@@ -16,7 +16,7 @@ func (t TemplateSet) Get(appName, name, format string) *template.Template {
 }
 
 func (t TemplateSet) Ident(appName, name, format string) string {
-	return fmt.Sprintf("%s:%s.%s", appName, name, format)
+	return fmt.Sprintf("%s:%s.%s", appName, toSnakeCase(name), format)
 }
 
 func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {
