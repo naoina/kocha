@@ -24,7 +24,7 @@ func handler(writer http.ResponseWriter, req *http.Request) {
 
 func Run(addr string, port int) {
 	if !initialized {
-		log.Fatal("Uninitialized. Please call the kocha.Init() before kocha.Run()")
+		log.Fatalln("Uninitialized. Please call the kocha.Init() before kocha.Run()")
 	}
 	if addr == "" {
 		addr = DefaultHttpAddr

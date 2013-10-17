@@ -89,7 +89,7 @@ func (route *Route) dispatch(methodName, path string) (controller *reflect.Value
 		case "int":
 			p, err := strconv.Atoi(v)
 			if err != nil {
-				log.Fatal(err)
+				log.Panic(err)
 			}
 			args = append(args, reflect.ValueOf(p))
 		default:
@@ -118,11 +118,11 @@ func (route *Route) buildMethodTypes() {
 		}
 	}
 	if filePath == "" {
-		log.Fatal(fmt.Sprintf("%s: no such file", filepath.Join(pkgPath, goFile)))
+		log.Panic(fmt.Sprintf("%s: no such file", filepath.Join(pkgPath, goFile)))
 	}
 	f, err := parser.ParseFile(token.NewFileSet(), filePath, nil, 0)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	route.MethodTypes = make(map[string]methodArgs)
 	for _, d := range f.Decls {
@@ -179,7 +179,7 @@ func (route *Route) buildRegexpPath() {
 				methodNames = append(methodNames, methodName)
 			}
 			controllerName := reflect.TypeOf(route.Controller).Name()
-			log.Fatalf("argument `%s` is not defined in these methods `%s.%s`",
+			log.Panicf("argument `%s` is not defined in these methods `%s.%s`",
 				name, controllerName, strings.Join(methodNames, ", "))
 		}
 		regexpBuf.WriteString(fmt.Sprintf(`/(?P<%s>%s)`, regexp.QuoteMeta(name), rePatStr))

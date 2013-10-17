@@ -50,7 +50,7 @@ func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {
 				}
 				return nil
 			}); err != nil {
-				log.Fatal(err)
+				log.Panic(err)
 			}
 		}
 	}
@@ -60,7 +60,7 @@ func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {
 		for layoutName, layoutPath := range layouts {
 			layoutBytes, err := ioutil.ReadFile(layoutPath)
 			if err != nil {
-				log.Fatal(err)
+				log.Panic(err)
 			}
 			layoutTemplate := template.Must(template.New("layout").Parse(string(layoutBytes)))
 			templateSet[layoutAppName][layoutName] = layoutTemplate
