@@ -147,9 +147,10 @@ func (route *Route) buildMethodTypes() {
 			}
 			route.MethodTypes[methodName] = make(methodArgs)
 			for _, v := range fdecl.Type.Params.List {
-				name := v.Names[0].Name
 				t := v.Type.(*ast.Ident).Name
-				route.MethodTypes[methodName][name] = t
+				for _, name := range v.Names {
+					route.MethodTypes[methodName][name.Name] = t
+				}
 			}
 			return false
 		})
