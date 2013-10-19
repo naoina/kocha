@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"runtime"
 )
 
 func handler(writer http.ResponseWriter, req *http.Request) {
@@ -13,6 +14,15 @@ func handler(writer http.ResponseWriter, req *http.Request) {
 		http.NotFound(writer, req)
 		return
 	}
+	defer func() {
+		if err := recover(); err != nil {
+			buf := make([]byte, 4096)
+			runtime.Stack(buf, false)
+			log.Print(err)
+			log.Print(string(buf))
+			http.Error(writer, "500 Internal Server Error", 500)
+		}
+	}()
 	c := controller.Elem()
 	cc := c.FieldByName("Controller")
 	cc.FieldByName("Name").SetString(c.Type().Name())

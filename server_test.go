@@ -1,8 +1,11 @@
 package kocha
 
 import (
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -59,5 +62,40 @@ func TestServer(t *testing.T) {
 	expected = "tmpl3-naoina-2013-7-19"
 	if !reflect.DeepEqual(body, expected) {
 		t.Errorf("Expect %v, but %v", expected, body)
+	}
+
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/missing", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler(w, req)
+	status = w.Code
+	if !reflect.DeepEqual(status, http.StatusNotFound) {
+		t.Errorf("Expect %v, but %v", http.StatusOK, status)
+	}
+
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/missing", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler(w, req)
+	status = w.Code
+	if !reflect.DeepEqual(status, http.StatusNotFound) {
+		t.Errorf("Expect %v, but %v", http.StatusOK, status)
+	}
+
+	log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(os.Stdout)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/error", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler(w, req)
+	status = w.Code
+	if !reflect.DeepEqual(status, http.StatusInternalServerError) {
+		t.Errorf("Expect %v, but %v", http.StatusInternalServerError, status)
 	}
 }

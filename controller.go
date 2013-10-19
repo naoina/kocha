@@ -1,7 +1,7 @@
 package kocha
 
 import (
-	"log"
+	"errors"
 )
 
 type Controller struct {
@@ -19,11 +19,11 @@ func (c *Controller) Render(context ...Context) Result {
 	case 1:
 		ctx = context[0]
 	default: // > 1
-		log.Panic("too many arguments")
+		panic(errors.New("too many arguments"))
 	}
 	t := appConfig.TemplateSet.Get(appConfig.AppName, c.Name, "html")
 	if t == nil {
-		log.Panicf("no such template: %s", appConfig.TemplateSet.Ident(appConfig.AppName, c.Name, "html"))
+		panic(errors.New("no such template: " + appConfig.TemplateSet.Ident(appConfig.AppName, c.Name, "html")))
 	}
 	return &ResultTemplate{
 		Template: t,
