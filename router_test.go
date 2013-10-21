@@ -1,6 +1,7 @@
 package kocha
 
 import (
+	testfixtures "./testfixtures"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -23,6 +24,11 @@ func TestInitRouteTable(t *testing.T) {
 			Name:       "date",
 			Path:       "/:year/:month/:day/user/:name",
 			Controller: FixtureDateTestCtrl{},
+		},
+		&Route{
+			Name:       "relpath",
+			Path:       "/relpath",
+			Controller: testfixtures.FixtureRelpathTestCtrl{},
 		},
 	})
 	expected := []*Route{
@@ -59,6 +65,15 @@ func TestInitRouteTable(t *testing.T) {
 				},
 			},
 			RegexpPath: regexp.MustCompile(`^/(?P<year>\d+)/(?P<month>\d+)/(?P<day>\d+)/user/(?P<name>[\w-]+)$`),
+		},
+		&Route{
+			Name:       "relpath",
+			Path:       "/relpath",
+			Controller: testfixtures.FixtureRelpathTestCtrl{},
+			MethodTypes: map[string]methodArgs{
+				"Get": methodArgs{},
+			},
+			RegexpPath: regexp.MustCompile(`^/relpath$`),
 		},
 	}
 	if !reflect.DeepEqual(actual, expected) {
