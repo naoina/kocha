@@ -12,11 +12,11 @@ import (
 type TemplateSet map[string]map[string]*template.Template
 
 func (t TemplateSet) Get(appName, name, format string) *template.Template {
-	return t[appName][fmt.Sprintf("%s.%s", toSnakeCase(name), format)]
+	return t[appName][fmt.Sprintf("%s.%s", ToSnakeCase(name), format)]
 }
 
 func (t TemplateSet) Ident(appName, name, format string) string {
-	return fmt.Sprintf("%s:%s.%s", appName, toSnakeCase(name), format)
+	return fmt.Sprintf("%s:%s.%s", appName, ToSnakeCase(name), format)
 }
 
 func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {

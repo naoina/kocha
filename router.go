@@ -105,7 +105,7 @@ func (route *Route) dispatch(methodName, path string) (controller *reflect.Value
 func (route *Route) buildMethodTypes() {
 	controller := reflect.TypeOf(route.Controller)
 	cname := controller.Name()
-	sname := toSnakeCase(cname)
+	sname := ToSnakeCase(cname)
 	pkgPath := controller.PkgPath()
 	goFile := sname + ".go"
 	var filePath string

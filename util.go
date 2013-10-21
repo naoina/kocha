@@ -6,7 +6,26 @@ import (
 	"unicode"
 )
 
-func toSnakeCase(s string) string {
+func ToCamelCase(s string) string {
+	result := make([]rune, 0, len(s))
+	upper := false
+	for _, r := range s {
+		if r == '_' {
+			upper = true
+			continue
+		}
+		if upper {
+			result = append(result, unicode.ToUpper(r))
+			upper = false
+			continue
+		}
+		result = append(result, r)
+	}
+	result[0] = unicode.ToUpper(result[0])
+	return string(result)
+}
+
+func ToSnakeCase(s string) string {
 	var result bytes.Buffer
 	result.WriteRune(unicode.ToLower(rune(s[0])))
 	for _, c := range s[1:] {
