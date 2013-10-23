@@ -1,7 +1,7 @@
 package kocha
 
 import (
-	testfixtures "./testfixtures"
+	testdata "./testdata"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -28,7 +28,7 @@ func TestInitRouteTable(t *testing.T) {
 		&Route{
 			Name:       "relpath",
 			Path:       "/relpath",
-			Controller: testfixtures.FixtureRelpathTestCtrl{},
+			Controller: testdata.FixtureRelpathTestCtrl{},
 		},
 	})
 	expected := []*Route{
@@ -69,7 +69,7 @@ func TestInitRouteTable(t *testing.T) {
 		&Route{
 			Name:       "relpath",
 			Path:       "/relpath",
-			Controller: testfixtures.FixtureRelpathTestCtrl{},
+			Controller: testdata.FixtureRelpathTestCtrl{},
 			MethodTypes: map[string]methodArgs{
 				"Get": methodArgs{},
 			},

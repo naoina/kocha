@@ -62,7 +62,7 @@ func TestTemplateSet_Ident(t *testing.T) {
 func TestTemplateSetFromPaths(t *testing.T) {
 	actual := TemplateSetFromPaths(map[string][]string{
 		"appName": []string{
-			filepath.Join("testfixtures", "app", "views"),
+			filepath.Join("testdata", "app", "views"),
 		},
 	})
 	expected := map[string]map[string]string{
