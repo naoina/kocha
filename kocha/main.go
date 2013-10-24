@@ -4,22 +4,10 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"github.com/naoina/kocha"
 	"os"
 	"text/template"
 )
-
-type Error struct {
-	usager  usager
-	message string
-}
-
-func (e Error) Error() string {
-	return e.message
-}
-
-type usager interface {
-	Usage() string
-}
 
 type command interface {
 	Name() string
@@ -58,9 +46,9 @@ func main() {
 	progName := os.Args[0]
 	defer func() {
 		if err := recover(); err != nil {
-			if err, ok := err.(Error); ok {
-				fmt.Fprintln(os.Stderr, err.message)
-				fmt.Fprintf(os.Stderr, "usage: %s %s\n", progName, err.usager.Usage())
+			if err, ok := err.(kocha.Error); ok {
+				fmt.Fprintln(os.Stderr, err.Message)
+				fmt.Fprintf(os.Stderr, "usage: %s %s\n", progName, err.Usager.Usage())
 				os.Exit(1)
 			}
 			panic(err)
