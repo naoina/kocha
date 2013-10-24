@@ -2,16 +2,36 @@
 
 A web application framework for [Go](http://golang.org/)
 
-## Installation
+## Getting started
 
-    go get github.com/naoina/kocha
+1. install the framework:
 
-To run example:
+        go get -u github.com/naoina/kocha
 
-    cd $GOPATH/github.com/naoina/kocha/examples/simple
-    go run main.go
+    And command-line tool
 
-## Usage
+        go get -u github.com/naoina/kocha/kocha
+
+2. Create a new application:
+
+        kocha new myapp
+
+    where "myapp" is the application name.
+
+3. Change directory and run the application:
+
+        cd myapp
+        go run main.go
+
+    or
+
+        cd myapp
+        go build
+        ./myapp
+
+Run `kocha -h` for more information.
+
+## Documentation
 
 TODO
 
