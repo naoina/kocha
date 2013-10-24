@@ -1,6 +1,7 @@
 package kocha
 
 import (
+	"encoding/xml"
 	"html/template"
 	"reflect"
 	"testing"
@@ -109,6 +110,20 @@ func TestControllerRenderJSON(t *testing.T) {
 	expected := &ResultJSON{
 		Context: struct{ A, B string }{"hoge", "foo"},
 	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+func TestControllerRenderXML(t *testing.T) {
+	c := newTestController()
+	ctx := struct {
+		XMLName xml.Name `xml:"user"`
+		A       string   `xml:"id"`
+		B       string   `xml:"name"`
+	}{A: "hoge", B: "foo"}
+	actual := c.RenderXML(ctx)
+	expected := &ResultXML{ctx}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}

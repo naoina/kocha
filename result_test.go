@@ -1,6 +1,7 @@
 package kocha
 
 import (
+	"encoding/xml"
 	"html/template"
 	"net/http/httptest"
 	"reflect"
@@ -32,6 +33,22 @@ func TestResultJSONProc(t *testing.T) {
 	result.Proc(w)
 	expected := `{"A":"ctx1","B":"testctx2"}
 `
+	actual := w.Body.String()
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+func TestResultXMLProc(t *testing.T) {
+	result := &ResultXML{
+		Context: struct {
+			XMLName xml.Name `xml:"user"`
+			A       string   `xml:"id"`
+			B       string   `xml:"name"`
+		}{A: "testId", B: "testName"},
+	}
+	w := httptest.NewRecorder()
+	result.Proc(w)
+	expected := `<user><id>testId</id><name>testName</name></user>`
 	actual := w.Body.String()
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)

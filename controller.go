@@ -36,3 +36,9 @@ func (c *Controller) RenderJSON(context interface{}) Result {
 		Context: context,
 	}
 }
+
+func (c *Controller) RenderXML(context interface{}) Result {
+	return &ResultXML{
+		Context: context,
+	}
+}
