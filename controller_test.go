@@ -102,3 +102,14 @@ func TestControllerRender_with_missing_Template(t *testing.T) {
 	c.Name = "unknownctrlr"
 	c.Render()
 }
+
+func TestControllerRenderJSON(t *testing.T) {
+	c := newTestController()
+	actual := c.RenderJSON(struct{ A, B string }{"hoge", "foo"})
+	expected := &ResultJSON{
+		Context: struct{ A, B string }{"hoge", "foo"},
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}

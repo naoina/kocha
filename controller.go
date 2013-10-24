@@ -30,3 +30,9 @@ func (c *Controller) Render(context ...Context) Result {
 		Context:  ctx,
 	}
 }
+
+func (c *Controller) RenderJSON(context interface{}) Result {
+	return &ResultJSON{
+		Context: context,
+	}
+}

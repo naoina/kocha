@@ -23,3 +23,17 @@ func TestResultTemplateProc(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 }
+
+func TestResultJSONProc(t *testing.T) {
+	result := &ResultJSON{
+		Context: struct{ A, B string }{"ctx1", "testctx2"},
+	}
+	w := httptest.NewRecorder()
+	result.Proc(w)
+	expected := `{"A":"ctx1","B":"testctx2"}
+`
+	actual := w.Body.String()
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
