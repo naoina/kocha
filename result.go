@@ -3,6 +3,7 @@ package kocha
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"html/template"
 	"net/http"
 )
@@ -38,6 +39,16 @@ type ResultXML struct {
 
 func (r *ResultXML) Proc(writer http.ResponseWriter) {
 	if err := xml.NewEncoder(writer).Encode(r.Context); err != nil {
+		panic(err)
+	}
+}
+
+type ResultPlainText struct {
+	Content string
+}
+
+func (r *ResultPlainText) Proc(writer http.ResponseWriter) {
+	if _, err := fmt.Fprint(writer, r.Content); err != nil {
 		panic(err)
 	}
 }

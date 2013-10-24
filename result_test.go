@@ -54,3 +54,14 @@ func TestResultXMLProc(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 }
+
+func TestResultPlainTextProc(t *testing.T) {
+	result := &ResultPlainText{"test_content"}
+	w := httptest.NewRecorder()
+	result.Proc(w)
+	expected := `test_content`
+	actual := w.Body.String()
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}

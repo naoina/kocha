@@ -128,3 +128,12 @@ func TestControllerRenderXML(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 }
+
+func TestControllerRenderPlainText(t *testing.T) {
+	c := newTestController()
+	actual := c.RenderPlainText("test_content_data")
+	expected := &ResultPlainText{"test_content_data"}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}

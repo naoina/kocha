@@ -42,3 +42,9 @@ func (c *Controller) RenderXML(context interface{}) Result {
 		Context: context,
 	}
 }
+
+func (c *Controller) RenderPlainText(content string) Result {
+	return &ResultPlainText{
+		Content: content,
+	}
+}
