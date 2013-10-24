@@ -31,13 +31,29 @@ func TestResultJSONProc(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 	result.Proc(w)
-	expected := `{"A":"ctx1","B":"testctx2"}
+	expected := "application/json"
+	actual := w.Header().Get("Content-Type")
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	w = httptest.NewRecorder()
+	w.Header().Set("Content-Type", "test/mime")
+	result.Proc(w)
+	expected = "test/mime"
+	actual = w.Header().Get("Content-Type")
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	expected = `{"A":"ctx1","B":"testctx2"}
 `
-	actual := w.Body.String()
+	actual = w.Body.String()
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 }
+
 func TestResultXMLProc(t *testing.T) {
 	result := &ResultXML{
 		Context: struct {
@@ -48,8 +64,23 @@ func TestResultXMLProc(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 	result.Proc(w)
-	expected := `<user><id>testId</id><name>testName</name></user>`
-	actual := w.Body.String()
+	expected := "application/xml"
+	actual := w.Header().Get("Content-Type")
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	w = httptest.NewRecorder()
+	w.Header().Set("Content-Type", "test/mime")
+	result.Proc(w)
+	expected = "test/mime"
+	actual = w.Header().Get("Content-Type")
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	expected = `<user><id>testId</id><name>testName</name></user>`
+	actual = w.Body.String()
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -59,8 +90,23 @@ func TestResultPlainTextProc(t *testing.T) {
 	result := &ResultPlainText{"test_content"}
 	w := httptest.NewRecorder()
 	result.Proc(w)
-	expected := `test_content`
-	actual := w.Body.String()
+	expected := "text/plain"
+	actual := w.Header().Get("Content-Type")
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	w = httptest.NewRecorder()
+	w.Header().Set("Content-Type", "test/mime")
+	result.Proc(w)
+	expected = "test/mime"
+	actual = w.Header().Get("Content-Type")
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	expected = `test_content`
+	actual = w.Body.String()
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
