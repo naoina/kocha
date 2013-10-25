@@ -51,6 +51,7 @@ func (c *newCommand) Run() {
 	}
 	data := map[string]interface{}{
 		"appName": filepath.Base(absPath),
+		"appPath": appPath,
 	}
 	filepath.Walk(skeletonDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

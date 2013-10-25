@@ -1,7 +1,7 @@
 package config
 
 import (
-	"../app/controllers"
+	"{{.appPath}}/app/controllers"
 	"github.com/naoina/kocha"
 )
 
