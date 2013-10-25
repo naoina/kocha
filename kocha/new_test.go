@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"go/build"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -54,7 +55,9 @@ func Test_newCommand_Run_with_already_exists(t *testing.T) {
 		panic(err)
 	}
 	defer os.RemoveAll(tempdir)
-	configDir := filepath.Join(tempdir, "config")
+	appPath := filepath.Base(tempdir)
+	dstPath := filepath.Join(tempdir, "src", appPath)
+	configDir := filepath.Join(dstPath, "config")
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		panic(err)
 	}
@@ -64,12 +67,17 @@ func Test_newCommand_Run_with_already_exists(t *testing.T) {
 	cmd := &newCommand{}
 	flags := flag.NewFlagSet("testflags", flag.ExitOnError)
 	cmd.DefineFlags(flags)
-	flags.Parse([]string{tempdir})
+	flags.Parse([]string{appPath})
 	defer func() {
 		if err := recover(); err == nil {
 			t.Errorf("Expect panic, but not occurred")
 		}
 	}()
+	origGOPATH := build.Default.GOPATH
+	defer func() {
+		build.Default.GOPATH = origGOPATH
+	}()
+	build.Default.GOPATH = tempdir + string(filepath.ListSeparator) + build.Default.GOPATH
 	cmd.Run()
 }
 
@@ -79,6 +87,8 @@ func Test_newCommand_Run(t *testing.T) {
 		panic(err)
 	}
 	defer os.RemoveAll(tempdir)
+	appPath := filepath.Base(tempdir)
+	dstPath := filepath.Join(tempdir, "src", appPath)
 	f, err := os.OpenFile(os.DevNull, os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		panic(err)
@@ -91,10 +101,15 @@ func Test_newCommand_Run(t *testing.T) {
 	cmd := &newCommand{}
 	flags := flag.NewFlagSet("testflags", flag.ExitOnError)
 	cmd.DefineFlags(flags)
-	flags.Parse([]string{tempdir})
+	flags.Parse([]string{appPath})
+	origGOPATH := build.Default.GOPATH
+	defer func() {
+		build.Default.GOPATH = origGOPATH
+	}()
+	build.Default.GOPATH = tempdir + string(filepath.ListSeparator) + build.Default.GOPATH
 	cmd.Run()
 	var actuals []string
-	filepath.Walk(tempdir, func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(dstPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			panic(err)
 		}
@@ -116,7 +131,7 @@ func Test_newCommand_Run(t *testing.T) {
 	sort.Strings(expects)
 	for i, _ := range actuals {
 		actual := actuals[i]
-		expected := filepath.Join(tempdir, expects[i])
+		expected := filepath.Join(dstPath, expects[i])
 		if actual != expected {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}

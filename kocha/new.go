@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/naoina/kocha"
+	"go/build"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -39,18 +40,15 @@ func (c *newCommand) Run() {
 	if appPath == "" {
 		kocha.PanicOnError(c, "abort: no APP_PATH given")
 	}
+	dstBasePath := filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src", appPath)
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
 	skeletonDir := filepath.Join(baseDir, "skeleton", "new")
-	absPath, err := filepath.Abs(appPath)
-	if err != nil {
-		panic(err)
-	}
-	if _, err := os.Stat(filepath.Join(appPath, "config", "app.go")); err == nil {
+	if _, err := os.Stat(filepath.Join(dstBasePath, "config", "app.go")); err == nil {
 		kocha.PanicOnError(c, "abort: Kocha application is already exists")
 	}
 	data := map[string]interface{}{
-		"appName": filepath.Base(absPath),
+		"appName": filepath.Base(appPath),
 		"appPath": appPath,
 	}
 	filepath.Walk(skeletonDir, func(path string, info os.FileInfo, err error) error {
@@ -60,7 +58,7 @@ func (c *newCommand) Run() {
 		if info.IsDir() {
 			return nil
 		}
-		dstPath := filepath.Join(appPath, strings.TrimPrefix(path, skeletonDir))
+		dstPath := filepath.Join(dstBasePath, strings.TrimPrefix(path, skeletonDir))
 		dstDir := filepath.Dir(dstPath)
 		dirCreated, err := mkdirAllIfNotExists(dstDir)
 		if err != nil {
