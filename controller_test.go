@@ -3,6 +3,8 @@ package kocha
 import (
 	"encoding/xml"
 	"html/template"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 )
@@ -14,14 +16,78 @@ func newControllerTestAppConfig() *AppConfig {
 		TemplateSet: TemplateSet{
 			"testAppName": map[string]*template.Template{
 				"testctrlr.html": template.Must(template.New("tmpl1").Parse(`tmpl1`)),
+				"testctrlr.json": template.Must(template.New("tmpl2").Parse(`{"tmpl2":"content"}`)),
 			},
 		},
 	}
 }
 
 func newTestController() *Controller {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		panic(err)
+	}
+	w := httptest.NewRecorder()
 	return &Controller{
-		Name: "testctrlr",
+		Name:     "testctrlr",
+		Request:  NewRequest(req),
+		Response: NewResponse(w),
+	}
+}
+
+func TestMimeTypeFormats(t *testing.T) {
+	actual := MimeTypeFormats
+	expected := mimeTypeFormats{
+		"application/json": "json",
+		"application/xml":  "xml",
+		"text/html":        "html",
+		"text/plain":       "txt",
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+func TestMimeTypeFormatsGet(t *testing.T) {
+	actual := MimeTypeFormats.Get("application/json")
+	expected := "json"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	actual = MimeTypeFormats.Get("text/plain")
+	expected = "txt"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+func TestMimeTypeFormatsSet(t *testing.T) {
+	mimeType := "test/mime"
+	if MimeTypeFormats[mimeType] != "" {
+		t.Fatalf("Expect none, but %v", MimeTypeFormats[mimeType])
+	}
+	expected := "testmimetype"
+	MimeTypeFormats.Set(mimeType, expected)
+	defer delete(MimeTypeFormats, mimeType)
+	actual := MimeTypeFormats[mimeType]
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+func TestMimeTypeFormatsDel(t *testing.T) {
+	if MimeTypeFormats["text/html"] == "" {
+		t.Fatal("Expect exists, but not exists")
+	}
+	MimeTypeFormats.Del("text/html")
+	defer func() {
+		MimeTypeFormats["text/html"] = "html"
+	}()
+	actual := MimeTypeFormats["text/html"]
+	expected := ""
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 }
 
@@ -70,6 +136,24 @@ func TestControllerRender_with_Context(t *testing.T) {
 	expected := &ResultTemplate{
 		Template: appConfig.TemplateSet["testAppName"]["testctrlr.html"],
 		Context:  ctx,
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+func TestControllerRender_with_ContentType(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newControllerTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+	c := newTestController()
+	c.Response.ContentType = "application/json"
+	actual := c.Render()
+	expected := &ResultTemplate{
+		Template: appConfig.TemplateSet["testAppName"]["testctrlr.json"],
+		Context:  nil,
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
