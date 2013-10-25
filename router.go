@@ -110,7 +110,7 @@ func (route *Route) buildMethodTypes() {
 	goFile := sname + ".go"
 	var filePath string
 	for _, src := range build.Default.SrcDirs() {
-		if path, err := filepath.Abs(filepath.Join(src, strings.TrimPrefix(pkgPath, "_"+src), goFile)); err == nil {
+		if path, err := filepath.Abs(filepath.Join(src, pkgPath, goFile)); err == nil {
 			if _, err := os.Stat(path); err == nil {
 				filePath = path
 				break
