@@ -17,8 +17,8 @@ func newTestAppConfig() *AppConfig {
 				"fixture_error_test_ctrl.html": template.Must(template.New("tmpl4").Parse(`tmpl4`)),
 			},
 		},
-		RouteTable: []*Route{
-			&Route{
+		RouteTable: RouteTable{
+			{
 				Name:       "root",
 				Path:       "/",
 				Controller: FixtureRootTestCtrl{},
@@ -27,7 +27,7 @@ func newTestAppConfig() *AppConfig {
 				},
 				RegexpPath: regexp.MustCompile(`^/$`),
 			},
-			&Route{
+			{
 				Name:       "user",
 				Path:       "/user/:id",
 				Controller: FixtureUserTestCtrl{},
@@ -38,7 +38,7 @@ func newTestAppConfig() *AppConfig {
 				},
 				RegexpPath: regexp.MustCompile(`^/user/(?P<id>\d+)$`),
 			},
-			&Route{
+			{
 				Name:       "date",
 				Path:       "/:year/:month/:day/user/:name",
 				Controller: FixtureDateTestCtrl{},
@@ -52,7 +52,7 @@ func newTestAppConfig() *AppConfig {
 				},
 				RegexpPath: regexp.MustCompile(`^/(?P<year>\d+)/(?P<month>\d+)/(?P<day>\d+)/user/(?P<name>[\w-]+)$`),
 			},
-			&Route{
+			{
 				Name:       "error",
 				Path:       "/error",
 				Controller: FixtureErrorTestCtrl{},

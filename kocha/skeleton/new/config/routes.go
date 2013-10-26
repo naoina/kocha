@@ -5,8 +5,10 @@ import (
 	"github.com/naoina/kocha"
 )
 
-var Routes []*kocha.Route = []*kocha.Route{
-	&kocha.Route{
+type RouteTable kocha.RouteTable
+
+var Routes = RouteTable{
+	{
 		Name:       "root",
 		Path:       "/",
 		Controller: controllers.Root{},

@@ -23,15 +23,15 @@ func TestInit(t *testing.T) {
 		AppPath:     "testpath",
 		AppName:     "testappname",
 		TemplateSet: nil,
-		RouteTable: []*Route{
-			&Route{
+		RouteTable: RouteTable{
+			{
 				Name:        "route1",
 				Path:        "route_path1",
 				Controller:  nil,
 				MethodTypes: nil,
 				RegexpPath:  nil,
 			},
-			&Route{
+			{
 				Name:        "route2",
 				Path:        "route_path2",
 				Controller:  nil,

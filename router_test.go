@@ -8,25 +8,25 @@ import (
 )
 
 func TestInitRouteTable(t *testing.T) {
-	actual := InitRouteTable([]*Route{
-		&Route{
+	actual := InitRouteTable(RouteTable{
+		{
 			Name:       "root",
 			Path:       "/",
 			Controller: FixtureRootTestCtrl{},
 		},
-		&Route{
+		{
 			Name:       "user",
 			Path:       "/user/:id",
 			Controller: FixtureUserTestCtrl{},
 		},
-		&Route{
+		{
 			Name:       "date",
 			Path:       "/:year/:month/:day/user/:name",
 			Controller: FixtureDateTestCtrl{},
 		},
 	})
-	expected := []*Route{
-		&Route{
+	expected := RouteTable{
+		{
 			Name:       "root",
 			Path:       "/",
 			Controller: FixtureRootTestCtrl{},
@@ -35,7 +35,7 @@ func TestInitRouteTable(t *testing.T) {
 			},
 			RegexpPath: regexp.MustCompile(`^/$`),
 		},
-		&Route{
+		{
 			Name:       "user",
 			Path:       "/user/:id",
 			Controller: FixtureUserTestCtrl{},
@@ -46,7 +46,7 @@ func TestInitRouteTable(t *testing.T) {
 			},
 			RegexpPath: regexp.MustCompile(`^/user/(?P<id>\d+)$`),
 		},
-		&Route{
+		{
 			Name:       "date",
 			Path:       "/:year/:month/:day/user/:name",
 			Controller: FixtureDateTestCtrl{},

@@ -70,8 +70,9 @@ import (
 	"../app/controllers"
 	"github/naoina/kocha"
 )
-var Routes = []*kocha.Route{
-	&kocha.Route{
+type RouteTable kocha.RouteTable
+var Routes = RouteTable{
+	{
 		Name: "root",
 		Path: "/",
 		Controller: controllers.Root{},
@@ -109,13 +110,14 @@ import (
 	"github/naoina/kocha"
 )
 
-var Routes = []*kocha.Route{
-	&kocha.Route{
+type RouteTable kocha.RouteTable
+
+var Routes = RouteTable{
+	{
 		Name:       "root",
 		Path:       "/",
 		Controller: controllers.Root{},
-	},
-	&kocha.Route{
+	}, {
 		Name:       "app_controller",
 		Path:       "/app_controller",
 		Controller: controllers.AppController{},
@@ -142,9 +144,9 @@ var Routes = []*kocha.Route{
 	}
 }
 
-func Test_routeTypeName(t *testing.T) {
-	actual := routeTypeName
-	expected := "kocha.Route"
+func Test_routeTableTypeName(t *testing.T) {
+	actual := routeTableTypeName
+	expected := "RouteTable"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}

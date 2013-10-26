@@ -16,7 +16,9 @@ import (
 	"runtime"
 )
 
-var routeTypeName = reflect.TypeOf(kocha.Route{}).String()
+var (
+	routeTableTypeName = reflect.TypeOf(kocha.RouteTable{}).Name()
+)
 
 type controllerGenerator struct {
 	flag *flag.FlagSet
@@ -83,12 +85,11 @@ func (g *controllerGenerator) addRouteToFile(name string) {
 	if _, err := io.CopyN(&buf, routeFile, offset); err != nil {
 		kocha.PanicOnError(g, "abort: failed to read file: %v", err)
 	}
-	buf.WriteString(fmt.Sprintf(`,
-&%s{
+	buf.WriteString(fmt.Sprintf(`, {
 	Name:       "%s",
 	Path:       "/%s",
 	Controller: controllers.%s{},
-}`, routeTypeName, routeName, routeName, routeStructName))
+}`, routeName, routeName, routeStructName))
 	if _, err := io.Copy(&buf, routeFile); err != nil {
 		kocha.PanicOnError(g, "abort: failed to read file: %v", err)
 	}
@@ -111,16 +112,8 @@ func findRouteTableAST(file *ast.File) *ast.CompositeLit {
 			}
 		case *ast.CompositeLit:
 			switch t := aType.Type.(type) {
-			case *ast.ArrayType:
-				star, ok := t.Elt.(*ast.StarExpr)
-				if !ok {
-					return false
-				}
-				selector, ok := star.X.(*ast.SelectorExpr)
-				if !ok {
-					return false
-				}
-				if name := fmt.Sprintf("%s.%s", selector.X.(*ast.Ident).Name, selector.Sel.Name); name == routeTypeName {
+			case *ast.Ident:
+				if t.Name == routeTableTypeName {
 					routeTableAST = aType
 					return false
 				}
@@ -133,19 +126,11 @@ func findRouteTableAST(file *ast.File) *ast.CompositeLit {
 
 func findRouteASTs(clit *ast.CompositeLit) []*ast.CompositeLit {
 	var routeASTs []*ast.CompositeLit
-	ast.Inspect(clit, func(node ast.Node) bool {
-		switch aType := node.(type) {
-		case *ast.CompositeLit:
-			switch t := aType.Type.(type) {
-			case *ast.SelectorExpr:
-				if name := fmt.Sprintf("%s.%s", t.X.(*ast.Ident).Name, t.Sel.Name); name == routeTypeName {
-					routeASTs = append(routeASTs, aType)
-				}
-				return false
-			}
+	for _, c := range clit.Elts {
+		if a, ok := c.(*ast.CompositeLit); ok {
+			routeASTs = append(routeASTs, a)
 		}
-		return true
-	})
+	}
 	return routeASTs
 }
 

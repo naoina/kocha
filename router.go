@@ -21,6 +21,8 @@ type (
 	methodArgs map[string]string
 )
 
+type RouteTable []*Route
+
 type Route struct {
 	Name        string
 	Path        string
@@ -45,7 +47,7 @@ var (
 	placeHolderRegexp = regexp.MustCompile(`/(?:(?::([\w-]+))|[\w-]*)`)
 )
 
-func InitRouteTable(routeTable []*Route) []*Route {
+func InitRouteTable(routeTable RouteTable) RouteTable {
 	for _, route := range routeTable {
 		route.buildMethodTypes()
 		route.buildRegexpPath()

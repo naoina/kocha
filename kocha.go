@@ -13,7 +13,7 @@ type AppConfig struct {
 	AppPath     string
 	AppName     string
 	TemplateSet TemplateSet
-	RouteTable  []*Route
+	RouteTable  RouteTable
 }
 
 var (
