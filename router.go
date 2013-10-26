@@ -44,7 +44,8 @@ var (
 		"":    `[\w-]+`, // default
 		"int": `\d+`,
 	}
-	placeHolderRegexp = regexp.MustCompile(`/(?:(?::([\w-]+))|[\w-]*)`)
+	placeHolderRegexp = regexp.MustCompile(`:[\w-]+`)
+	pathRegexp        = regexp.MustCompile(`/(?:(?::([\w-]+))|[\w-]*)`)
 )
 
 func InitRouteTable(routeTable RouteTable) RouteTable {
@@ -53,6 +54,19 @@ func InitRouteTable(routeTable RouteTable) RouteTable {
 		route.buildRegexpPath()
 	}
 	return routeTable
+}
+
+func Reverse(name string, v ...interface{}) string {
+	for _, route := range appConfig.RouteTable {
+		if route.Name == name {
+			return route.reverse(v...)
+		}
+	}
+	types := make([]string, len(v))
+	for i, value := range v {
+		types[i] = reflect.TypeOf(value).Name()
+	}
+	panic(fmt.Errorf("no match route found: %v (%v)", name, strings.Join(types, ", ")))
 }
 
 func dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
@@ -102,6 +116,26 @@ func (route *Route) dispatch(methodName, path string) (controller *reflect.Value
 	c := reflect.New(t)
 	m := c.MethodByName(methodName)
 	return &c, &m, args
+}
+
+func (route *Route) reverse(v ...interface{}) string {
+	switch n := route.RegexpPath.NumSubexp(); {
+	case len(v) < n:
+		panic(fmt.Errorf("too few arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
+	case len(v) > n:
+		panic(fmt.Errorf("too many arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
+	case len(v)+n == 0:
+		return route.Path
+	}
+	path := placeHolderRegexp.ReplaceAllStringFunc(route.Path, func(s string) string {
+		result := fmt.Sprint(v[0])
+		v = v[1:]
+		return result
+	})
+	if !route.RegexpPath.MatchString(path) {
+		panic(fmt.Errorf("parameter type mismatch: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
+	}
+	return path
 }
 
 func (route *Route) buildMethodTypes() {
@@ -161,7 +195,7 @@ func (route *Route) buildMethodTypes() {
 
 func (route *Route) buildRegexpPath() {
 	var regexpBuf bytes.Buffer
-	for _, paths := range placeHolderRegexp.FindAllStringSubmatch(route.Path, -1) {
+	for _, paths := range pathRegexp.FindAllStringSubmatch(route.Path, -1) {
 		name := paths[1]
 		if name == "" {
 			regexpBuf.WriteString(regexp.QuoteMeta(paths[0]))

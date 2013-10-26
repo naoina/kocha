@@ -66,6 +66,92 @@ func TestInitRouteTable(t *testing.T) {
 	}
 }
 
+func TestReverse(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+
+	actual := Reverse("root")
+	expected := "/"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	actual = Reverse("user", 77)
+	expected = "/user/77"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	actual = Reverse("date", 2013, 10, 26, "naoina")
+	expected = "/2013/10/26/user/naoina"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+func TestReverse_with_unknown_route_name(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+
+	defer func() {
+		if err := recover(); err == nil {
+			t.Errorf("panic doesn't happened")
+		}
+	}()
+	Reverse("unknown")
+}
+
+func TestReverse_with_few_arguments(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+
+	defer func() {
+		if err := recover(); err == nil {
+			t.Errorf("panic doesn't happened")
+		}
+	}()
+	Reverse("user")
+}
+
+func TestReverse_with_many_arguments(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+
+	defer func() {
+		if err := recover(); err == nil {
+			t.Errorf("panic doesn't happened")
+		}
+	}()
+	Reverse("user", 77, 100)
+}
+
+func TestReverse_with_type_mismatch(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+
+	defer func() {
+		if err := recover(); err == nil {
+			t.Errorf("panic doesn't happened")
+		}
+	}()
+	Reverse("user", "naoina")
+}
+
 func Test_dispatch_with_route_missing(t *testing.T) {
 	oldAppConfig := appConfig
 	appConfig = newTestAppConfig()
