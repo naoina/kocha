@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	AppName   = filepath.Base(rootPath)
+	AppName   = "{{.appName}}"
 	Addr      = "0.0.0.0"
 	Port      = 9100
 	AppConfig = &kocha.AppConfig{
@@ -24,3 +24,10 @@ var (
 	_, configFileName, _, _ = runtime.Caller(0)
 	rootPath                = filepath.Dir(filepath.Join(configFileName, ".."))
 )
+
+func init() {
+	config := kocha.Config(AppName)
+	config.Set("AppName", AppName)
+	config.Set("Addr", Addr)
+	config.Set("Port", Port)
+}
