@@ -2,11 +2,176 @@ package kocha
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"path/filepath"
 	"reflect"
 	"testing"
+	"testing/quick"
+	"time"
 )
+
+func TestTemplateFuncs_eq(t *testing.T) {
+	base := `{{eq "%v" "%v"}}`
+	if err := quick.Check(func(x string) bool {
+		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(fmt.Sprintf(base, x, x)))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, nil); err != nil {
+			panic(err)
+		}
+		return buf.String() == "true"
+	}, nil); err != nil {
+		t.Error(err)
+	}
+
+	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(fmt.Sprintf(base, "a", "b")))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, nil); err != nil {
+		panic(err)
+	}
+	actual := buf.String()
+	expected := "false"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %q, but %q", expected, actual)
+	}
+}
+
+func TestTemplateFuncs_ne(t *testing.T) {
+	base := `{{ne "%v" "%v"}}`
+	if err := quick.Check(func(x string) bool {
+		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(fmt.Sprintf(base, x, x)))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, nil); err != nil {
+			panic(err)
+		}
+		return buf.String() == "false"
+	}, nil); err != nil {
+		t.Error(err)
+	}
+
+	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(fmt.Sprintf(base, "a", "b")))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, nil); err != nil {
+		panic(err)
+	}
+	actual := buf.String()
+	expected := "true"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %q, but %q", expected, actual)
+	}
+}
+
+func TestTemplateFuncs_in_with_invalid_type(t *testing.T) {
+	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{in 1 1}}`))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, nil); err == nil {
+		t.Errorf("Expect errors, but no errors")
+	}
+}
+
+func TestTemplateFuncs_in(t *testing.T) {
+	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{in . "a"}}`))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, []string{"b", "a", "c"}); err != nil {
+		panic(err)
+	}
+	actual := buf.String()
+	expected := "true"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %q, but %q", expected, actual)
+	}
+
+	buf.Reset()
+	if err := tmpl.Execute(&buf, []string{"ab", "b", "c"}); err != nil {
+		panic(err)
+	}
+	actual = buf.String()
+	expected = "false"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %q, but %q", expected, actual)
+	}
+}
+
+func TestTemplateFuncs_url(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{url "root"}}`))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, nil); err != nil {
+		panic(err)
+	}
+	actual := buf.String()
+	expected := "/"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %q, but %q", expected, actual)
+	}
+
+	tmpl = template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{url "user" 713}}`))
+	buf.Reset()
+	if err := tmpl.Execute(&buf, nil); err != nil {
+		panic(err)
+	}
+	actual = buf.String()
+	expected = "/user/713"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+func TestTemplateFuncs_nl2br(t *testing.T) {
+	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{nl2br "a\nb\nc\n"}}`))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, nil); err != nil {
+		panic(err)
+	}
+	actual := buf.String()
+	expected := "a<br>b<br>c<br>"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %q, but %q", expected, actual)
+	}
+}
+
+func TestTemplateFuncs_raw(t *testing.T) {
+	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{raw "\n<br>"}}`))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, nil); err != nil {
+		panic(err)
+	}
+	actual := buf.String()
+	expected := "\n<br>"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %q, but %q", expected, actual)
+	}
+}
+
+func TestTemplateFuncs_date(t *testing.T) {
+	base := `{{date . "%v"}}`
+	now := time.Now()
+	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(fmt.Sprintf(base, "2006/01/02 15:04:05.999999999")))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, now); err != nil {
+		panic(err)
+	}
+	actual := buf.String()
+	expected := now.Format("2006/01/02 15:04:05.999999999")
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %q, but %q", expected, actual)
+	}
+
+	tmpl = template.Must(template.New("test").Funcs(TemplateFuncs).Parse(fmt.Sprintf(base, "Jan 02 2006 03:04.999999999")))
+	buf.Reset()
+	if err := tmpl.Execute(&buf, now); err != nil {
+		panic(err)
+	}
+	actual = buf.String()
+	expected = now.Format("Jan 02 2006 03:04.999999999")
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %q, but %q", expected, actual)
+	}
+}
 
 func TestTemplateSet_Get(t *testing.T) {
 	templateSet := TemplateSet{

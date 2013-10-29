@@ -7,6 +7,51 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
+	"time"
+)
+
+var (
+	TemplateFuncs = template.FuncMap{
+		"eq": func(a, b interface{}) bool {
+			// TODO: remove in Go 1.2
+			//       see http://tip.golang.org/pkg/text/template/#hdr-Functions
+			return a == b
+		},
+		"ne": func(a, b interface{}) bool {
+			// TODO: remove in Go 1.2
+			//       see http://tip.golang.org/pkg/text/template/#hdr-Functions
+			return a != b
+		},
+		"in": func(a, b interface{}) bool {
+			v := reflect.ValueOf(a)
+			switch v.Kind() {
+			case reflect.Slice, reflect.Array, reflect.String:
+				if v.IsNil() {
+					return false
+				}
+				for i := 0; i < v.Len(); i++ {
+					if v.Index(i).Interface() == b {
+						return true
+					}
+				}
+			default:
+				panic(fmt.Errorf("invalid type %v: valid types are slice, array and string", v.Type().Name()))
+			}
+			return false
+		},
+		"url": Reverse,
+		"nl2br": func(text string) template.HTML {
+			return template.HTML(strings.Replace(template.HTMLEscapeString(text), "\n", "<br>", -1))
+		},
+		"raw": func(text string) template.HTML {
+			return template.HTML(text)
+		},
+		"date": func(date time.Time, layout string) string {
+			return date.Format(layout)
+		},
+	}
 )
 
 type TemplateSet map[string]map[string]*template.Template
@@ -62,7 +107,7 @@ func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {
 			if err != nil {
 				log.Panic(err)
 			}
-			layoutTemplate := template.Must(template.New("layout").Parse(string(layoutBytes)))
+			layoutTemplate := template.Must(template.New("layout").Funcs(TemplateFuncs).Parse(string(layoutBytes)))
 			templateSet[layoutAppName][layoutName] = layoutTemplate
 			for templateAppName, templates := range templatePaths {
 				templateSet[templateAppName] = make(map[string]*template.Template)
