@@ -21,12 +21,12 @@ A web application framework for [Go](http://golang.org/)
 3. Change directory and run the application:
 
         cd myapp
-        go run main.go
+        go run dev.go
 
     or
 
         cd myapp
-        go build
+        go build -o myapp dev.go
         ./myapp
 
 Run `kocha -h` for more information.
