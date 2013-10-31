@@ -30,8 +30,8 @@ func TestInitRouteTable(t *testing.T) {
 			Name:       "root",
 			Path:       "/",
 			Controller: FixtureRootTestCtrl{},
-			MethodTypes: map[string]methodArgs{
-				"Get": methodArgs{},
+			MethodTypes: map[string]MethodArgs{
+				"Get": MethodArgs{},
 			},
 			RegexpPath: regexp.MustCompile(`^/$`),
 		},
@@ -39,8 +39,8 @@ func TestInitRouteTable(t *testing.T) {
 			Name:       "user",
 			Path:       "/user/:id",
 			Controller: FixtureUserTestCtrl{},
-			MethodTypes: map[string]methodArgs{
-				"Get": methodArgs{
+			MethodTypes: map[string]MethodArgs{
+				"Get": MethodArgs{
 					"id": "int",
 				},
 			},
@@ -50,8 +50,8 @@ func TestInitRouteTable(t *testing.T) {
 			Name:       "date",
 			Path:       "/:year/:month/:day/user/:name",
 			Controller: FixtureDateTestCtrl{},
-			MethodTypes: map[string]methodArgs{
-				"Get": methodArgs{
+			MethodTypes: map[string]MethodArgs{
+				"Get": MethodArgs{
 					"year":  "int",
 					"month": "int",
 					"day":   "int",

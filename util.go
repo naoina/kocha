@@ -3,6 +3,7 @@ package kocha
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -142,46 +143,70 @@ func confirmOverwrite(dstPath string) bool {
 	}
 }
 
-func Red(s string) string {
-	return fmt.Sprintf("\x1b[31;1m%20s\x1b[0m", s)
+type colorfunc func(string, ...interface{}) string
+
+func Red(s string, a ...interface{}) string {
+	return color(31, s, a...)
 }
 
-func Green(s string) string {
-	return fmt.Sprintf("\x1b[32;1m%20s\x1b[0m", s)
+func Green(s string, a ...interface{}) string {
+	return color(32, s, a...)
 }
 
-func Yellow(s string) string {
-	return fmt.Sprintf("\x1b[33;1m%20s\x1b[0m", s)
+func Yellow(s string, a ...interface{}) string {
+	return color(33, s, a...)
 }
 
-func Blue(s string) string {
-	return fmt.Sprintf("\x1b[34;1m%20s\x1b[0m", s)
+func Blue(s string, a ...interface{}) string {
+	return color(34, s, a...)
 }
 
-func Magenta(s string) string {
-	return fmt.Sprintf("\x1b[35;1m%20s\x1b[0m", s)
+func Magenta(s string, a ...interface{}) string {
+	return color(35, s, a...)
 }
 
-func Cyan(s string) string {
-	return fmt.Sprintf("\x1b[36;1m%20s\x1b[0m", s)
+func Cyan(s string, a ...interface{}) string {
+	return color(36, s, a...)
+}
+
+func color(colorCode int, s string, a ...interface{}) string {
+	switch length := len(a); {
+	case length == 0:
+		a = append(a, "%s")
+	case length > 1:
+		panic(errors.New("too many arguments"))
+	}
+	return fmt.Sprintf(fmt.Sprintf("\x1b[%d;1m%s\x1b[0m", colorCode, a[0]), s)
 }
 
 func PrintIdentical(path string) {
-	fmt.Println(Blue("identical"), "", path)
+	printPathStatus(Blue, "identical", path)
 }
 
 func PrintConflict(path string) {
-	fmt.Println(Red("conflict"), "", path)
+	printPathStatus(Red, "conflict", path)
 }
 
 func PrintSkip(path string) {
-	fmt.Println(Cyan("skip"), "", path)
+	printPathStatus(Cyan, "skip", path)
 }
 
 func PrintOverwrite(path string) {
-	fmt.Println(Cyan("overwrite"), "", path)
+	printPathStatus(Cyan, "overwrite", path)
 }
 
 func PrintCreate(path string) {
-	fmt.Println(Green("create"), "", path)
+	printPathStatus(Green, "create", path)
+}
+
+func PrintExist(path string) {
+	printPathStatus(Blue, "exist", path)
+}
+
+func PrintCreateDirectory(path string) {
+	printPathStatus(Green, "create directory", path)
+}
+
+func printPathStatus(f colorfunc, message, s string) {
+	fmt.Println(f(message, "%20s"), "", s)
 }

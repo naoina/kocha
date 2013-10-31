@@ -18,7 +18,7 @@ import (
 )
 
 type (
-	methodArgs map[string]string
+	MethodArgs map[string]string
 )
 
 type RouteTable []*Route
@@ -27,7 +27,7 @@ type Route struct {
 	Name        string
 	Path        string
 	Controller  interface{}
-	MethodTypes map[string]methodArgs
+	MethodTypes map[string]MethodArgs
 	RegexpPath  *regexp.Regexp
 }
 
@@ -160,7 +160,7 @@ func (route *Route) buildMethodTypes() {
 	if err != nil {
 		log.Panic(err)
 	}
-	route.MethodTypes = make(map[string]methodArgs)
+	route.MethodTypes = make(map[string]MethodArgs)
 	for _, d := range f.Decls {
 		ast.Inspect(d, func(node ast.Node) bool {
 			fdecl, ok := node.(*ast.FuncDecl)
@@ -181,7 +181,7 @@ func (route *Route) buildMethodTypes() {
 			if _, ok := controllerMethods[methodName]; !ok {
 				return false
 			}
-			route.MethodTypes[methodName] = make(methodArgs)
+			route.MethodTypes[methodName] = make(MethodArgs)
 			for _, v := range fdecl.Type.Params.List {
 				t := v.Type.(*ast.Ident).Name
 				for _, name := range v.Names {

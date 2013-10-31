@@ -22,8 +22,8 @@ func newTestAppConfig() *AppConfig {
 				Name:       "root",
 				Path:       "/",
 				Controller: FixtureRootTestCtrl{},
-				MethodTypes: map[string]methodArgs{
-					"Get": methodArgs{},
+				MethodTypes: map[string]MethodArgs{
+					"Get": MethodArgs{},
 				},
 				RegexpPath: regexp.MustCompile(`^/$`),
 			},
@@ -31,8 +31,8 @@ func newTestAppConfig() *AppConfig {
 				Name:       "user",
 				Path:       "/user/:id",
 				Controller: FixtureUserTestCtrl{},
-				MethodTypes: map[string]methodArgs{
-					"Get": methodArgs{
+				MethodTypes: map[string]MethodArgs{
+					"Get": MethodArgs{
 						"id": "int",
 					},
 				},
@@ -42,8 +42,8 @@ func newTestAppConfig() *AppConfig {
 				Name:       "date",
 				Path:       "/:year/:month/:day/user/:name",
 				Controller: FixtureDateTestCtrl{},
-				MethodTypes: map[string]methodArgs{
-					"Get": methodArgs{
+				MethodTypes: map[string]MethodArgs{
+					"Get": MethodArgs{
 						"year":  "int",
 						"month": "int",
 						"day":   "int",
@@ -56,8 +56,8 @@ func newTestAppConfig() *AppConfig {
 				Name:       "error",
 				Path:       "/error",
 				Controller: FixtureErrorTestCtrl{},
-				MethodTypes: map[string]methodArgs{
-					"Get": methodArgs{},
+				MethodTypes: map[string]MethodArgs{
+					"Get": MethodArgs{},
 				},
 				RegexpPath: regexp.MustCompile(`^/error$`),
 			},

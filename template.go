@@ -112,7 +112,8 @@ func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {
 			for templateAppName, templates := range templatePaths {
 				templateSet[templateAppName] = make(map[string]*template.Template)
 				for templateName, templatePath := range templates {
-					layout := template.Must(layoutTemplate.Clone())
+					// do not use the layoutTemplate.Clone() in order to retrieve layout as string by `kocha build`
+					layout := template.Must(template.New("layout").Funcs(TemplateFuncs).Parse(string(layoutBytes)))
 					t := template.Must(layout.ParseFiles(templatePath))
 					templateSet[templateAppName][templateName] = t
 				}

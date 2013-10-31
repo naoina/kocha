@@ -65,9 +65,9 @@ func (c *newCommand) Run() {
 			kocha.PanicOnError(c, "abort: failed to create directory: %v", err)
 		}
 		if dirCreated {
-			fmt.Println(kocha.Green("create directory"), "", dstDir)
+			kocha.PrintCreateDirectory(dstDir)
 		} else {
-			fmt.Println(kocha.Blue("exist"), "", dstDir)
+			kocha.PrintExist(dstDir)
 		}
 		kocha.CopyTemplate(c, path, dstPath, data)
 		return nil

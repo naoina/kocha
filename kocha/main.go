@@ -21,6 +21,7 @@ type command interface {
 var commands = []command{
 	&newCommand{},
 	&generateCommand{},
+	&buildCommand{},
 }
 
 func usage() {
