@@ -72,18 +72,7 @@ func TestServer(t *testing.T) {
 	handler(w, req)
 	status = w.Code
 	if !reflect.DeepEqual(status, http.StatusNotFound) {
-		t.Errorf("Expect %v, but %v", http.StatusOK, status)
-	}
-
-	w = httptest.NewRecorder()
-	req, err = http.NewRequest("GET", "/missing", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	handler(w, req)
-	status = w.Code
-	if !reflect.DeepEqual(status, http.StatusNotFound) {
-		t.Errorf("Expect %v, but %v", http.StatusOK, status)
+		t.Errorf("Expect %v, but %v", http.StatusNotFound, status)
 	}
 
 	log.SetOutput(ioutil.Discard)
