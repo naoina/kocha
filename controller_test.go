@@ -141,6 +141,9 @@ func TestControllerRender_with_Context(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
+	if !reflect.DeepEqual(c.Response.ContentType, "text/html") {
+		t.Errorf("Expect %v, but %v", "text/html", c.Response.ContentType)
+	}
 }
 
 func TestControllerRender_with_ContentType(t *testing.T) {
@@ -198,6 +201,9 @@ func TestControllerRenderJSON(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
+	if !reflect.DeepEqual(c.Response.ContentType, "application/json") {
+		t.Errorf("Expect %v, but %v", "application/json", c.Response.ContentType)
+	}
 }
 
 func TestControllerRenderXML(t *testing.T) {
@@ -212,6 +218,9 @@ func TestControllerRenderXML(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
+	if !reflect.DeepEqual(c.Response.ContentType, "application/xml") {
+		t.Errorf("Expect %v, but %v", "application/xml", c.Response.ContentType)
+	}
 }
 
 func TestControllerRenderPlainText(t *testing.T) {
@@ -220,5 +229,8 @@ func TestControllerRenderPlainText(t *testing.T) {
 	expected := &ResultPlainText{"test_content_data"}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+	if !reflect.DeepEqual(c.Response.ContentType, "text/plain") {
+		t.Errorf("Expect %v, but %v", "text/plain", c.Response.ContentType)
 	}
 }

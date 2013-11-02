@@ -7,11 +7,13 @@ import (
 type Response struct {
 	http.ResponseWriter
 	ContentType string
+	StatusCode  int
 }
 
 func NewResponse(rw http.ResponseWriter) *Response {
 	return &Response{
 		ResponseWriter: rw,
-		ContentType:    "text/html",
+		ContentType:    "",
+		StatusCode:     http.StatusOK,
 	}
 }

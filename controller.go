@@ -45,6 +45,7 @@ func (c *Controller) Render(context ...Context) Result {
 	default: // > 1
 		panic(errors.New("too many arguments"))
 	}
+	c.setContentTypeIfNotExists("text/html")
 	format := MimeTypeFormats.Get(c.Response.ContentType)
 	if format == "" {
 		panic(fmt.Errorf("unknown Content-Type: %v", c.Response.ContentType))
@@ -60,20 +61,29 @@ func (c *Controller) Render(context ...Context) Result {
 }
 
 func (c *Controller) RenderJSON(context interface{}) Result {
+	c.setContentTypeIfNotExists("application/json")
 	return &ResultJSON{
 		Context: context,
 	}
 }
 
 func (c *Controller) RenderXML(context interface{}) Result {
+	c.setContentTypeIfNotExists("application/xml")
 	return &ResultXML{
 		Context: context,
 	}
 }
 
 func (c *Controller) RenderPlainText(content string) Result {
+	c.setContentTypeIfNotExists("text/plain")
 	return &ResultPlainText{
 		Content: content,
+	}
+}
+
+func (c *Controller) setContentTypeIfNotExists(contentType string) {
+	if c.Response.ContentType == "" {
+		c.Response.ContentType = contentType
 	}
 }
 

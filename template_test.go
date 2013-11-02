@@ -232,9 +232,10 @@ func TestTemplateSetFromPaths(t *testing.T) {
 	})
 	expected := map[string]map[string]string{
 		"appName": map[string]string{
-			"fixture_date_test_ctrl.html": "This is layout\n\nThis is date\n\n",
-			"fixture_root_test_ctrl.html": "This is layout\n\nThis is root\n\n",
-			"fixture_user_test_ctrl.html": "This is layout\n\nThis is user\n\n",
+			"fixture_date_test_ctrl.html":   "This is layout\n\nThis is date\n\n",
+			"fixture_root_test_ctrl.html":   "This is layout\n\nThis is root\n\n",
+			"fixture_user_test_ctrl.html":   "This is layout\n\nThis is user\n\n",
+			"fixture_teapot_test_ctrl.html": "This is layout\n\nI'm a tea pot\n\n",
 		},
 	}
 	for appName, actualMap := range actual {

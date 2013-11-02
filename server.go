@@ -36,6 +36,8 @@ func handler(writer http.ResponseWriter, req *http.Request) {
 	cc.FieldByName("Response").Set(reflect.ValueOf(response))
 	cc.FieldByName("Params").FieldByName("Values").Set(reflect.ValueOf(request.Form))
 	result := method.Call(args)
+	response.Header().Set("Content-Type", response.ContentType+"; charset=utf-8")
+	response.WriteHeader(response.StatusCode)
 	result[0].Interface().(Result).Proc(response)
 }
 
