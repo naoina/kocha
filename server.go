@@ -23,11 +23,18 @@ func handler(writer http.ResponseWriter, req *http.Request) {
 			http.Error(writer, "500 Internal Server Error", 500)
 		}
 	}()
+	request := NewRequest(req)
+	response := NewResponse(writer)
+	request.Body = http.MaxBytesReader(writer, request.Body, maxClientBodySize)
+	if err := request.ParseMultipartForm(maxClientBodySize); err != nil {
+		panic(err)
+	}
 	c := controller.Elem()
 	cc := c.FieldByName("Controller")
 	cc.FieldByName("Name").SetString(c.Type().Name())
-	cc.FieldByName("Request").Set(reflect.ValueOf(NewRequest(req)))
-	cc.FieldByName("Response").Set(reflect.ValueOf(NewResponse(writer)))
+	cc.FieldByName("Request").Set(reflect.ValueOf(request))
+	cc.FieldByName("Response").Set(reflect.ValueOf(response))
+	cc.FieldByName("Params").FieldByName("Values").Set(reflect.ValueOf(request.Form))
 	result := method.Call(args)
 	result[0].Interface().(Result).Proc(writer)
 }

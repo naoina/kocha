@@ -30,4 +30,5 @@ func init() {
 	config.Set("AppName", AppName)
 	config.Set("Addr", Addr)
 	config.Set("Port", Port)
+	config.Set("MaxClientBodySize", 1024*1024*10) // 10MB
 }

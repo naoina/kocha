@@ -32,6 +32,7 @@ func newTestController() *Controller {
 		Name:     "testctrlr",
 		Request:  NewRequest(req),
 		Response: NewResponse(w),
+		Params:   Params{},
 	}
 }
 

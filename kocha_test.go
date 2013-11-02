@@ -9,8 +9,13 @@ func TestConst(t *testing.T) {
 	if !reflect.DeepEqual(DefaultHttpAddr, "0.0.0.0") {
 		t.Errorf(`Expect %v, but %v`, "0.0.0.0", DefaultHttpAddr)
 	}
+
 	if !reflect.DeepEqual(DefaultHttpPort, 80) {
 		t.Errorf("Expect %v, but %v", 80, DefaultHttpPort)
+	}
+
+	if !reflect.DeepEqual(DefaultMaxClientBodySize, 1024*1024*10) {
+		t.Errorf("Expect %v, but %v", 1024*1024*10, DefaultMaxClientBodySize)
 	}
 }
 
@@ -46,5 +51,37 @@ func TestInit(t *testing.T) {
 	}
 	if !initialized {
 		t.Errorf("Expect %v, but %v", true, initialized)
+	}
+	if maxClientBodySize != DefaultMaxClientBodySize {
+		t.Errorf("Expect %v, but %v", DefaultMaxClientBodySize, maxClientBodySize)
+	}
+
+	configs["testappname"]["MaxClientBodySize"] = 100
+	Init(expectedConfig)
+	if maxClientBodySize != 100 {
+		t.Errorf("Expect %v, but %v", 100, maxClientBodySize)
+	}
+}
+
+func TestInit_with_invalid_MaxClientBodySize(t *testing.T) {
+	initialized = false
+	defer func() {
+		initialized = false
+	}()
+	ap := &AppConfig{
+		AppName: "testappname",
+	}
+	for _, v := range []interface{}{
+		"100", 1.1, nil, uint(100),
+	} {
+		func() {
+			configs["testappname"]["MaxClientBodySize"] = v
+			defer func() {
+				if err := recover(); err == nil {
+					t.Errorf("Value is %v, Expect panic, but not occurred", v)
+				}
+			}()
+			Init(ap)
+		}()
 	}
 }

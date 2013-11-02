@@ -3,6 +3,7 @@ package kocha
 import (
 	"errors"
 	"fmt"
+	"net/url"
 )
 
 type mimeTypeFormats map[string]string
@@ -30,6 +31,7 @@ type Controller struct {
 	Name     string
 	Request  *Request
 	Response *Response
+	Params   Params
 }
 
 type Context map[string]interface{}
@@ -73,4 +75,8 @@ func (c *Controller) RenderPlainText(content string) Result {
 	return &ResultPlainText{
 		Content: content,
 	}
+}
+
+type Params struct {
+	url.Values
 }
