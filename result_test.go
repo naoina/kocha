@@ -16,10 +16,19 @@ func TestResultTemplateProc(t *testing.T) {
 			"key2": "value2",
 		},
 	}
+	res := NewResponse(httptest.NewRecorder())
+	result.Proc(res)
+	expected := "text/html"
+	actual := res.Header().Get("Content-Type")
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
 	w := httptest.NewRecorder()
-	result.Proc(w)
-	expected := `value1testvalue2`
-	actual := w.Body.String()
+	res = NewResponse(w)
+	result.Proc(res)
+	expected = `value1testvalue2`
+	actual = w.Body.String()
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -29,19 +38,20 @@ func TestResultJSONProc(t *testing.T) {
 	result := &ResultJSON{
 		Context: struct{ A, B string }{"ctx1", "testctx2"},
 	}
-	w := httptest.NewRecorder()
-	result.Proc(w)
+	res := NewResponse(httptest.NewRecorder())
+	result.Proc(res)
 	expected := "application/json"
-	actual := w.Header().Get("Content-Type")
+	actual := res.Header().Get("Content-Type")
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	w = httptest.NewRecorder()
-	w.Header().Set("Content-Type", "test/mime")
-	result.Proc(w)
+	w := httptest.NewRecorder()
+	res = NewResponse(w)
+	res.Header().Set("Content-Type", "test/mime")
+	result.Proc(res)
 	expected = "test/mime"
-	actual = w.Header().Get("Content-Type")
+	actual = res.Header().Get("Content-Type")
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -62,19 +72,20 @@ func TestResultXMLProc(t *testing.T) {
 			B       string   `xml:"name"`
 		}{A: "testId", B: "testName"},
 	}
-	w := httptest.NewRecorder()
-	result.Proc(w)
+	res := NewResponse(httptest.NewRecorder())
+	result.Proc(res)
 	expected := "application/xml"
-	actual := w.Header().Get("Content-Type")
+	actual := res.Header().Get("Content-Type")
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	w = httptest.NewRecorder()
-	w.Header().Set("Content-Type", "test/mime")
-	result.Proc(w)
+	w := httptest.NewRecorder()
+	res = NewResponse(w)
+	res.Header().Set("Content-Type", "test/mime")
+	result.Proc(res)
 	expected = "test/mime"
-	actual = w.Header().Get("Content-Type")
+	actual = res.Header().Get("Content-Type")
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -88,19 +99,20 @@ func TestResultXMLProc(t *testing.T) {
 
 func TestResultPlainTextProc(t *testing.T) {
 	result := &ResultPlainText{"test_content"}
-	w := httptest.NewRecorder()
-	result.Proc(w)
+	res := NewResponse(httptest.NewRecorder())
+	result.Proc(res)
 	expected := "text/plain"
-	actual := w.Header().Get("Content-Type")
+	actual := res.Header().Get("Content-Type")
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	w = httptest.NewRecorder()
-	w.Header().Set("Content-Type", "test/mime")
-	result.Proc(w)
+	w := httptest.NewRecorder()
+	res = NewResponse(w)
+	res.Header().Set("Content-Type", "test/mime")
+	result.Proc(res)
 	expected = "test/mime"
-	actual = w.Header().Get("Content-Type")
+	actual = res.Header().Get("Content-Type")
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}

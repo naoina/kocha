@@ -9,7 +9,7 @@ import (
 )
 
 type Result interface {
-	Proc(http.ResponseWriter)
+	Proc(*Response)
 }
 
 type ResultTemplate struct {
@@ -17,8 +17,9 @@ type ResultTemplate struct {
 	Context  Context
 }
 
-func (r *ResultTemplate) Proc(writer http.ResponseWriter) {
-	if err := r.Template.Execute(writer, r.Context); err != nil {
+func (r *ResultTemplate) Proc(res *Response) {
+	res.Header().Set("Content-Type", res.ContentType)
+	if err := r.Template.Execute(res, r.Context); err != nil {
 		panic(err)
 	}
 }
@@ -27,9 +28,9 @@ type ResultJSON struct {
 	Context interface{}
 }
 
-func (r *ResultJSON) Proc(writer http.ResponseWriter) {
-	setContentTypeIfNotExists(writer.Header(), "application/json")
-	if err := json.NewEncoder(writer).Encode(r.Context); err != nil {
+func (r *ResultJSON) Proc(res *Response) {
+	setContentTypeIfNotExists(res.Header(), "application/json")
+	if err := json.NewEncoder(res).Encode(r.Context); err != nil {
 		panic(err)
 	}
 }
@@ -38,9 +39,9 @@ type ResultXML struct {
 	Context interface{}
 }
 
-func (r *ResultXML) Proc(writer http.ResponseWriter) {
-	setContentTypeIfNotExists(writer.Header(), "application/xml")
-	if err := xml.NewEncoder(writer).Encode(r.Context); err != nil {
+func (r *ResultXML) Proc(res *Response) {
+	setContentTypeIfNotExists(res.Header(), "application/xml")
+	if err := xml.NewEncoder(res).Encode(r.Context); err != nil {
 		panic(err)
 	}
 }
@@ -49,9 +50,9 @@ type ResultPlainText struct {
 	Content string
 }
 
-func (r *ResultPlainText) Proc(writer http.ResponseWriter) {
-	setContentTypeIfNotExists(writer.Header(), "text/plain")
-	if _, err := fmt.Fprint(writer, r.Content); err != nil {
+func (r *ResultPlainText) Proc(res *Response) {
+	setContentTypeIfNotExists(res.Header(), "text/plain")
+	if _, err := fmt.Fprint(res, r.Content); err != nil {
 		panic(err)
 	}
 }

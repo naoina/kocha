@@ -36,7 +36,7 @@ func handler(writer http.ResponseWriter, req *http.Request) {
 	cc.FieldByName("Response").Set(reflect.ValueOf(response))
 	cc.FieldByName("Params").FieldByName("Values").Set(reflect.ValueOf(request.Form))
 	result := method.Call(args)
-	result[0].Interface().(Result).Proc(writer)
+	result[0].Interface().(Result).Proc(response)
 }
 
 func Run(addr string, port int) {
