@@ -21,7 +21,7 @@ func main() {
 			{
 				Name: "{{.Name}}",
 				Path: "{{.Path}}",
-				Controller: {{.Controller|printf "%#v"}},
+				Controller: {{.Controller|printf "%T"}}{},
 				MethodTypes: {{.MethodTypes|printf "%#v"}},
 				RegexpPath: regexp.MustCompile("{{.RegexpPath.String}}"),
 			},
