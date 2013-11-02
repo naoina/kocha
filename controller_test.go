@@ -234,3 +234,26 @@ func TestControllerRenderPlainText(t *testing.T) {
 		t.Errorf("Expect %v, but %v", "text/plain", c.Response.ContentType)
 	}
 }
+
+func TestControllerRedirect(t *testing.T) {
+	c := newTestController()
+	actual := c.Redirect("/path/to/redirect/permanently", true)
+	expected := &ResultRedirect{
+		Request:     c.Request,
+		URL:         "/path/to/redirect/permanently",
+		Permanently: true,
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	actual = c.Redirect("/path/to/redirect", false)
+	expected = &ResultRedirect{
+		Request:     c.Request,
+		URL:         "/path/to/redirect",
+		Permanently: false,
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}

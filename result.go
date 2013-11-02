@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"html/template"
+	"net/http"
 )
 
 type Result interface {
@@ -50,4 +51,18 @@ func (r *ResultPlainText) Proc(res *Response) {
 	if _, err := fmt.Fprint(res, r.Content); err != nil {
 		panic(err)
 	}
+}
+
+type ResultRedirect struct {
+	Request     *Request
+	URL         string
+	Permanently bool
+}
+
+func (r *ResultRedirect) Proc(res *Response) {
+	statusCode := http.StatusFound
+	if r.Permanently {
+		statusCode = http.StatusMovedPermanently
+	}
+	http.Redirect(res, r.Request.Request, r.URL, statusCode)
 }

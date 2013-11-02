@@ -87,6 +87,14 @@ func (c *Controller) setContentTypeIfNotExists(contentType string) {
 	}
 }
 
+func (c *Controller) Redirect(url string, permanently bool) Result {
+	return &ResultRedirect{
+		Request:     c.Request,
+		URL:         url,
+		Permanently: permanently,
+	}
+}
+
 type Params struct {
 	url.Values
 }
