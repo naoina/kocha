@@ -236,6 +236,7 @@ func TestTemplateSetFromPaths(t *testing.T) {
 			"fixture_root_test_ctrl.html":   "This is layout\n\nThis is root\n\n",
 			"fixture_user_test_ctrl.html":   "This is layout\n\nThis is user\n\n",
 			"fixture_teapot_test_ctrl.html": "This is layout\n\nI'm a tea pot\n\n",
+			"errors/500.html":               "This is layout\n\n500 error\n\n",
 		},
 	}
 	for appName, actualMap := range actual {

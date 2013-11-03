@@ -15,8 +15,11 @@ func newControllerTestAppConfig() *AppConfig {
 		AppName: "testAppName",
 		TemplateSet: TemplateSet{
 			"testAppName": map[string]*template.Template{
-				"testctrlr.html": template.Must(template.New("tmpl1").Parse(`tmpl1`)),
-				"testctrlr.json": template.Must(template.New("tmpl2").Parse(`{"tmpl2":"content"}`)),
+				"testctrlr.html":  template.Must(template.New("tmpl1").Parse(`tmpl1`)),
+				"testctrlr.json":  template.Must(template.New("tmpl2").Parse(`{"tmpl2":"content"}`)),
+				"errors/500.html": template.Must(template.New("tmpl3").Parse(`500 error`)),
+				"errors/400.html": template.Must(template.New("tmpl4").Parse(`400 error`)),
+				"errors/500.json": template.Must(template.New("tmpl5").Parse(`{"error":500}`)),
 			},
 		},
 	}
@@ -232,6 +235,94 @@ func TestControllerRenderText(t *testing.T) {
 	}
 	if !reflect.DeepEqual(c.Response.ContentType, "text/plain") {
 		t.Errorf("Expect %v, but %v", "text/plain", c.Response.ContentType)
+	}
+}
+
+func TestControllerRenderError(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newControllerTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+	c := newTestController()
+	var actual interface{} = c.RenderError(http.StatusInternalServerError)
+	var expected interface{} = &ResultTemplate{
+		Template: appConfig.TemplateSet["testAppName"]["errors/500.html"],
+		Context:  nil,
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+	actual = c.Response.StatusCode
+	expected = http.StatusInternalServerError
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	c = newTestController()
+	actual = c.RenderError(http.StatusBadRequest)
+	expected = &ResultTemplate{
+		Template: appConfig.TemplateSet["testAppName"]["errors/400.html"],
+		Context:  nil,
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+	actual = c.Response.StatusCode
+	expected = http.StatusBadRequest
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	c = newTestController()
+	c.Response.ContentType = "application/json"
+	actual = c.RenderError(http.StatusInternalServerError)
+	expected = &ResultTemplate{
+		Template: appConfig.TemplateSet["testAppName"]["errors/500.json"],
+		Context:  nil,
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+	actual = c.Response.StatusCode
+	expected = http.StatusInternalServerError
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	func() {
+		c = newTestController()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Errorf("panic doesn't happened")
+			}
+		}()
+		c.Response.ContentType = "unknown/content-type"
+		c.RenderError(http.StatusInternalServerError)
+	}()
+
+	func() {
+		c = newTestController()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Errorf("panic doesn't happened")
+			}
+		}()
+		c.RenderError(http.StatusInternalServerError, nil, nil)
+	}()
+
+	c = newTestController()
+	actual = c.RenderError(http.StatusTeapot)
+	expected = &ResultText{
+		Content: http.StatusText(http.StatusTeapot),
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+	actual = c.Response.StatusCode
+	expected = http.StatusTeapot
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 }
 

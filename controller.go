@@ -3,7 +3,10 @@ package kocha
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
+	"path/filepath"
+	"strconv"
 )
 
 type mimeTypeFormats map[string]string
@@ -78,6 +81,35 @@ func (c *Controller) RenderText(content string) Result {
 	c.setContentTypeIfNotExists("text/plain")
 	return &ResultText{
 		Content: content,
+	}
+}
+
+func (c *Controller) RenderError(statusCode int, context ...Context) Result {
+	var ctx Context
+	switch len(context) {
+	case 0: // do nothing
+	case 1:
+		ctx = context[0]
+	default: // > 1
+		panic(errors.New("too many arguments"))
+	}
+	c.setContentTypeIfNotExists("text/html")
+	format := MimeTypeFormats.Get(c.Response.ContentType)
+	if format == "" {
+		panic(fmt.Errorf("unknown Content-Type: %v", c.Response.ContentType))
+	}
+	c.Response.StatusCode = statusCode
+	name := filepath.Join("errors", strconv.Itoa(statusCode))
+	t := appConfig.TemplateSet.Get(appConfig.AppName, name, format)
+	if t == nil {
+		c.Response.ContentType = "text/plain"
+		return &ResultText{
+			Content: http.StatusText(statusCode),
+		}
+	}
+	return &ResultTemplate{
+		Template: t,
+		Context:  ctx,
 	}
 }
 
