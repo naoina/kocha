@@ -10,13 +10,15 @@ var (
 	Addr = config.Addr
 	Port = config.Port
 	AppConfig = config.AppConfig
+
+	logPath = "log/prod.log"
 )
 
 func init() {
 	AppConfig.Logger = &kocha.Logger{
 		DEBUG: kocha.Loggers{kocha.NullLogger()},
 		INFO:  kocha.Loggers{kocha.NullLogger()},
-		WARN:  kocha.Loggers{kocha.ConsoleLogger(-1)},
-		ERROR: kocha.Loggers{kocha.ConsoleLogger(-1)},
+		WARN:  kocha.Loggers{kocha.FileLogger(logPath, -1)},
+		ERROR: kocha.Loggers{kocha.FileLogger(logPath, -1)},
 	}
 }

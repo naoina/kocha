@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 const (
@@ -52,6 +53,24 @@ func ConsoleLogger(flag int) *log.Logger {
 		flag = defaultLflag
 	}
 	return log.New(os.Stdout, "", flag)
+}
+
+func FileLogger(path string, flag int) *log.Logger {
+	if flag == -1 {
+		flag = defaultLflag
+	}
+	path, err := filepath.Abs(path)
+	if err != nil {
+		panic(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		panic(err)
+	}
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		panic(err)
+	}
+	return log.New(file, "", flag)
 }
 
 type Loggers []*log.Logger

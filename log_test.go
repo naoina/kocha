@@ -1,8 +1,10 @@
 package kocha
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -32,6 +34,26 @@ func TestConsoleLogger(t *testing.T) {
 
 	actual = ConsoleLogger(log.Ldate)
 	expected = log.New(os.Stdout, "", log.Ldate)
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+func TestFileLogger(t *testing.T) {
+	logDir, err := ioutil.TempDir("", "TestFileLogger")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(logDir)
+	logPath := filepath.Join(logDir, "testlog.log")
+	logger := FileLogger(logPath, 0)
+	logger.Print("testlog")
+	buf, err := ioutil.ReadFile(logPath)
+	if err != nil {
+		panic(err)
+	}
+	actual := string(buf)
+	expected := "testlog\n"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
