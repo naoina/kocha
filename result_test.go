@@ -60,8 +60,8 @@ func TestResultXMLProc(t *testing.T) {
 	}
 }
 
-func TestResultPlainTextProc(t *testing.T) {
-	result := &ResultPlainText{"test_content"}
+func TestResultTextProc(t *testing.T) {
+	result := &ResultText{"test_content"}
 	w := httptest.NewRecorder()
 	res := NewResponse(w)
 	result.Proc(res)

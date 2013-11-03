@@ -74,9 +74,9 @@ func (c *Controller) RenderXML(context interface{}) Result {
 	}
 }
 
-func (c *Controller) RenderPlainText(content string) Result {
+func (c *Controller) RenderText(content string) Result {
 	c.setContentTypeIfNotExists("text/plain")
-	return &ResultPlainText{
+	return &ResultText{
 		Content: content,
 	}
 }

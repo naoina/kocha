@@ -43,11 +43,11 @@ func (r *ResultXML) Proc(res *Response) {
 	}
 }
 
-type ResultPlainText struct {
+type ResultText struct {
 	Content string
 }
 
-func (r *ResultPlainText) Proc(res *Response) {
+func (r *ResultText) Proc(res *Response) {
 	if _, err := fmt.Fprint(res, r.Content); err != nil {
 		panic(err)
 	}
