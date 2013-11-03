@@ -44,6 +44,7 @@ func TestInit(t *testing.T) {
 				RegexpPath:  nil,
 			},
 		},
+		Logger: &Logger{},
 	}
 	Init(expectedConfig)
 	if !reflect.DeepEqual(appConfig, expectedConfig) {
@@ -54,6 +55,10 @@ func TestInit(t *testing.T) {
 	}
 	if maxClientBodySize != DefaultMaxClientBodySize {
 		t.Errorf("Expect %v, but %v", DefaultMaxClientBodySize, maxClientBodySize)
+	}
+
+	if !reflect.DeepEqual(Log, expectedConfig.Logger) {
+		t.Errorf("Expect %v, but %v", expectedConfig.Logger, Log)
 	}
 
 	configs["testappname"]["MaxClientBodySize"] = 100

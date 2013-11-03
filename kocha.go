@@ -17,9 +17,12 @@ type AppConfig struct {
 	AppName     string
 	TemplateSet TemplateSet
 	RouteTable  RouteTable
+	Logger      *Logger
 }
 
 var (
+	Log *Logger
+
 	appConfig         *AppConfig
 	initialized       bool  = false
 	maxClientBodySize int64 = DefaultMaxClientBodySize
@@ -35,6 +38,7 @@ func Init(config *AppConfig) {
 			panic(fmt.Errorf("`MaxClientBodySize` must be integer type. but %v", v.Type()))
 		}
 	}
+	Log = initLogger(appConfig.Logger)
 	initialized = true
 }
 
