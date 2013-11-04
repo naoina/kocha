@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -95,7 +94,7 @@ func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {
 				}
 				return nil
 			}); err != nil {
-				log.Panic(err)
+				panic(err)
 			}
 		}
 	}
@@ -105,7 +104,7 @@ func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {
 		for layoutName, layoutPath := range layouts {
 			layoutBytes, err := ioutil.ReadFile(layoutPath)
 			if err != nil {
-				log.Panic(err)
+				panic(err)
 			}
 			layoutTemplate := template.Must(template.New("layout").Funcs(TemplateFuncs).Parse(string(layoutBytes)))
 			templateSet[layoutAppName][layoutName] = layoutTemplate

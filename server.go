@@ -18,8 +18,7 @@ func handler(writer http.ResponseWriter, req *http.Request) {
 		if err := recover(); err != nil {
 			buf := make([]byte, 4096)
 			runtime.Stack(buf, false)
-			log.Print(err)
-			log.Print(string(buf))
+			Log.Error("%v\n%v", err, string(buf))
 			http.Error(writer, "500 Internal Server Error", 500)
 		}
 	}()
