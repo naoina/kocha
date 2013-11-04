@@ -348,3 +348,28 @@ func TestControllerRedirect(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 }
+
+func TestErrorControllerGet(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newControllerTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		panic(err)
+	}
+	w := httptest.NewRecorder()
+	c := &ErrorController{
+		StatusCode: http.StatusTeapot,
+	}
+	c.Controller.Request = NewRequest(req)
+	c.Controller.Response = NewResponse(w)
+	actual := c.Get()
+	expected := &ResultText{
+		Content: http.StatusText(http.StatusTeapot),
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}

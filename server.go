@@ -9,19 +9,23 @@ import (
 )
 
 func handler(writer http.ResponseWriter, req *http.Request) {
-	controller, method, args := dispatch(req)
-	if controller == nil {
-		http.NotFound(writer, req)
-		return
-	}
 	defer func() {
 		if err := recover(); err != nil {
 			buf := make([]byte, 4096)
 			runtime.Stack(buf, false)
 			Log.Error("%v\n%v", err, string(buf))
-			http.Error(writer, "500 Internal Server Error", 500)
+			controller, method, args := errorDispatch(http.StatusInternalServerError)
+			render(req, writer, controller, method, args)
 		}
 	}()
+	controller, method, args := dispatch(req)
+	if controller == nil {
+		controller, method, args = errorDispatch(http.StatusNotFound)
+	}
+	render(req, writer, controller, method, args)
+}
+
+func render(req *http.Request, writer http.ResponseWriter, controller, method *reflect.Value, args []reflect.Value) {
 	request := NewRequest(req)
 	response := NewResponse(writer)
 	request.Body = http.MaxBytesReader(writer, request.Body, maxClientBodySize)

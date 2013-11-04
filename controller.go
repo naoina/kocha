@@ -127,6 +127,15 @@ func (c *Controller) Redirect(url string, permanently bool) Result {
 	}
 }
 
+type ErrorController struct {
+	Controller
+	StatusCode int
+}
+
+func (c *ErrorController) Get() Result {
+	return c.RenderError(c.StatusCode)
+}
+
 type Params struct {
 	url.Values
 }
