@@ -39,9 +39,15 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 	cc.Request = request
 	cc.Response = response
 	cc.Params.Values = request.Form
+	for _, m := range appConfig.Middlewares {
+		m.Before(&cc)
+	}
 	ccValue.Set(reflect.ValueOf(cc))
 	result := method.Call(args)
-	response.Header().Set("Content-Type", response.ContentType+"; charset=utf-8")
+	for _, m := range appConfig.Middlewares {
+		m.After(&cc)
+	}
+	ccValue.Set(reflect.ValueOf(cc))
 	response.WriteHeader(response.StatusCode)
 	result[0].Interface().(Result).Proc(response)
 }

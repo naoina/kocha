@@ -134,4 +134,43 @@ func TestServer(t *testing.T) {
 	if !reflect.DeepEqual(w.Code, http.StatusTeapot) {
 		t.Errorf("Expect %v, but %v", http.StatusTeapot, w.Code)
 	}
+
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := &TestMiddleware{t: t}
+	appConfig.Middlewares = []Middleware{m} // all default middlewares are override
+	handler(w, req)
+	if !reflect.DeepEqual(m.called, "beforeafter") {
+		t.Errorf("Expect %v, but %v", "beforeafter", m.called)
+	}
+	status = w.Code
+	if !reflect.DeepEqual(status, http.StatusOK) {
+		t.Errorf("Expect %v, but %v", http.StatusOK, status)
+	}
+	body = w.Body.String()
+	expected = "tmpl1"
+	if !reflect.DeepEqual(body, expected) {
+		t.Errorf("Expect %v, but %v", expected, body)
+	}
+	actual = w.Header().Get("Content-Type")
+	expected = ""
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+type TestMiddleware struct {
+	t      *testing.T
+	called string
+}
+
+func (m *TestMiddleware) Before(c *Controller) {
+	m.called += "before"
+}
+
+func (m *TestMiddleware) After(c *Controller) {
+	m.called += "after"
 }

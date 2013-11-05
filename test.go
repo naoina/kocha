@@ -82,5 +82,6 @@ func newTestAppConfig() *AppConfig {
 				RegexpPath: regexp.MustCompile(`^/teapot$`),
 			},
 		},
+		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
 	}
 }

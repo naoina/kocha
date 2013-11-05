@@ -19,4 +19,5 @@ func init() {
 		WARN:  kocha.Loggers{kocha.ConsoleLogger(-1)},
 		ERROR: kocha.Loggers{kocha.ConsoleLogger(-1)},
 	}
+	AppConfig.Middlewares = append(kocha.DefaultMiddlewares, []kocha.Middleware{}...)
 }

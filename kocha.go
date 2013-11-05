@@ -18,6 +18,7 @@ type AppConfig struct {
 	TemplateSet TemplateSet
 	RouteTable  RouteTable
 	Logger      *Logger
+	Middlewares []Middleware
 }
 
 var (
