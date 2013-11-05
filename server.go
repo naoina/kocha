@@ -32,12 +32,14 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 	if err := request.ParseMultipartForm(maxClientBodySize); err != nil {
 		panic(err)
 	}
-	c := controller.Elem()
-	cc := c.FieldByName("Controller")
-	cc.FieldByName("Name").SetString(c.Type().Name())
-	cc.FieldByName("Request").Set(reflect.ValueOf(request))
-	cc.FieldByName("Response").Set(reflect.ValueOf(response))
-	cc.FieldByName("Params").FieldByName("Values").Set(reflect.ValueOf(request.Form))
+	ac := controller.Elem()
+	ccValue := ac.FieldByName("Controller")
+	cc := ccValue.Interface().(Controller)
+	cc.Name = ac.Type().Name()
+	cc.Request = request
+	cc.Response = response
+	cc.Params.Values = request.Form
+	ccValue.Set(reflect.ValueOf(cc))
 	result := method.Call(args)
 	response.Header().Set("Content-Type", response.ContentType+"; charset=utf-8")
 	response.WriteHeader(response.StatusCode)
