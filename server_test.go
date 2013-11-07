@@ -32,7 +32,7 @@ func TestServer(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, body)
 	}
 	actual := w.Header().Get("Content-Type")
-	expected = "text/html; charset=utf-8"
+	expected = "text/html"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -111,7 +111,7 @@ func TestServer(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, body)
 	}
 	actual = w.Header().Get("Content-Type")
-	expected = "application/json; charset=utf-8"
+	expected = "application/json"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}

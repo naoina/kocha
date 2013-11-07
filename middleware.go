@@ -23,7 +23,7 @@ func (m *ResponseContentTypeMiddleware) Before(c *Controller) {
 
 func (m *ResponseContentTypeMiddleware) After(c *Controller) {
 	res := c.Response
-	res.Header().Set("Content-Type", res.ContentType+"; charset=utf-8")
+	res.Header().Set("Content-Type", res.ContentType)
 }
 
 // Session processing middleware.

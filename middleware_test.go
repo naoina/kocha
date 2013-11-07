@@ -44,7 +44,7 @@ func TestResponseContentTypeMiddlewareAfter(t *testing.T) {
 	}
 	m.After(c)
 	actual = res.Header().Get("Content-Type")
-	expected = "text/html; charset=utf-8"
+	expected = "text/html"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
