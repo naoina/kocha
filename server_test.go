@@ -160,6 +160,46 @@ func TestServer(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
+
+	func() {
+		defer func() {
+			if err := recover(); err != nil {
+				t.Errorf("Expect don't panic, but panic")
+			}
+		}()
+		w = httptest.NewRecorder()
+		req, err = http.NewRequest("GET", "/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		m := &TestPanicInBeforeMiddleware{}
+		appConfig.Middlewares = []Middleware{m} // all default middlewares are override
+		handler(w, req)
+		status = w.Code
+		if !reflect.DeepEqual(status, http.StatusInternalServerError) {
+			t.Errorf("Expect %v, but %v", http.StatusInternalServerError, status)
+		}
+	}()
+
+	func() {
+		defer func() {
+			if err := recover(); err != nil {
+				t.Errorf("Expect don't panic, but panic")
+			}
+		}()
+		w = httptest.NewRecorder()
+		req, err = http.NewRequest("GET", "/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		m := &TestPanicInAfterMiddleware{}
+		appConfig.Middlewares = []Middleware{m} // all default middlewares are override
+		handler(w, req)
+		status = w.Code
+		if !reflect.DeepEqual(status, http.StatusInternalServerError) {
+			t.Errorf("Expect %v, but %v", http.StatusInternalServerError, status)
+		}
+	}()
 }
 
 type TestMiddleware struct {
@@ -174,3 +214,13 @@ func (m *TestMiddleware) Before(c *Controller) {
 func (m *TestMiddleware) After(c *Controller) {
 	m.called += "after"
 }
+
+type TestPanicInBeforeMiddleware struct{}
+
+func (m *TestPanicInBeforeMiddleware) Before(c *Controller) { panic("before") }
+func (m *TestPanicInBeforeMiddleware) After(c *Controller)  {}
+
+type TestPanicInAfterMiddleware struct{}
+
+func (m *TestPanicInAfterMiddleware) Before(c *Controller) {}
+func (m *TestPanicInAfterMiddleware) After(c *Controller)  { panic("after") }

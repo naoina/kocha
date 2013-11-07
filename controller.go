@@ -133,6 +133,12 @@ type ErrorController struct {
 	StatusCode int
 }
 
+func NewErrorController(statusCode int) *ErrorController {
+	return &ErrorController{
+		StatusCode: statusCode,
+	}
+}
+
 func (c *ErrorController) Get() Result {
 	return c.RenderError(c.StatusCode)
 }

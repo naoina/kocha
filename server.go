@@ -9,18 +9,14 @@ import (
 )
 
 func handler(writer http.ResponseWriter, req *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-			buf := make([]byte, 4096)
-			runtime.Stack(buf, false)
-			Log.Error("%v\n%v", err, string(buf))
-			controller, method, args := errorDispatch(http.StatusInternalServerError)
-			render(req, writer, controller, method, args)
-		}
-	}()
 	controller, method, args := dispatch(req)
 	if controller == nil {
-		controller, method, args = errorDispatch(http.StatusNotFound)
+		c := NewErrorController(http.StatusNotFound)
+		cValue := reflect.ValueOf(c)
+		mValue := reflect.ValueOf(c.Get)
+		controller = &cValue
+		method = &mValue
+		args = []reflect.Value{}
 	}
 	render(req, writer, controller, method, args)
 }
@@ -29,9 +25,6 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 	request := NewRequest(req)
 	response := NewResponse(writer)
 	request.Body = http.MaxBytesReader(writer, request.Body, maxClientBodySize)
-	if err := request.ParseMultipartForm(maxClientBodySize); err != nil {
-		panic(err)
-	}
 	ac := controller.Elem()
 	ccValue := ac.FieldByName("Controller")
 	cc := ccValue.Interface().(Controller)
@@ -39,15 +32,32 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 	cc.Request = request
 	cc.Response = response
 	cc.Params.Values = request.Form
-	for _, m := range appConfig.Middlewares {
-		m.Before(&cc)
-	}
-	ccValue.Set(reflect.ValueOf(cc))
-	result := method.Call(args)
-	for _, m := range appConfig.Middlewares {
-		m.After(&cc)
-	}
-	ccValue.Set(reflect.ValueOf(cc))
+	result := func() (result []reflect.Value) {
+		defer func() {
+			if err := recover(); err != nil {
+				buf := make([]byte, 4096)
+				runtime.Stack(buf, false)
+				Log.Error("%v\n%v", err, string(buf))
+				c := NewErrorController(http.StatusInternalServerError)
+				c.Controller = cc
+				r := c.Get()
+				result = []reflect.Value{reflect.ValueOf(r)}
+			}
+		}()
+		if err := request.ParseMultipartForm(maxClientBodySize); err != nil {
+			panic(err)
+		}
+		for _, m := range appConfig.Middlewares {
+			m.Before(&cc)
+		}
+		ccValue.Set(reflect.ValueOf(cc))
+		r := method.Call(args)
+		for _, m := range appConfig.Middlewares {
+			m.After(&cc)
+		}
+		ccValue.Set(reflect.ValueOf(cc))
+		return r
+	}()
 	response.WriteHeader(response.StatusCode)
 	result[0].Interface().(Result).Proc(response)
 }

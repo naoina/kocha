@@ -79,13 +79,6 @@ func dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Val
 	return controller, method, args
 }
 
-func errorDispatch(statusCode int) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
-	c := &ErrorController{StatusCode: statusCode}
-	cValue := reflect.ValueOf(c)
-	m := reflect.ValueOf(c.Get)
-	return &cValue, &m, []reflect.Value{}
-}
-
 func (route *Route) dispatch(methodName, path string) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
 	matchesBase := route.RegexpPath.FindStringSubmatch(path)
 	if len(matchesBase) == 0 {

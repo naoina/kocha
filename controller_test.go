@@ -349,6 +349,19 @@ func TestControllerRedirect(t *testing.T) {
 	}
 }
 
+func TestNewErrorController(t *testing.T) {
+	for _, v := range []int{
+		http.StatusInternalServerError,
+		http.StatusTeapot,
+	} {
+		actual := NewErrorController(v)
+		expected := &ErrorController{StatusCode: v}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Value %v, expect %v, but %v", v, expected, actual)
+		}
+	}
+}
+
 func TestErrorControllerGet(t *testing.T) {
 	oldAppConfig := appConfig
 	appConfig = newControllerTestAppConfig()
