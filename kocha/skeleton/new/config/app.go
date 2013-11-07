@@ -39,6 +39,8 @@ var (
 			SecretKey: "{{.secretKey}}",
 			SignedKey: "{{.signedKey}}",
 		},
+
+		MaxClientBodySize: 1024 * 1024 * 10, // 10MB
 	}
 
 	_, configFileName, _, _ = runtime.Caller(0)
@@ -50,5 +52,4 @@ func init() {
 	config.Set("AppName", AppName)
 	config.Set("Addr", Addr)
 	config.Set("Port", Port)
-	config.Set("MaxClientBodySize", 1024*1024*10) // 10MB
 }

@@ -1,8 +1,6 @@
 package kocha
 
 import (
-	"fmt"
-	"reflect"
 	"runtime"
 )
 
@@ -13,32 +11,27 @@ const (
 )
 
 type AppConfig struct {
-	AppPath     string
-	AppName     string
-	TemplateSet TemplateSet
-	RouteTable  RouteTable
-	Logger      *Logger
-	Middlewares []Middleware
-	Session     SessionConfig
+	AppPath           string
+	AppName           string
+	TemplateSet       TemplateSet
+	RouteTable        RouteTable
+	Logger            *Logger
+	Middlewares       []Middleware
+	Session           SessionConfig
+	MaxClientBodySize int64
 }
 
 var (
 	Log *Logger
 
-	appConfig         *AppConfig
-	initialized       bool  = false
-	maxClientBodySize int64 = DefaultMaxClientBodySize
+	appConfig   *AppConfig
+	initialized bool = false
 )
 
 func Init(config *AppConfig) {
 	appConfig = config
-	if size, ok := Config(appConfig.AppName).Get("MaxClientBodySize"); ok {
-		switch v := reflect.ValueOf(size); v.Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			maxClientBodySize = v.Int()
-		default:
-			panic(fmt.Errorf("`MaxClientBodySize` must be integer type. but %v", v.Type()))
-		}
+	if appConfig.MaxClientBodySize < 1 {
+		appConfig.MaxClientBodySize = DefaultMaxClientBodySize
 	}
 	Log = initLogger(appConfig.Logger)
 	initialized = true

@@ -24,7 +24,7 @@ func handler(writer http.ResponseWriter, req *http.Request) {
 func render(req *http.Request, writer http.ResponseWriter, controller, method *reflect.Value, args []reflect.Value) {
 	request := NewRequest(req)
 	response := NewResponse(writer)
-	request.Body = http.MaxBytesReader(writer, request.Body, maxClientBodySize)
+	request.Body = http.MaxBytesReader(writer, request.Body, appConfig.MaxClientBodySize)
 	ac := controller.Elem()
 	ccValue := ac.FieldByName("Controller")
 	cc := ccValue.Interface().(Controller)
@@ -44,7 +44,7 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 				result = []reflect.Value{reflect.ValueOf(r)}
 			}
 		}()
-		if err := request.ParseMultipartForm(maxClientBodySize); err != nil {
+		if err := request.ParseMultipartForm(appConfig.MaxClientBodySize); err != nil {
 			panic(err)
 		}
 		for _, m := range appConfig.Middlewares {

@@ -24,7 +24,7 @@ func TestInit(t *testing.T) {
 	defer func() {
 		initialized = false
 	}()
-	expectedConfig := &AppConfig{
+	config := &AppConfig{
 		AppPath:     "testpath",
 		AppName:     "testappname",
 		TemplateSet: nil,
@@ -46,47 +46,39 @@ func TestInit(t *testing.T) {
 		},
 		Logger: &Logger{},
 	}
-	Init(expectedConfig)
-	if !reflect.DeepEqual(appConfig, expectedConfig) {
-		t.Errorf("Expect %v, but %v", expectedConfig, appConfig)
+	Init(config)
+	actual := appConfig
+	expected := config
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
 	}
+	if config.MaxClientBodySize != DefaultMaxClientBodySize {
+		t.Errorf("Expect %v, but %v", DefaultMaxClientBodySize, config.MaxClientBodySize)
+	}
+
 	if !initialized {
 		t.Errorf("Expect %v, but %v", true, initialized)
 	}
-	if maxClientBodySize != DefaultMaxClientBodySize {
-		t.Errorf("Expect %v, but %v", DefaultMaxClientBodySize, maxClientBodySize)
+
+	config.MaxClientBodySize = -1
+	Init(config)
+	actual = appConfig
+	expected = config
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+	if config.MaxClientBodySize != DefaultMaxClientBodySize {
+		t.Errorf("Expect %v, but %v", DefaultMaxClientBodySize, config.MaxClientBodySize)
 	}
 
-	if !reflect.DeepEqual(Log, expectedConfig.Logger) {
-		t.Errorf("Expect %v, but %v", expectedConfig.Logger, Log)
+	config.MaxClientBodySize = 20131108
+	Init(config)
+	actual = appConfig
+	expected = config
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
 	}
-
-	configs["testappname"]["MaxClientBodySize"] = 100
-	Init(expectedConfig)
-	if maxClientBodySize != 100 {
-		t.Errorf("Expect %v, but %v", 100, maxClientBodySize)
-	}
-}
-
-func TestInit_with_invalid_MaxClientBodySize(t *testing.T) {
-	initialized = false
-	defer func() {
-		initialized = false
-	}()
-	ap := &AppConfig{
-		AppName: "testappname",
-	}
-	for _, v := range []interface{}{
-		"100", 1.1, nil, uint(100),
-	} {
-		func() {
-			configs["testappname"]["MaxClientBodySize"] = v
-			defer func() {
-				if err := recover(); err == nil {
-					t.Errorf("Value is %v, Expect panic, but not occurred", v)
-				}
-			}()
-			Init(ap)
-		}()
+	if config.MaxClientBodySize != 20131108 {
+		t.Errorf("Expect %v, but %v", 20131108, config.MaxClientBodySize)
 	}
 }
