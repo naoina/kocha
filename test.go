@@ -83,5 +83,11 @@ func newTestAppConfig() *AppConfig {
 			},
 		},
 		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
+		Session: SessionConfig{
+			Name:      "test_session",
+			Store:     &SessionCookieStore{},
+			SecretKey: "abcdefghijklmnopqrstuvwxyzABCDEF",
+			SignedKey: "abcdefghijklmn",
+		},
 	}
 }

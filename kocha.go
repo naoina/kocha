@@ -19,6 +19,7 @@ type AppConfig struct {
 	RouteTable  RouteTable
 	Logger      *Logger
 	Middlewares []Middleware
+	Session     SessionConfig
 }
 
 var (

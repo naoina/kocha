@@ -48,8 +48,10 @@ func (c *newCommand) Run() {
 		kocha.PanicOnError(c, "abort: Kocha application is already exists")
 	}
 	data := map[string]interface{}{
-		"appName": filepath.Base(appPath),
-		"appPath": appPath,
+		"appName":   filepath.Base(appPath),
+		"appPath":   appPath,
+		"secretKey": strings.Trim(fmt.Sprintf("%q", string(kocha.GenerateRandomKey(32))), `"`), // AES-256
+		"signedKey": strings.Trim(fmt.Sprintf("%q", string(kocha.GenerateRandomKey(16))), `"`),
 	}
 	filepath.Walk(skeletonDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

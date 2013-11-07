@@ -35,6 +35,7 @@ type Controller struct {
 	Request  *Request
 	Response *Response
 	Params   Params
+	Session  Session
 }
 
 type Context map[string]interface{}

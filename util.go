@@ -11,7 +11,13 @@ import (
 	"path"
 	"strings"
 	"text/template"
+	"time"
 	"unicode"
+)
+
+var (
+	// Now returns current time. This is for mock in tests.
+	Now = func() time.Time { return time.Now() }
 )
 
 func ToCamelCase(s string) string {

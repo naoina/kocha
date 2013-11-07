@@ -4,6 +4,7 @@ import (
 	"github.com/naoina/kocha"
 	"path/filepath"
 	"runtime"
+	"time"
 )
 
 var (
@@ -19,6 +20,25 @@ var (
 				filepath.Join(rootPath, "app", "views"),
 			},
 		}),
+
+		// Session settings
+		Session: kocha.SessionConfig{
+			Name:  "{{.appName}}_session",
+			Store: &kocha.SessionCookieStore{},
+
+			// Expiration of session cookie, in seconds, from now.
+			// Persistent if -1, For not specify, set 0.
+			CookieExpires: time.Duration(90) * time.Hour * 24,
+
+			// Expiration of session data, in seconds, from now.
+			// Perssitent if -1, For not specify, set 0.
+			SessionExpires: time.Duration(90) * time.Hour * 24,
+			HttpOnly:       false,
+
+			// AUTO-GENERATED Random keys. DO NOT EDIT.
+			SecretKey: "{{.secretKey}}",
+			SignedKey: "{{.signedKey}}",
+		},
 	}
 
 	_, configFileName, _, _ = runtime.Caller(0)
