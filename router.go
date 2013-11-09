@@ -140,56 +140,69 @@ func (route *Route) reverse(v ...interface{}) string {
 func (route *Route) buildMethodTypes() {
 	controller := reflect.TypeOf(route.Controller)
 	cname := controller.Name()
-	sname := ToSnakeCase(cname)
 	pkgPath := controller.PkgPath()
-	goFile := sname + ".go"
-	var filePath string
-	for _, src := range build.Default.SrcDirs() {
-		if path, err := filepath.Abs(filepath.Join(src, pkgPath, goFile)); err == nil {
-			if _, err := os.Stat(path); err == nil {
-				filePath = path
-				break
-			}
-		}
+	pkgDir := findPkgDir(pkgPath)
+	if pkgDir == "" {
+		panic(fmt.Errorf("%v: package not found", pkgPath))
 	}
-	if filePath == "" {
-		panic(fmt.Errorf("%s: no such file", filepath.Join(pkgPath, goFile)))
-	}
-	f, err := parser.ParseFile(token.NewFileSet(), filePath, nil, 0)
+	pkgInfo, err := build.ImportDir(pkgDir, 0)
 	if err != nil {
 		panic(err)
 	}
-	route.MethodTypes = make(map[string]MethodArgs)
-	for _, d := range f.Decls {
-		ast.Inspect(d, func(node ast.Node) bool {
-			fdecl, ok := node.(*ast.FuncDecl)
-			if !ok {
-				return false
-			}
-			var recv string
-			switch t := fdecl.Recv.List[0].Type.(type) {
-			case *ast.StarExpr:
-				recv = t.X.(*ast.Ident).Name
-			case *ast.Ident:
-				recv = t.Name
-			}
-			if recv != cname {
-				return false
-			}
-			methodName := fdecl.Name.Name
-			if _, ok := controllerMethods[methodName]; !ok {
-				return false
-			}
-			route.MethodTypes[methodName] = make(MethodArgs)
-			for _, v := range fdecl.Type.Params.List {
-				t := v.Type.(*ast.Ident).Name
-				for _, name := range v.Names {
-					route.MethodTypes[methodName][name.Name] = t
-				}
-			}
-			return false
-		})
+	astFiles := make([]*ast.File, len(pkgInfo.GoFiles))
+	for i, goFilePath := range pkgInfo.GoFiles {
+		if astFiles[i], err = parser.ParseFile(token.NewFileSet(), filepath.Join(pkgInfo.Dir, goFilePath), nil, 0); err != nil {
+			panic(err)
+		}
 	}
+	route.MethodTypes = make(map[string]MethodArgs)
+	for _, file := range astFiles {
+		for _, d := range file.Decls {
+			ast.Inspect(d, func(node ast.Node) bool {
+				fdecl, ok := node.(*ast.FuncDecl)
+				if !ok || fdecl.Recv == nil {
+					return false
+				}
+				var recv string
+				switch t := fdecl.Recv.List[0].Type.(type) {
+				case *ast.StarExpr:
+					recv = t.X.(*ast.Ident).Name
+				case *ast.Ident:
+					recv = t.Name
+				}
+				if recv != cname {
+					return false
+				}
+				methodName := fdecl.Name.Name
+				if _, ok := controllerMethods[methodName]; !ok {
+					return false
+				}
+				route.MethodTypes[methodName] = make(MethodArgs)
+				for _, v := range fdecl.Type.Params.List {
+					t := v.Type.(*ast.Ident).Name
+					for _, name := range v.Names {
+						route.MethodTypes[methodName][name.Name] = t
+					}
+				}
+				return false
+			})
+		}
+	}
+}
+
+func findPkgDir(pkgPath string) string {
+	var pkgDir string
+	for _, srcDir := range build.Default.SrcDirs() {
+		path, err := filepath.Abs(filepath.Join(srcDir, pkgPath))
+		if err != nil {
+			panic(err)
+		}
+		if _, err := os.Stat(path); err == nil {
+			pkgDir = path
+			break
+		}
+	}
+	return pkgDir
 }
 
 func (route *Route) buildRegexpPath() {
