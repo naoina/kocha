@@ -24,6 +24,11 @@ func TestInitRouteTable(t *testing.T) {
 			Path:       "/:year/:month/:day/user/:name",
 			Controller: FixtureDateTestCtrl{},
 		},
+		{
+			Name:       "static",
+			Path:       "/static/*path",
+			Controller: StaticServe{},
+		},
 	})
 	expected := RouteTable{
 		{
@@ -60,9 +65,20 @@ func TestInitRouteTable(t *testing.T) {
 			},
 			RegexpPath: regexp.MustCompile(`^/(?P<year>\d+)/(?P<month>\d+)/(?P<day>\d+)/user/(?P<name>[\w-]+)$`),
 		},
+		{
+			Name:       "static",
+			Path:       "/static/*path",
+			Controller: StaticServe{},
+			MethodTypes: map[string]MethodArgs{
+				"Get": MethodArgs{
+					"path": "url.URL",
+				},
+			},
+			RegexpPath: regexp.MustCompile(`^/static/(?P<path>[\w-/.]+)$`),
+		},
 	}
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+		t.Errorf("Expect %q, but %q", expected, actual)
 	}
 }
 
@@ -89,6 +105,14 @@ func TestReverse(t *testing.T) {
 	expected = "/2013/10/26/user/naoina"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	for _, v := range []string{"/hoge.png", "hoge.png"} {
+		actual = Reverse("static", v)
+		expected = "/static/hoge.png"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
 	}
 }
 

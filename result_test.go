@@ -1,8 +1,10 @@
 package kocha
 
 import (
+	"bytes"
 	"encoding/xml"
 	"html/template"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -114,4 +116,43 @@ func TestResultRedirectProc(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
+}
+
+func TestResultContentProc(t *testing.T) {
+	buf := bytes.NewBufferString("foobar")
+	result := &ResultContent{Reader: buf}
+	w := httptest.NewRecorder()
+	res := NewResponse(w)
+	result.Proc(res)
+	var actual interface{} = w.Body.String()
+	var expected interface{} = "foobar"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	closer := &testCloser{bytes.NewBufferString("brown fox"), false}
+	result = &ResultContent{Reader: closer}
+	w = httptest.NewRecorder()
+	res = NewResponse(w)
+	result.Proc(res)
+	actual = w.Body.String()
+	expected = "brown fox"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+	actual = closer.Closed
+	expected = true
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+type testCloser struct {
+	io.Reader
+	Closed bool
+}
+
+func (c *testCloser) Close() error {
+	c.Closed = true
+	return nil
 }

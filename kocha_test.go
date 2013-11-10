@@ -6,16 +6,15 @@ import (
 )
 
 func TestConst(t *testing.T) {
-	if !reflect.DeepEqual(DefaultHttpAddr, "0.0.0.0") {
-		t.Errorf(`Expect %v, but %v`, "0.0.0.0", DefaultHttpAddr)
-	}
-
-	if !reflect.DeepEqual(DefaultHttpPort, 80) {
-		t.Errorf("Expect %v, but %v", 80, DefaultHttpPort)
-	}
-
-	if !reflect.DeepEqual(DefaultMaxClientBodySize, 1024*1024*10) {
-		t.Errorf("Expect %v, but %v", 1024*1024*10, DefaultMaxClientBodySize)
+	for actual, expected := range map[interface{}]interface{}{
+		DefaultHttpAddr:          "0.0.0.0",
+		DefaultHttpPort:          80,
+		DefaultMaxClientBodySize: 1024 * 1024 * 10,
+		StaticDir:                "public",
+	} {
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
 	}
 }
 

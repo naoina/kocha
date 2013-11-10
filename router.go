@@ -8,6 +8,7 @@ import (
 	"go/parser"
 	"go/token"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -40,11 +41,12 @@ var (
 		"Patch":  true,
 	}
 	typeRegexpStrings = map[string]string{
-		"":    `[\w-]+`, // default
-		"int": `\d+`,
+		"":        `[\w-]+`, // default
+		"int":     `\d+`,
+		"url.URL": `[\w-/.]+`,
 	}
-	placeHolderRegexp = regexp.MustCompile(`:[\w-]+`)
-	pathRegexp        = regexp.MustCompile(`/(?:(?::([\w-]+))|[\w-]*)`)
+	placeHolderRegexp = regexp.MustCompile(`:[\w-]+|\*[\w-/]+`)
+	pathRegexp        = regexp.MustCompile(`/(?:(?::([\w-]+))|(?:\*([\w-/]+))|[\w-]*)`)
 )
 
 func InitRouteTable(routeTable RouteTable) RouteTable {
@@ -100,16 +102,24 @@ func (route *Route) dispatch(methodName, path string) (controller *reflect.Value
 		}
 	}
 	for i, v := range matches {
+		var arg interface{}
 		switch types[i] {
 		case "int":
-			p, err := strconv.Atoi(v)
+			i, err := strconv.Atoi(v)
 			if err != nil {
 				panic(err)
 			}
-			args = append(args, reflect.ValueOf(p))
+			arg = i
+		case "url.URL":
+			u, err := url.Parse(v)
+			if err != nil {
+				panic(err)
+			}
+			arg = u
 		default:
-			args = append(args, reflect.ValueOf(v))
+			arg = v
 		}
+		args = append(args, reflect.ValueOf(arg))
 	}
 	t := reflect.TypeOf(route.Controller)
 	c := reflect.New(t)
@@ -134,7 +144,7 @@ func (route *Route) reverse(v ...interface{}) string {
 	if !route.RegexpPath.MatchString(path) {
 		panic(fmt.Errorf("parameter type mismatch: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
 	}
-	return path
+	return normPath(path)
 }
 
 func (route *Route) buildMethodTypes() {
@@ -179,9 +189,9 @@ func (route *Route) buildMethodTypes() {
 				}
 				route.MethodTypes[methodName] = make(MethodArgs)
 				for _, v := range fdecl.Type.Params.List {
-					t := v.Type.(*ast.Ident).Name
+					typeName := astTypeName(v.Type)
 					for _, name := range v.Names {
-						route.MethodTypes[methodName][name.Name] = t
+						route.MethodTypes[methodName][name.Name] = typeName
 					}
 				}
 				return false
@@ -205,10 +215,25 @@ func findPkgDir(pkgPath string) string {
 	return pkgDir
 }
 
+func astTypeName(expr ast.Expr) string {
+	var typeName string
+	switch t := expr.(type) {
+	case *ast.Ident:
+		typeName = t.Name
+	case *ast.SelectorExpr:
+		typeName = fmt.Sprintf("%v.%v", t.X.(*ast.Ident).Name, t.Sel.Name)
+	case *ast.StarExpr:
+		typeName = astTypeName(t.X)
+	default:
+		panic(fmt.Errorf("sorry, unexpected argument type `%T` found. please report this issue.", t))
+	}
+	return typeName
+}
+
 func (route *Route) buildRegexpPath() {
 	var regexpBuf bytes.Buffer
 	for _, paths := range pathRegexp.FindAllStringSubmatch(route.Path, -1) {
-		name := paths[1]
+		name := paths[1] + paths[2]
 		if name == "" {
 			regexpBuf.WriteString(regexp.QuoteMeta(paths[0]))
 			continue

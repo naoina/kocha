@@ -3,8 +3,12 @@ package kocha
 import (
 	"encoding/xml"
 	"html/template"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -326,6 +330,125 @@ func TestControllerRenderError(t *testing.T) {
 	}
 }
 
+func TestControllerSendFile(t *testing.T) {
+	// general test
+	func() {
+		tmpFile, err := ioutil.TempFile("", "TestControllerSendFile")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tmpFile.Close()
+		defer os.Remove(tmpFile.Name())
+		if _, err := tmpFile.WriteString("foobarbaz"); err != nil {
+			t.Fatal(err)
+		}
+		c := newTestController()
+		result, ok := c.SendFile(tmpFile.Name()).(*ResultContent)
+		if !ok {
+			t.Errorf("Expect %T, but %T", &ResultContent{}, result)
+		}
+
+		actual, err := ioutil.ReadAll(result.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := []byte("foobarbaz")
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
+
+	// test default static path
+	func() {
+		tmpDir := filepath.Join(os.TempDir(), StaticDir)
+		if err := os.Mkdir(tmpDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		tmpFile, err := ioutil.TempFile(tmpDir, "TestControllerSendFile")
+		if err != nil {
+			panic(err)
+		}
+		defer tmpFile.Close()
+		defer os.RemoveAll(tmpDir)
+		oldAppConfig := appConfig
+		appConfig = newControllerTestAppConfig()
+		appConfig.AppPath = filepath.Dir(tmpDir)
+		defer func() {
+			appConfig = oldAppConfig
+		}()
+		if _, err := tmpFile.WriteString("foobarbaz"); err != nil {
+			t.Fatal(err)
+		}
+		c := newTestController()
+		result, ok := c.SendFile(filepath.Base(tmpFile.Name())).(*ResultContent)
+		if !ok {
+			t.Errorf("Expect %T, but %T", &ResultContent{}, result)
+		}
+
+		actual, err := ioutil.ReadAll(result.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := []byte("foobarbaz")
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
+
+	// test file not found
+	func() {
+		oldAppConfig := appConfig
+		appConfig = newControllerTestAppConfig()
+		defer func() {
+			appConfig = oldAppConfig
+		}()
+		c := newTestController()
+		result, ok := c.SendFile("unknown/path").(*ResultText)
+		if !ok {
+			t.Errorf("Expect %T, but %T", &ResultText{}, result)
+		}
+		actual := result.Content
+		expected := http.StatusText(http.StatusNotFound)
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
+
+	// test detect content type
+	func() {
+		tmpFile, err := ioutil.TempFile("", "TestControllerSendFile")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tmpFile.Close()
+		defer os.Remove(tmpFile.Name())
+		if _, err := tmpFile.WriteString("foobarbaz"); err != nil {
+			t.Fatal(err)
+		}
+		c := newTestController()
+		c.SendFile(tmpFile.Name())
+		actual := c.Response.ContentType
+		expected := "text/plain; charset=utf-8"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+
+		c.Response.ContentType = ""
+		if _, err := tmpFile.Seek(0, os.SEEK_SET); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tmpFile.Write([]byte("\x89PNG\x0d\x0a\x1a\x0a")); err != nil {
+			t.Fatal(err)
+		}
+		c.SendFile(tmpFile.Name())
+		actual = c.Response.ContentType
+		expected = "image/png"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
+}
+
 func TestControllerRedirect(t *testing.T) {
 	c := newTestController()
 	actual := c.Redirect("/path/to/redirect/permanently", true)
@@ -346,6 +469,36 @@ func TestControllerRedirect(t *testing.T) {
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+func TestStaticServeGet(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newControllerTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+	tmpFile, err := ioutil.TempFile("", "TestStaticServeGet")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tmpFile.Close()
+	defer os.RemoveAll(tmpFile.Name())
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		panic(err)
+	}
+	w := httptest.NewRecorder()
+	c := &StaticServe{}
+	c.Controller.Request = NewRequest(req)
+	c.Controller.Response = NewResponse(w)
+	u, err := url.Parse(tmpFile.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, ok := c.Get(u).(*ResultContent)
+	if !ok {
+		t.Errorf("Expect %T, but %T", &ResultContent{}, result)
 	}
 }
 

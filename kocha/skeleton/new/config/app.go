@@ -14,7 +14,7 @@ var (
 	AppConfig = &kocha.AppConfig{
 		AppPath:    rootPath,
 		AppName:    AppName,
-		RouteTable: kocha.InitRouteTable(kocha.RouteTable(Routes)),
+		RouteTable: kocha.InitRouteTable(kocha.RouteTable(Routes())),
 		TemplateSet: kocha.TemplateSetFromPaths(map[string][]string{
 			AppName: []string{
 				filepath.Join(rootPath, "app", "views"),

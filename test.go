@@ -81,6 +81,17 @@ func newTestAppConfig() *AppConfig {
 				},
 				RegexpPath: regexp.MustCompile(`^/teapot$`),
 			},
+			{
+				Name:       "static",
+				Path:       "/static/*path",
+				Controller: StaticServe{},
+				MethodTypes: map[string]MethodArgs{
+					"Get": MethodArgs{
+						"path": "url.URL",
+					},
+				},
+				RegexpPath: regexp.MustCompile(`^/static/(?P<path>[\w-./]+)$`),
+			},
 		},
 		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
 		Session: SessionConfig{

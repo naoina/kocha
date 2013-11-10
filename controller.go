@@ -3,8 +3,10 @@ package kocha
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strconv"
 )
@@ -114,6 +116,42 @@ func (c *Controller) RenderError(statusCode int, context ...Context) Result {
 	}
 }
 
+// Sendfile returns result of any content.
+// The path argument specifies an absolute or relative path.
+// If absolute path, read the content from the path as it is.
+// If relative path, add AppPath and StaticDir to the prefix of the path and
+// then read the content from the path that.
+// Also, set ContentType detect from content if c.Response.ContentType is empty.
+func (c *Controller) SendFile(path string) Result {
+	path = filepath.FromSlash(path)
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(appConfig.AppPath, StaticDir, path)
+	}
+	if _, err := os.Stat(path); err != nil {
+		return c.RenderError(http.StatusNotFound)
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+	if c.Response.ContentType == "" {
+		buf := make([]byte, 512)
+		if n, err := io.ReadFull(file, buf); err != nil {
+			if err != io.EOF && err != io.ErrUnexpectedEOF {
+				panic(err)
+			}
+			buf = buf[:n]
+		}
+		c.Response.ContentType = http.DetectContentType(buf)
+		if _, err := file.Seek(0, os.SEEK_SET); err != nil {
+			panic(err)
+		}
+	}
+	return &ResultContent{
+		Reader: file,
+	}
+}
+
 func (c *Controller) setContentTypeIfNotExists(contentType string) {
 	if c.Response.ContentType == "" {
 		c.Response.ContentType = contentType
@@ -126,6 +164,15 @@ func (c *Controller) Redirect(url string, permanently bool) Result {
 		URL:         url,
 		Permanently: permanently,
 	}
+}
+
+// StaticServe is pre-defined controller for serve a static file.
+type StaticServe struct {
+	Controller
+}
+
+func (c *StaticServe) Get(path *url.URL) Result {
+	return c.SendFile(path.Path)
 }
 
 type ErrorController struct {

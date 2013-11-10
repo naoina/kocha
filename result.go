@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"html/template"
+	"io"
 	"net/http"
 )
 
@@ -65,4 +66,20 @@ func (r *ResultRedirect) Proc(res *Response) {
 		statusCode = http.StatusMovedPermanently
 	}
 	http.Redirect(res, r.Request.Request, r.URL, statusCode)
+}
+
+// ResultContent represents a result of any content.
+type ResultContent struct {
+	// The content body.
+	// If Reader is implemented the io.Closer interface, call Reader.Close() in end of Proc().
+	Reader io.Reader
+}
+
+func (r *ResultContent) Proc(res *Response) {
+	if closer, ok := r.Reader.(io.Closer); ok {
+		defer closer.Close()
+	}
+	if _, err := io.Copy(res, r.Reader); err != nil {
+		panic(err)
+	}
 }
