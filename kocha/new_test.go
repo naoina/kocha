@@ -129,6 +129,7 @@ func Test_newCommand_Run(t *testing.T) {
 		filepath.Join("config", "prod", "app.go"),
 		filepath.Join("dev.go"),
 		filepath.Join("prod.go"),
+		filepath.Join("public", "robots.txt"),
 	}
 	sort.Strings(actuals)
 	sort.Strings(expects)
