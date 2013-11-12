@@ -2,6 +2,7 @@ package generators
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/naoina/kocha"
@@ -102,22 +103,33 @@ func (g *controllerGenerator) addRouteToFile(name string) {
 	}
 }
 
-func findRouteTableAST(file *ast.File) *ast.CompositeLit {
-	var routeTableAST *ast.CompositeLit
+var ErrRouteTableASTIsFound = errors.New("route table AST is found")
+
+func findRouteTableAST(file *ast.File) (routeTableAST *ast.CompositeLit) {
+	defer func() {
+		if err := recover(); err != nil && err != ErrRouteTableASTIsFound {
+			panic(err)
+		}
+	}()
 	ast.Inspect(file, func(node ast.Node) bool {
 		switch aType := node.(type) {
 		case *ast.GenDecl:
 			if aType.Tok != token.VAR {
 				return false
 			}
-		case *ast.CompositeLit:
-			switch t := aType.Type.(type) {
-			case *ast.Ident:
-				if t.Name == routeTableTypeName {
-					routeTableAST = aType
-					return false
+			ast.Inspect(aType, func(n ast.Node) bool {
+				switch typ := n.(type) {
+				case *ast.CompositeLit:
+					switch t := typ.Type.(type) {
+					case *ast.Ident:
+						if t.Name == routeTableTypeName {
+							routeTableAST = typ
+							panic(ErrRouteTableASTIsFound)
+						}
+					}
 				}
-			}
+				return true
+			})
 		}
 		return true
 	})

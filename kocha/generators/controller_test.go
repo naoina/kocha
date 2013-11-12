@@ -51,7 +51,7 @@ func Test_controllerGeneratorGenerate(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	// defer os.RemoveAll(tempdir)
+	defer os.RemoveAll(tempdir)
 	os.Chdir(tempdir)
 	controllerPath := filepath.Join("app", "controllers")
 	if err := os.MkdirAll(controllerPath, 0755); err != nil {
@@ -71,13 +71,17 @@ import (
 	"github/naoina/kocha"
 )
 type RouteTable kocha.RouteTable
-var Routes = RouteTable{
+var routes = RouteTable{
 	{
 		Name: "root",
 		Path: "/",
 		Controller: controllers.Root{},
 	},
-}`
+}
+func Routes() RouteTable {
+	return append(routes, RouteTable{}...)
+}
+`
 	if err := ioutil.WriteFile(filepath.Join(configPath, "routes.go"), []byte(routeFileContent), 0644); err != nil {
 		panic(err)
 	}
@@ -112,7 +116,7 @@ import (
 
 type RouteTable kocha.RouteTable
 
-var Routes = RouteTable{
+var routes = RouteTable{
 	{
 		Name:       "root",
 		Path:       "/",
@@ -122,6 +126,10 @@ var Routes = RouteTable{
 		Path:       "/app_controller",
 		Controller: controllers.AppController{},
 	},
+}
+
+func Routes() RouteTable {
+	return append(routes, RouteTable{}...)
 }
 `
 	routesBuf, err := ioutil.ReadFile(filepath.Join(configPath, "routes.go"))
