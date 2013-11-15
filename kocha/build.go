@@ -57,7 +57,6 @@ func (c *buildCommand) Run() {
 	if err := os.Mkdir(tmpDir, 0755); err != nil && !os.IsExist(err) {
 		kocha.PanicOnError(c, "abort: failed to create directory: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
 	skeletonDir := filepath.Join(baseDir, "skeleton", "build")
@@ -87,6 +86,9 @@ func (c *buildCommand) Run() {
 	c.execCmd("go", "build", "-o", appName, mainFilePath)
 	fmt.Printf("build all-in-one binary to %v\n", filepath.Join(dir, appName))
 	fmt.Println(kocha.Green("Build successful"))
+	if err := os.RemoveAll(tmpDir); err != nil {
+		panic(err)
+	}
 }
 
 func (c *buildCommand) Package(importPath string) *build.Package {

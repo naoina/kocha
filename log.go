@@ -12,25 +12,21 @@ const (
 	defaultLflag = log.Ldate | log.Ltime
 )
 
-var (
-	nullLogger = log.New(ioutil.Discard, "", 0)
-)
-
 func initLogger(logger *Logger) *Logger {
 	if logger == nil {
 		logger = &Logger{}
 	}
 	if logger.DEBUG == nil {
-		logger.DEBUG = Loggers{nullLogger}
+		logger.DEBUG = Loggers{NullLogger()}
 	}
 	if logger.INFO == nil {
-		logger.INFO = Loggers{nullLogger}
+		logger.INFO = Loggers{NullLogger()}
 	}
 	if logger.WARN == nil {
-		logger.WARN = Loggers{nullLogger}
+		logger.WARN = Loggers{NullLogger()}
 	}
 	if logger.ERROR == nil {
-		logger.ERROR = Loggers{nullLogger}
+		logger.ERROR = Loggers{NullLogger()}
 	}
 	setPrefix := func(loggers Loggers, prefix string) {
 		for _, logger := range loggers {
@@ -44,18 +40,49 @@ func initLogger(logger *Logger) *Logger {
 	return logger
 }
 
-func NullLogger() *log.Logger {
-	return nullLogger
+type logger interface {
+	Output(calldepth int, s string) error
+	SetPrefix(prefix string)
+	GoString() string
 }
 
-func ConsoleLogger(flag int) *log.Logger {
+type nullLogger struct {
+	*log.Logger
+}
+
+func (l *nullLogger) GoString() string {
+	return "kocha.NullLogger()"
+}
+
+func NullLogger() logger {
+	return &nullLogger{log.New(ioutil.Discard, "", 0)}
+}
+
+type consoleLogger struct {
+	*log.Logger
+}
+
+func (l *consoleLogger) GoString() string {
+	return fmt.Sprintf("kocha.ConsoleLogger(%d)", l.Flags())
+}
+
+func ConsoleLogger(flag int) logger {
 	if flag == -1 {
 		flag = defaultLflag
 	}
-	return log.New(os.Stdout, "", flag)
+	return &consoleLogger{log.New(os.Stdout, "", flag)}
 }
 
-func FileLogger(path string, flag int) *log.Logger {
+type fileLogger struct {
+	*log.Logger
+	path string
+}
+
+func (l *fileLogger) GoString() string {
+	return fmt.Sprintf("kocha.FileLogger(%q, %d)", l.path, l.Flags())
+}
+
+func FileLogger(path string, flag int) logger {
 	if flag == -1 {
 		flag = defaultLflag
 	}
@@ -70,10 +97,10 @@ func FileLogger(path string, flag int) *log.Logger {
 	if err != nil {
 		panic(err)
 	}
-	return log.New(file, "", flag)
+	return &fileLogger{log.New(file, "", flag), path}
 }
 
-type Loggers []*log.Logger
+type Loggers []logger
 
 type Logger struct {
 	DEBUG Loggers

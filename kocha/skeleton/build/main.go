@@ -3,56 +3,19 @@
 package main
 
 import (
-	"bytes"
-	"compress/gzip"
 	"{{.controllersImportPath}}"
 	"github.com/naoina/kocha"
 	"html/template"
-	"io/ioutil"
 	"regexp"
 )
 
 func main() {
-	kocha.Init(&kocha.AppConfig{
-		AppPath: "{{.appPath}}",
-		AppName: "{{.appName}}",
-		RouteTable: kocha.RouteTable{
-			{{range .routeTable}}
-			{
-				Name: "{{.Name}}",
-				Path: "{{.Path}}",
-				Controller: {{.Controller|printf "%T"}}{},
-				MethodTypes: {{.MethodTypes|printf "%#v"}},
-				RegexpPath: regexp.MustCompile("{{.RegexpPath.String}}"),
-			},
-			{{end}}
-		},
-		TemplateSet: kocha.TemplateSet{
-			{{range $appName, $value := .templateSet}}
-			"{{$appName}}": {{range $tmplName, $tmpl := $value}}{
-				"{{$tmplName}}": template.Must(template.New("{{$tmplName}}").Funcs(kocha.TemplateFuncs).Parse(gunzip({{$tmpl|templateText}}))),
-			},
-			{{end}}
-			{{end}}
-		},
-	})
+	kocha.Init({{.appConfig|goString}})
 	kocha.Run("{{.addr}}", {{.port}})
 }
 
 func init() {
-	config := kocha.Config("{{.appName}}")
+	config := kocha.Config("{{.appConfig.AppName}}")
 	{{range $name, $value := .config}}
-	config.Set("{{$name}}", {{$value|printf "%#v"}}){{end}}
-}
-
-func gunzip(gz string) string {
-	r, err := gzip.NewReader(bytes.NewReader([]byte(gz)))
-	if err != nil {
-		panic(err)
-	}
-	result, err := ioutil.ReadAll(r)
-	if err != nil {
-		panic(err)
-	}
-	return string(result)
+	config.Set("{{$name}}", {{$value|goString}}){{end}}
 }

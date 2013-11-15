@@ -3,14 +3,9 @@
 package main
 
 import (
-	"bytes"
-	"compress/gzip"
 	"github.com/naoina/kocha"
-	htmltemplate "html/template"
 	config "{{.configImportPath}}"
 	"os"
-	"reflect"
-	"strconv"
 	"text/template"
 )
 
@@ -20,25 +15,7 @@ const (
 
 func main() {
 	funcMap := template.FuncMap{
-		"templateText": func(tmpl *htmltemplate.Template) string {
-			var buf bytes.Buffer
-			w, err := gzip.NewWriterLevel(&buf, gzip.BestCompression)
-			if err != nil {
-				panic(err)
-			}
-			for _, t := range tmpl.Templates() {
-				if t.Name() == "content" {
-					continue
-				}
-				if _, err := w.Write([]byte(reflect.ValueOf(t).Elem().FieldByName("text").Elem().FieldByName("text").String())); err != nil {
-					panic(err)
-				}
-			}
-			if err := w.Close(); err != nil {
-				panic(err)
-			}
-			return strconv.Quote(buf.String())
-		},
+		"goString": kocha.GoString,
 	}
 	t := template.Must(template.New("main").Funcs(funcMap).Parse(mainTemplate))
 	file, err := os.Create("{{.mainFilePath}}")
@@ -46,15 +23,12 @@ func main() {
 		panic(err)
 	}
 	defer file.Close()
-	appConfig:=config.AppConfig
+	appConfig := config.AppConfig
 	data := map[string]interface{}{
-		"appPath":     appConfig.AppPath,
-		"appName":     appConfig.AppName,
-		"routeTable":  appConfig.RouteTable,
-		"templateSet": appConfig.TemplateSet,
-		"addr":        config.Addr,
-		"port":        config.Port,
-		"config":      kocha.Config(appConfig.AppName),
+		"appConfig":             appConfig,
+		"addr":                  config.Addr,
+		"port":                  config.Port,
+		"config":                kocha.Config(appConfig.AppName),
 		"controllersImportPath": "{{.controllersImportPath}}",
 	}
 	if err := t.Execute(file, data); err != nil {

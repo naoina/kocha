@@ -3,12 +3,16 @@ package kocha
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
+	htmltemplate "html/template"
 	"io"
 	"io/ioutil"
 	"os"
 	"path"
+	"reflect"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -215,4 +219,112 @@ func PrintCreateDirectory(path string) {
 
 func printPathStatus(f colorfunc, message, s string) {
 	fmt.Println(f(message, "%20s"), "", s)
+}
+
+// GoString returns Go-syntax representation of the value.
+// It returns compilable Go-syntax that different with "%#v" format for fmt package.
+func GoString(i interface{}) string {
+	switch t := i.(type) {
+	case *regexp.Regexp:
+		return fmt.Sprintf(`regexp.MustCompile(%q)`, t)
+	case *htmltemplate.Template:
+		var gzipped bytes.Buffer
+		w, err := gzip.NewWriterLevel(&gzipped, gzip.BestCompression)
+		if err != nil {
+			panic(err)
+		}
+		for _, t := range t.Templates() {
+			if t.Name() == "content" {
+				continue
+			}
+			if _, err := w.Write([]byte(reflect.ValueOf(t).Elem().FieldByName("text").Elem().FieldByName("text").String())); err != nil {
+				panic(err)
+			}
+		}
+		if err := w.Close(); err != nil {
+			panic(err)
+		}
+		return fmt.Sprintf(`template.Must(template.New(%q).Funcs(kocha.TemplateFuncs).Parse(kocha.Gunzip(%q)))`, t.Name(), gzipped.String())
+	case fmt.GoStringer:
+		return t.GoString()
+	case nil:
+		return "nil"
+	}
+	v := reflect.ValueOf(i)
+	var name string
+	if v.Kind() == reflect.Ptr {
+		if v = v.Elem(); !v.IsValid() {
+			return "nil"
+		}
+		name = "&"
+	}
+	name += v.Type().String()
+	var (
+		tmplStr string
+		fields  interface{}
+	)
+	switch v.Kind() {
+	case reflect.Struct:
+		f := make(map[string]interface{})
+		for i := 0; i < v.NumField(); i++ {
+			if tf := v.Type().Field(i); !tf.Anonymous && v.Field(i).CanInterface() {
+				f[tf.Name] = GoString(v.Field(i).Interface())
+			}
+		}
+		tmplStr = `
+{{.name}}{
+	{{range $name, $value := .fields}}
+	{{$name}}: {{$value}},
+	{{end}}
+}`
+		fields = f
+	case reflect.Slice:
+		f := make([]string, v.Len())
+		for i := 0; i < v.Len(); i++ {
+			f[i] = GoString(v.Index(i).Interface())
+		}
+		tmplStr = `
+{{.name}}{
+	{{range $value := .fields}}
+	{{$value}},
+	{{end}}
+}`
+		fields = f
+	case reflect.Map:
+		f := make(map[interface{}]interface{})
+		for _, k := range v.MapKeys() {
+			f[k.Interface()] = GoString(v.MapIndex(k).Interface())
+		}
+		tmplStr = `
+{{.name}}{
+	{{range $name, $value := .fields}}
+	{{$name|printf "%q"}}: {{$value}},
+	{{end}}
+}`
+		fields = f
+	default:
+		return fmt.Sprintf("%#v", v.Interface())
+	}
+	t := template.Must(template.New(name).Parse(tmplStr))
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, map[string]interface{}{
+		"name":   name,
+		"fields": fields,
+	}); err != nil {
+		panic(err)
+	}
+	return buf.String()
+}
+
+// Gunzip returns unzipped string.
+func Gunzip(gz string) string {
+	r, err := gzip.NewReader(bytes.NewReader([]byte(gz)))
+	if err != nil {
+		panic(err)
+	}
+	result, err := ioutil.ReadAll(r)
+	if err != nil {
+		panic(err)
+	}
+	return string(result)
 }

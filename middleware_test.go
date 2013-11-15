@@ -2,6 +2,7 @@ package kocha
 
 import (
 	"bytes"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -77,7 +78,7 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 	func() {
 		var buf bytes.Buffer
 		origLoggers := Log.INFO
-		Log.INFO = Loggers{log.New(&buf, "", 0)}
+		Log.INFO = Loggers{newTestBufferLogger(&buf)}
 		defer func() {
 			Log.INFO = origLoggers
 		}()
@@ -103,7 +104,7 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 	func() {
 		var buf bytes.Buffer
 		origLoggers := Log.ERROR
-		Log.ERROR = Loggers{log.New(&buf, "", 0)}
+		Log.ERROR = Loggers{newTestBufferLogger(&buf)}
 		defer func() {
 			Log.ERROR = origLoggers
 		}()
@@ -135,7 +136,7 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 	func() {
 		var buf bytes.Buffer
 		origLoggers := Log.ERROR
-		Log.ERROR = Loggers{log.New(&buf, "", 0)}
+		Log.ERROR = Loggers{newTestBufferLogger(&buf)}
 		defer func() {
 			Log.ERROR = origLoggers
 		}()
@@ -164,7 +165,7 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 	func() {
 		var buf bytes.Buffer
 		origLoggers := Log.INFO
-		Log.INFO = Loggers{log.New(&buf, "", 0)}
+		Log.INFO = Loggers{newTestBufferLogger(&buf)}
 		defer func() {
 			Log.INFO = origLoggers
 		}()
@@ -293,4 +294,11 @@ func TestSessionMiddlewareAfter(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
+}
+
+type testBufferLogger struct{ *log.Logger }
+
+func (l *testBufferLogger) GoString() string { return "" }
+func newTestBufferLogger(buf io.Writer) logger {
+	return &testBufferLogger{log.New(buf, "", 0)}
 }
