@@ -47,6 +47,18 @@ func Test_SessionCookieStore(t *testing.T) {
 	}, nil); err != nil {
 		t.Error(err)
 	}
+
+	func() {
+		defer func() {
+			if err := recover(); err == nil {
+				t.Error("panic doesn't occurs")
+			} else if _, ok := err.(ErrSession); !ok {
+				t.Error("Expect %T, but %T", ErrSession{}, err)
+			}
+		}()
+		store := &SessionCookieStore{}
+		store.Load("invalid")
+	}()
 }
 
 func Test_GenerateRandomKey(t *testing.T) {

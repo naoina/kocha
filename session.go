@@ -121,19 +121,36 @@ func (store *SessionCookieStore) Save(sess Session) (key string) {
 	if err := codec.NewEncoder(&buf, &codec.MsgpackHandle{}).Encode(sess); err != nil {
 		panic(err)
 	}
-	encrypted := store.encrypt(buf.Bytes())
+	encrypted, err := store.encrypt(buf.Bytes())
+	if err != nil {
+		panic(err)
+	}
 	return store.encode(store.sign(encrypted))
 }
 
 // Load returns the session data that extract from cookie value.
 // The key is stored session cookie value.
 func (store *SessionCookieStore) Load(key string) (sess Session) {
-	decoded := store.decode(key)
+	defer func() {
+		if err := recover(); err != nil {
+			if err, ok := err.(error); ok {
+				panic(NewErrSession(err.Error()))
+			}
+			panic(err)
+		}
+	}()
+	decoded, err := store.decode(key)
+	if err != nil {
+		panic(err)
+	}
 	unsigned, err := store.verify(decoded)
 	if err != nil {
 		panic(err)
 	}
-	decrypted := store.decrypt(unsigned)
+	decrypted, err := store.decrypt(unsigned)
+	if err != nil {
+		panic(err)
+	}
 	if err := codec.NewDecoderBytes(decrypted, &codec.MsgpackHandle{}).Decode(&sess); err != nil {
 		panic(err)
 	}
@@ -141,10 +158,10 @@ func (store *SessionCookieStore) Load(key string) (sess Session) {
 }
 
 // encrypt returns encrypted data by AES-256-CBC.
-func (store *SessionCookieStore) encrypt(buf []byte) []byte {
+func (store *SessionCookieStore) encrypt(buf []byte) ([]byte, error) {
 	block, err := aes.NewCipher([]byte(appConfig.Session.SecretKey))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	// padding for CBC
 	rem := (aes.BlockSize - len(buf)%aes.BlockSize) % aes.BlockSize
@@ -154,24 +171,24 @@ func (store *SessionCookieStore) encrypt(buf []byte) []byte {
 	encrypted := make([]byte, aes.BlockSize+len(buf))
 	iv := encrypted[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		panic(err)
+		return nil, err
 	}
 	mode := cipher.NewCBCEncrypter(block, iv)
 	mode.CryptBlocks(encrypted[aes.BlockSize:], buf)
-	return encrypted
+	return encrypted, nil
 }
 
 // decrypt returns decrypted data from crypted data by AES-256-CBC.
-func (store *SessionCookieStore) decrypt(buf []byte) []byte {
+func (store *SessionCookieStore) decrypt(buf []byte) ([]byte, error) {
 	block, err := aes.NewCipher([]byte(appConfig.Session.SecretKey))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	iv := buf[:aes.BlockSize]
 	decrypted := buf[aes.BlockSize:]
 	mode := cipher.NewCBCDecrypter(block, iv)
 	mode.CryptBlocks(decrypted, decrypted)
-	return decrypted
+	return decrypted, nil
 }
 
 // encode returns encoded string by Base64 with URLEncoding.
@@ -189,7 +206,7 @@ func (store *SessionCookieStore) encode(src []byte) string {
 }
 
 // decode returns decoded data from encoded data by Base64 with URLEncoding.
-func (store *SessionCookieStore) decode(src string) []byte {
+func (store *SessionCookieStore) decode(src string) ([]byte, error) {
 	size := len(src)
 	rem := (4 - size%4) % 4
 	buf := make([]byte, size+rem)
@@ -199,9 +216,9 @@ func (store *SessionCookieStore) decode(src string) []byte {
 	}
 	n, err := base64.URLEncoding.Decode(buf, buf)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return buf[:n]
+	return buf[:n], nil
 }
 
 // sign returns signed data.
