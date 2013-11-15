@@ -22,6 +22,7 @@ var commands = []command{
 	&newCommand{},
 	&generateCommand{},
 	&buildCommand{},
+	&runCommand{},
 }
 
 func usage() {
