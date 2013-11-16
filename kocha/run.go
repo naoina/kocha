@@ -3,12 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/howeyc/fsnotify"
 	"github.com/naoina/kocha"
 	"os"
 	"os/exec"
 	"path/filepath"
 )
 
+// Default environment
 const DEFAULT_ENV = "dev"
 
 type runCommand struct {
@@ -46,14 +48,50 @@ func (c *runCommand) Run() {
 		panic(err)
 	}
 	appName := filepath.Base(dir)
-	c.execCmd("go", "build", "-o", appName, env+".go")
-	c.execCmd(filepath.Join(dir, appName))
+	src := env + ".go"
+	for {
+		c.watchApp(dir, appName, src)
+	}
 }
 
-func (c *runCommand) execCmd(name string, args ...string) {
+func (c *runCommand) watchApp(dir, appName, src string) {
+	cmd := c.execCmd("go", "build", "-o", appName, src)
+	if err := cmd.Wait(); err == nil {
+		cmd = c.execCmd(filepath.Join(dir, appName))
+	}
+	defer cmd.Process.Kill()
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		panic(err)
+	}
+	defer watcher.Close()
+	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.Name()[0] == '.' {
+			return filepath.SkipDir
+		}
+		if err := watcher.Watch(path); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		panic(err)
+	}
+	select {
+	case <-watcher.Event:
+	case err := <-watcher.Error:
+		panic(err)
+	}
+	fmt.Println("Reloading...\n")
+}
+
+func (c *runCommand) execCmd(name string, args ...string) *exec.Cmd {
 	cmd := exec.Command(name, args...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := cmd.Start(); err != nil {
 		kocha.PanicOnError(c, "abort: %v", err)
 	}
+	return cmd
 }
