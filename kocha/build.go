@@ -16,6 +16,7 @@ import (
 
 type buildCommand struct {
 	flag *flag.FlagSet
+	all  bool
 }
 
 func (c *buildCommand) Name() string {
@@ -31,10 +32,11 @@ func (c *buildCommand) Short() string {
 }
 
 func (c *buildCommand) Usage() string {
-	return fmt.Sprintf("%s ENV", c.Name())
+	return fmt.Sprintf("%s [options] ENV", c.Name())
 }
 
 func (c *buildCommand) DefineFlags(fs *flag.FlagSet) {
+	fs.BoolVar(&c.all, "a", false, "make the true all-in-one binary")
 	c.flag = fs
 }
 
@@ -73,11 +75,12 @@ func (c *buildCommand) Run() {
 	defer file.Close()
 	builderTemplatePath := filepath.Join(skeletonDir, "builder.go")
 	t := template.Must(template.ParseFiles(builderTemplatePath))
-	data := map[string]string{
+	data := map[string]interface{}{
 		"configImportPath":      configPkg.ImportPath,
 		"controllersImportPath": controllersPkg.ImportPath,
 		"mainTemplate":          string(mainTemplate),
 		"mainFilePath":          mainFilePath,
+		"resources":             c.collectResourcePaths(filepath.Join(dir, kocha.StaticDir)),
 	}
 	if err := t.Execute(file, data); err != nil {
 		kocha.PanicOnError(c, "abort: failed to write file: %v", err)
@@ -104,4 +107,29 @@ func (c *buildCommand) execCmd(cmd string, args ...string) {
 	if msg, err := command.CombinedOutput(); err != nil {
 		kocha.PanicOnError(c, "abort: build failed: %v\n%v", err, string(msg))
 	}
+}
+
+func (c *buildCommand) collectResourcePaths(root string) map[string]string {
+	result := make(map[string]string)
+	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.Name()[0] == '.' {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if info.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		result[rel] = path
+		return nil
+	})
+	return result
 }

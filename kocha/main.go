@@ -62,7 +62,20 @@ func main() {
 		case cmd.Name(), cmd.Alias():
 			flagSet := flag.NewFlagSet(cmd.Name(), flag.ExitOnError)
 			flagSet.Usage = func() {
-				fmt.Fprintf(os.Stderr, "usage: %s %s\n", progName, cmd.Usage())
+				var flags []*flag.Flag
+				flagSet.VisitAll(func(f *flag.Flag) {
+					flags = append(flags, f)
+				})
+				var buf bytes.Buffer
+				template.Must(template.New("usage").Parse(
+					`usage: %s %s
+{{if .}}
+Options:
+{{range .}}
+    -{{.Name|printf "%-12s"}} {{.Usage}}
+{{end}}{{end}}
+`)).Execute(&buf, flags)
+				fmt.Fprintf(os.Stderr, buf.String(), progName, cmd.Usage())
 			}
 			cmd.DefineFlags(flagSet)
 			flagSet.Parse(flag.Args()[1:])

@@ -11,6 +11,9 @@ import (
 
 func main() {
 	kocha.Init({{.appConfig|goString}})
+	{{range $name, $data := .resources}}
+	kocha.AddResource("{{$name}}", kocha.Gunzip({{$data|printf "%q"}}))
+	{{end}}
 	kocha.Run("{{.addr}}", {{.port}})
 }
 

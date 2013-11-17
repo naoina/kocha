@@ -18,7 +18,7 @@ func Test_buildCommand(t *testing.T) {
 		{"Name", cmd.Name(), "build"},
 		{"Alias", cmd.Alias(), "b"},
 		{"Short", cmd.Short(), "build your application"},
-		{"Usage", cmd.Usage(), "build ENV"},
+		{"Usage", cmd.Usage(), "build [options] ENV"},
 	} {
 		name, actual, expected := v[0], v[1], v[2]
 		if !reflect.DeepEqual(actual, expected) {

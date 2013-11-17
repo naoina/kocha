@@ -119,33 +119,29 @@ func (c *Controller) RenderError(statusCode int, context ...Context) Result {
 // Sendfile returns result of any content.
 // The path argument specifies an absolute or relative path.
 // If absolute path, read the content from the path as it is.
-// If relative path, add AppPath and StaticDir to the prefix of the path and
-// then read the content from the path that.
+// If relative path, First, Try to get the content from included resources and
+// returns it if successful. Otherwise, Add AppPath and StaticDir to the prefix
+// of the path and then will read the content from the path that.
 // Also, set ContentType detect from content if c.Response.ContentType is empty.
 func (c *Controller) SendFile(path string) Result {
+	var file io.ReadSeeker
 	path = filepath.FromSlash(path)
-	if !filepath.IsAbs(path) {
-		path = filepath.Join(appConfig.AppPath, StaticDir, path)
-	}
-	if _, err := os.Stat(path); err != nil {
-		return c.RenderError(http.StatusNotFound)
-	}
-	file, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
-	if c.Response.ContentType == "" {
-		buf := make([]byte, 512)
-		if n, err := io.ReadFull(file, buf); err != nil {
-			if err != io.EOF && err != io.ErrUnexpectedEOF {
-				panic(err)
-			}
-			buf = buf[:n]
+	if rc, ok := includedResources[path]; ok {
+		file = rc.Open()
+	} else {
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(appConfig.AppPath, StaticDir, path)
 		}
-		c.Response.ContentType = http.DetectContentType(buf)
-		if _, err := file.Seek(0, os.SEEK_SET); err != nil {
+		if _, err := os.Stat(path); err != nil {
+			return c.RenderError(http.StatusNotFound)
+		}
+		var err error
+		if file, err = os.Open(path); err != nil {
 			panic(err)
 		}
+	}
+	if c.Response.ContentType == "" {
+		c.Response.ContentType = detectContentType(file)
 	}
 	return &ResultContent{
 		Reader: file,

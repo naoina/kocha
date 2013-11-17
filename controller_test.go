@@ -447,6 +447,44 @@ func TestControllerSendFile(t *testing.T) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
 	}()
+
+	// test with included resources
+	func() {
+		defer func() {
+			includedResources = make(map[string]*resource)
+		}()
+		includedResources["testrcname"] = &resource{[]byte("foobarbaz")}
+		c := newTestController()
+		result, ok := c.SendFile("testrcname").(*ResultContent)
+		if !ok {
+			t.Errorf("Expect %T, but %T", &ResultContent{}, result)
+		}
+
+		actual, err := ioutil.ReadAll(result.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := []byte("foobarbaz")
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
+
+	// test detect content type with included resources
+	func() {
+		defer func() {
+			includedResources = make(map[string]*resource)
+		}()
+		c := newTestController()
+		c.Response.ContentType = ""
+		includedResources["testrcname"] = &resource{[]byte("\x89PNG\x0d\x0a\x1a\x0a")}
+		c.SendFile("testrcname")
+		actual := c.Response.ContentType
+		expected := "image/png"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
 }
 
 func TestControllerRedirect(t *testing.T) {

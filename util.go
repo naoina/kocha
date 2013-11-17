@@ -9,6 +9,7 @@ import (
 	htmltemplate "html/template"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"reflect"
@@ -228,23 +229,16 @@ func GoString(i interface{}) string {
 	case *regexp.Regexp:
 		return fmt.Sprintf(`regexp.MustCompile(%q)`, t)
 	case *htmltemplate.Template:
-		var gzipped bytes.Buffer
-		w, err := gzip.NewWriterLevel(&gzipped, gzip.BestCompression)
-		if err != nil {
-			panic(err)
-		}
+		var buf bytes.Buffer
 		for _, t := range t.Templates() {
 			if t.Name() == "content" {
 				continue
 			}
-			if _, err := w.Write([]byte(reflect.ValueOf(t).Elem().FieldByName("text").Elem().FieldByName("text").String())); err != nil {
+			if _, err := buf.WriteString(reflect.ValueOf(t).Elem().FieldByName("text").Elem().FieldByName("text").String()); err != nil {
 				panic(err)
 			}
 		}
-		if err := w.Close(); err != nil {
-			panic(err)
-		}
-		return fmt.Sprintf(`template.Must(template.New(%q).Funcs(kocha.TemplateFuncs).Parse(kocha.Gunzip(%q)))`, t.Name(), gzipped.String())
+		return fmt.Sprintf(`template.Must(template.New(%q).Funcs(kocha.TemplateFuncs).Parse(kocha.Gunzip(%q)))`, t.Name(), Gzip(buf.String()))
 	case fmt.GoStringer:
 		return t.GoString()
 	case nil:
@@ -316,6 +310,22 @@ func GoString(i interface{}) string {
 	return buf.String()
 }
 
+// Gzip returns gzipped string.
+func Gzip(raw string) string {
+	var gzipped bytes.Buffer
+	w, err := gzip.NewWriterLevel(&gzipped, gzip.BestCompression)
+	if err != nil {
+		panic(err)
+	}
+	if _, err := w.Write([]byte(raw)); err != nil {
+		panic(err)
+	}
+	if err := w.Close(); err != nil {
+		panic(err)
+	}
+	return gzipped.String()
+}
+
 // Gunzip returns unzipped string.
 func Gunzip(gz string) string {
 	r, err := gzip.NewReader(bytes.NewReader([]byte(gz)))
@@ -327,4 +337,20 @@ func Gunzip(gz string) string {
 		panic(err)
 	}
 	return string(result)
+}
+
+func detectContentType(r io.Reader) (contentType string) {
+	buf := make([]byte, 512)
+	if n, err := io.ReadFull(r, buf); err != nil {
+		if err != io.EOF && err != io.ErrUnexpectedEOF {
+			panic(err)
+		}
+		buf = buf[:n]
+	}
+	if rs, ok := r.(io.Seeker); ok {
+		if _, err := rs.Seek(0, os.SEEK_SET); err != nil {
+			panic(err)
+		}
+	}
+	return http.DetectContentType(buf)
 }

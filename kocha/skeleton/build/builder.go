@@ -4,6 +4,7 @@ package main
 
 import (
 	"github.com/naoina/kocha"
+	"io/ioutil"
 	config "{{.configImportPath}}"
 	"os"
 	"text/template"
@@ -24,12 +25,26 @@ func main() {
 	}
 	defer file.Close()
 	appConfig := config.AppConfig
+	res := map[string]string{
+		{{range $name, $path := .resources}}
+		"{{$name}}": "{{$path}}",
+		{{end}}
+	}
+	resources := make(map[string]string)
+	for name, path := range res {
+		buf, err := ioutil.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
+		resources[name] = kocha.Gzip(string(buf))
+	}
 	data := map[string]interface{}{
 		"appConfig":             appConfig,
 		"addr":                  config.Addr,
 		"port":                  config.Port,
 		"config":                kocha.Config(appConfig.AppName),
 		"controllersImportPath": "{{.controllersImportPath}}",
+		"resources":             resources,
 	}
 	if err := t.Execute(file, data); err != nil {
 		panic(err)
