@@ -70,7 +70,10 @@ func (c *runCommand) watchApp(dir, appName, src string) {
 			return err
 		}
 		if info.Name()[0] == '.' {
-			return filepath.SkipDir
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 		if err := watcher.Watch(path); err != nil {
 			return err
