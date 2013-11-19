@@ -66,14 +66,14 @@ func (c *buildCommand) Run() {
 	if err != nil {
 		panic(err)
 	}
-	mainFilePath := filepath.Join(tmpDir, "main.go")
-	builderFilePath := filepath.Join(tmpDir, "builder.go")
+	mainFilePath := filepath.ToSlash(filepath.Join(tmpDir, "main.go"))
+	builderFilePath := filepath.ToSlash(filepath.Join(tmpDir, "builder.go"))
 	file, err := os.Create(builderFilePath)
 	if err != nil {
 		kocha.PanicOnError(c, "abort: failed to create file: %v", err)
 	}
 	defer file.Close()
-	builderTemplatePath := filepath.Join(skeletonDir, "builder.go")
+	builderTemplatePath := filepath.ToSlash(filepath.Join(skeletonDir, "builder.go"))
 	t := template.Must(template.ParseFiles(builderTemplatePath))
 	data := map[string]interface{}{
 		"configImportPath":      configPkg.ImportPath,
@@ -85,6 +85,7 @@ func (c *buildCommand) Run() {
 	if err := t.Execute(file, data); err != nil {
 		kocha.PanicOnError(c, "abort: failed to write file: %v", err)
 	}
+	file.Close()
 	c.execCmd("go", "run", builderFilePath)
 	c.execCmd("go", "build", "-o", appName, mainFilePath)
 	fmt.Printf("build all-in-one binary to %v\n", filepath.Join(dir, appName))
@@ -128,7 +129,7 @@ func (c *buildCommand) collectResourcePaths(root string) map[string]string {
 		if err != nil {
 			return err
 		}
-		result[rel] = path
+		result[rel] = filepath.ToSlash(path)
 		return nil
 	})
 	return result
