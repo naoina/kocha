@@ -81,7 +81,7 @@ func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {
 				if err != nil {
 					return err
 				}
-				if filepath.HasPrefix(name, "layouts/") {
+				if filepath.HasPrefix(filepath.ToSlash(name), "layouts/") {
 					if layoutPath, ok := layoutPaths[appName][name]; ok {
 						return fmt.Errorf("duplicate name of layout file:\n  1. %s\n  2. %s\n", layoutPath, path)
 					}
