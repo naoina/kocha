@@ -74,7 +74,14 @@ func Run(addr string, port int) {
 	if !initialized {
 		log.Fatalln("Uninitialized. Please call the kocha.Init() before kocha.Run()")
 	}
-	l, reloaded := serverListener(addr, port)
+	if addr == "" {
+		addr = DefaultHttpAddr
+	}
+	if port == 0 {
+		port = DefaultHttpPort
+	}
+	addr = net.JoinHostPort(addr, strconv.Itoa(port))
+	l, reloaded := serverListener(addr)
 	listener := &waitableListener{
 		Listener: l,
 		wg:       &sync.WaitGroup{},
@@ -119,7 +126,7 @@ func gracefulRestart(listener *waitableListener) (pid int) {
 	return proc.Pid
 }
 
-func serverListener(addr string, port int) (listener net.Listener, reloaded bool) {
+func serverListener(addr string) (listener net.Listener, reloaded bool) {
 	if fdStr := os.Getenv(fdKey); fdStr != "" {
 		fd, err := strconv.Atoi(fdStr)
 		if err != nil {
@@ -132,13 +139,6 @@ func serverListener(addr string, port int) (listener net.Listener, reloaded bool
 		}
 		return l, true
 	}
-	if addr == "" {
-		addr = DefaultHttpAddr
-	}
-	if port == 0 {
-		port = DefaultHttpPort
-	}
-	addr = net.JoinHostPort(addr, strconv.Itoa(port))
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		panic(err)
