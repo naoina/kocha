@@ -35,7 +35,17 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 	request.Body = http.MaxBytesReader(writer, request.Body, appConfig.MaxClientBodySize)
 	ac := controller.Elem()
 	ccValue := ac.FieldByName("Controller")
-	cc := ccValue.Interface().(Controller)
+	var cc *Controller
+	switch c := ccValue.Interface().(type) {
+	case Controller:
+		cc = &c
+	case *Controller:
+		cc = &Controller{}
+		ccValue.Set(reflect.ValueOf(cc))
+		ccValue = ccValue.Elem()
+	default:
+		panic(fmt.Errorf("Controller must be struct of %T, but %T", cc, c))
+	}
 	cc.Name = ac.Type().Name()
 	cc.Request = request
 	cc.Response = response
@@ -56,14 +66,14 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 			panic(err)
 		}
 		for _, m := range appConfig.Middlewares {
-			m.Before(&cc)
+			m.Before(cc)
 		}
-		ccValue.Set(reflect.ValueOf(cc))
+		ccValue.Set(reflect.ValueOf(*cc))
 		r := method.Call(args)
 		for _, m := range appConfig.Middlewares {
-			m.After(&cc)
+			m.After(cc)
 		}
-		ccValue.Set(reflect.ValueOf(cc))
+		ccValue.Set(reflect.ValueOf(*cc))
 		return r
 	}()
 	response.WriteHeader(response.StatusCode)

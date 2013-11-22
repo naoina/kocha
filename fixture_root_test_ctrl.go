@@ -1,7 +1,7 @@
 package kocha
 
 type FixtureRootTestCtrl struct {
-	Controller
+	*Controller
 }
 
 func (c *FixtureRootTestCtrl) Get() Result {

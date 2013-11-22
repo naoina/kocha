@@ -164,7 +164,7 @@ func (c *Controller) Redirect(url string, permanently bool) Result {
 
 // StaticServe is pre-defined controller for serve a static file.
 type StaticServe struct {
-	Controller
+	*Controller
 }
 
 func (c *StaticServe) Get(path *url.URL) Result {
@@ -172,7 +172,7 @@ func (c *StaticServe) Get(path *url.URL) Result {
 }
 
 type ErrorController struct {
-	Controller
+	*Controller
 	StatusCode int
 }
 

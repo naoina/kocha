@@ -527,7 +527,7 @@ func TestStaticServeGet(t *testing.T) {
 		panic(err)
 	}
 	w := httptest.NewRecorder()
-	c := &StaticServe{}
+	c := &StaticServe{Controller: &Controller{}}
 	c.Controller.Request = NewRequest(req)
 	c.Controller.Response = NewResponse(w)
 	u, err := url.Parse(tmpFile.Name())
@@ -565,6 +565,7 @@ func TestErrorControllerGet(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 	c := &ErrorController{
+		Controller: &Controller{},
 		StatusCode: http.StatusTeapot,
 	}
 	c.Controller.Request = NewRequest(req)
