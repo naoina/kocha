@@ -65,7 +65,7 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 		ccValue.Set(reflect.ValueOf(cc))
 		ccValue = ccValue.Elem()
 	default:
-		panic(fmt.Errorf("Controller field must be struct of %T, but %T", cc, c))
+		panic(fmt.Errorf("BUG: Controller field must be struct of %T or that pointer, but %T", cc, c))
 	}
 	cc.Name = ac.Type().Name()
 	cc.Request = request

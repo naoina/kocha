@@ -51,6 +51,11 @@ var (
 
 func InitRouteTable(routeTable RouteTable) RouteTable {
 	for _, route := range routeTable {
+		if err := route.validate(); err != nil {
+			panic(err)
+		}
+	}
+	for _, route := range routeTable {
 		route.buildMethodTypes()
 		route.buildRegexpPath()
 	}
@@ -259,4 +264,18 @@ func (route *Route) buildRegexpPath() {
 		regexpBuf.WriteString(fmt.Sprintf(`/(?P<%s>%s)`, regexp.QuoteMeta(name), rePatStr))
 	}
 	route.RegexpPath = regexp.MustCompile(fmt.Sprintf("^%s$", regexpBuf.String()))
+}
+
+func (r *Route) validate() error {
+	c := reflect.ValueOf(r.Controller)
+	if c.Kind() != reflect.Struct || !c.FieldByName("Controller").IsValid() {
+		return fmt.Errorf(`Controller of route "%s" must be any type of embedded %T or that pointer, but %T`, r.Name, Controller{}, r.Controller)
+	}
+	switch cc := c.FieldByName("Controller").Interface().(type) {
+	case Controller:
+	case *Controller:
+	default:
+		return fmt.Errorf("Controller field must be struct of %T or that pointer, but %T", Controller{}, cc)
+	}
+	return nil
 }

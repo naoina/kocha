@@ -80,6 +80,31 @@ func TestInitRouteTable(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %q, but %q", expected, actual)
 	}
+
+	for _, v := range []interface{}{
+		nil,
+		"",
+		"hoge",
+		struct{ Controller interface{} }{},
+		struct{ Controller interface{} }{Controller: ""},
+		struct{ Controller interface{} }{Controller: "hoge"},
+		struct{ Controller interface{} }{Controller: 1},
+	} {
+		func() {
+			defer func() {
+				if err := recover(); err == nil {
+					t.Errorf("panic doesn't happened by %v", v)
+				}
+			}()
+			InitRouteTable(RouteTable{
+				{
+					Name:       "testroute",
+					Path:       "/",
+					Controller: v,
+				},
+			})
+		}()
+	}
 }
 
 func TestReverse(t *testing.T) {
