@@ -5,7 +5,7 @@ import (
 )
 
 type {{.Name}} struct {
-	kocha.Controller
+	*kocha.Controller
 }
 
 func (c *{{.Name}}) Get() kocha.Result {
