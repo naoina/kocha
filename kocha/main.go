@@ -9,6 +9,7 @@ import (
 	"text/template"
 )
 
+// command is the interface that sub-command.
 type command interface {
 	Name() string
 	Alias() string
@@ -18,6 +19,7 @@ type command interface {
 	Run()
 }
 
+// Command list.
 var commands = []command{
 	&newCommand{},
 	&generateCommand{},
@@ -25,6 +27,7 @@ var commands = []command{
 	&runCommand{},
 }
 
+// General usage.
 func usage() {
 	var buf bytes.Buffer
 	template.Must(template.New("usage").Parse(

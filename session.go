@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+// SessionConfig represents a configuration of session.
 type SessionConfig struct {
 	// Name of cookie (key)
 	Name string
@@ -34,12 +35,13 @@ type SessionConfig struct {
 	SignedKey      string
 }
 
+// SessionStore is the interface that session store.
 type SessionStore interface {
 	Save(sess Session) (key string)
 	Load(key string) (sess Session)
 }
 
-// A Session represents the session data store.
+// Session represents a session data store.
 type Session map[string]string
 
 const (
@@ -240,14 +242,14 @@ func (store *SessionCookieStore) verify(src []byte) (unsigned []byte, err error)
 	return unsigned, nil
 }
 
-// hash returns hashed data by HMAC-SHA1
+// hash returns hashed data by HMAC-SHA1.
 func (store *SessionCookieStore) hash(src []byte) []byte {
 	hash := hmac.New(sha1.New, []byte(appConfig.Session.SignedKey))
 	hash.Write(src)
 	return hash.Sum(nil)
 }
 
-// Generate a random bytes
+// Generate a random bytes.
 func GenerateRandomKey(length int) []byte {
 	result := make([]byte, length)
 	if _, err := io.ReadFull(rand.Reader, result); err != nil {

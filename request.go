@@ -6,16 +6,19 @@ import (
 	"strings"
 )
 
+// Request represents a request.
 type Request struct {
 	*http.Request
 }
 
+// NewRequest returns a new Request that given a *http.Request.
 func NewRequest(req *http.Request) *Request {
 	return &Request{
 		Request: req,
 	}
 }
 
+// Scheme returns current scheme of HTTP connection.
 func (r *Request) Scheme() string {
 	switch {
 	case os.Getenv("HTTPS") == "on", os.Getenv("HTTP_X_FORWARDED_SSL") == "on":
@@ -28,6 +31,7 @@ func (r *Request) Scheme() string {
 	return "http"
 }
 
+// IsSSL returns whether the current connection is secure.
 func (r *Request) IsSSL() bool {
 	return r.Scheme() == "https"
 }

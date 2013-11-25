@@ -10,22 +10,27 @@ import (
 	"text/template"
 )
 
+// newCommand implements `command` interface for `generate` command.
 type generateCommand struct {
 	flag *flag.FlagSet
 }
 
+// Name returns name of `generate` command.
 func (c *generateCommand) Name() string {
 	return "generate"
 }
 
+// Alias returns alias of `generate` command.
 func (c *generateCommand) Alias() string {
 	return "g"
 }
 
+// Short returns short description for help.
 func (c *generateCommand) Short() string {
 	return "generate files"
 }
 
+// Usage returns usage of `generate` command.
 func (c *generateCommand) Usage() string {
 	var buf bytes.Buffer
 	template.Must(template.New("usage").Parse(`%s GENERATOR [args]
@@ -41,6 +46,7 @@ func (c *generateCommand) DefineFlags(fs *flag.FlagSet) {
 	c.flag = fs
 }
 
+// Run execute the process for `generate` command.
 func (c *generateCommand) Run() {
 	generatorName := c.flag.Arg(0)
 	if generatorName == "" {

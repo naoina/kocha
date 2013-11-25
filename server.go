@@ -85,6 +85,9 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 	ccValue.Set(reflect.ValueOf(*cc))
 }
 
+// Run starts Kocha app.
+//
+// addr is string of address for bind, port is port for bind.
 func Run(addr string, port int) {
 	if !initialized {
 		log.Fatalln("Uninitialized. Please call the kocha.Init() before kocha.Run()")

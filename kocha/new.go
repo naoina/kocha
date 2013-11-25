@@ -11,22 +11,27 @@ import (
 	"strings"
 )
 
+// newCommand implements `command` interface for `new` command.
 type newCommand struct {
 	flag *flag.FlagSet
 }
 
+// Name returns name of `new` command.
 func (c *newCommand) Name() string {
 	return "new"
 }
 
+// Alias returns alias of `new` command.
 func (c *newCommand) Alias() string {
 	return ""
 }
 
+// Short returns short description for help.
 func (c *newCommand) Short() string {
 	return "create a new application"
 }
 
+// Usage returns usage of `new` command.
 func (c *newCommand) Usage() string {
 	return fmt.Sprintf("%s APP_PATH", c.Name())
 }
@@ -35,6 +40,7 @@ func (c *newCommand) DefineFlags(fs *flag.FlagSet) {
 	c.flag = fs
 }
 
+// Run execute the process for `new` command.
 func (c *newCommand) Run() {
 	appPath := c.flag.Arg(0)
 	if appPath == "" {

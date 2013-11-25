@@ -55,6 +55,7 @@ var (
 
 type TemplateSet map[string]map[string]*template.Template
 
+// Get gets a parsed template.
 func (t TemplateSet) Get(appName, name, format string) *template.Template {
 	return t[appName][fmt.Sprintf("%s.%s", ToSnakeCase(name), format)]
 }
@@ -63,6 +64,7 @@ func (t TemplateSet) Ident(appName, name, format string) string {
 	return fmt.Sprintf("%s:%s.%s", appName, ToSnakeCase(name), format)
 }
 
+// TemplateSetFromPaths returns TemplateSet constructed from templateSetPaths.
 func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {
 	layoutPaths := make(map[string]map[string]string)
 	templatePaths := make(map[string]map[string]string)

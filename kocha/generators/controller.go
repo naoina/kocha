@@ -21,10 +21,12 @@ var (
 	routeTableTypeName = reflect.TypeOf(kocha.RouteTable{}).Name()
 )
 
+// controllerGenerator is generator of controller.
 type controllerGenerator struct {
 	flag *flag.FlagSet
 }
 
+// Usage returns usage of controller generator.
 func (g *controllerGenerator) Usage() string {
 	return "controller NAME"
 }
@@ -33,6 +35,7 @@ func (g *controllerGenerator) DefineFlags(fs *flag.FlagSet) {
 	g.flag = fs
 }
 
+// Generate generate a controller templates.
 func (g *controllerGenerator) Generate() {
 	name := g.flag.Arg(0)
 	if name == "" {

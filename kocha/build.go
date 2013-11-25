@@ -14,23 +14,30 @@ import (
 	"text/template"
 )
 
+// buildCommand implements `command` interface for `build` command.
 type buildCommand struct {
 	flag *flag.FlagSet
-	all  bool
+
+	// Whether the build as the True All-in-One binary.
+	all bool
 }
 
+// Name returns name of `build` command.
 func (c *buildCommand) Name() string {
 	return "build"
 }
 
+// Alias returns alias of `build` command.
 func (c *buildCommand) Alias() string {
 	return "b"
 }
 
+// Short returns short description for help.
 func (c *buildCommand) Short() string {
 	return "build your application"
 }
 
+// Usage returns usage of `build` command.
 func (c *buildCommand) Usage() string {
 	return fmt.Sprintf("%s [options] ENV", c.Name())
 }
@@ -40,6 +47,7 @@ func (c *buildCommand) DefineFlags(fs *flag.FlagSet) {
 	c.flag = fs
 }
 
+// Run execute the process for `build` command.
 func (c *buildCommand) Run() {
 	env := c.flag.Arg(0)
 	if env == "" {

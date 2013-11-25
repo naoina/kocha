@@ -40,6 +40,7 @@ func initLogger(logger *Logger) *Logger {
 	return logger
 }
 
+// logger is the interface that logger.
 type logger interface {
 	Output(calldepth int, s string) error
 	SetPrefix(prefix string)
@@ -54,6 +55,7 @@ func (l *nullLogger) GoString() string {
 	return "kocha.NullLogger()"
 }
 
+// NullLogger returns a new null logger.
 func NullLogger() logger {
 	return &nullLogger{log.New(ioutil.Discard, "", 0)}
 }
@@ -66,6 +68,7 @@ func (l *consoleLogger) GoString() string {
 	return fmt.Sprintf("kocha.ConsoleLogger(%d)", l.Flags())
 }
 
+// ConsoleLogger returns a new console logger.
 func ConsoleLogger(flag int) logger {
 	if flag == -1 {
 		flag = defaultLflag
@@ -82,6 +85,7 @@ func (l *fileLogger) GoString() string {
 	return fmt.Sprintf("kocha.FileLogger(%q, %d)", l.path, l.Flags())
 }
 
+// FileLogger returns a new file logger that writes to path.
 func FileLogger(path string, flag int) logger {
 	if flag == -1 {
 		flag = defaultLflag
@@ -102,25 +106,37 @@ func FileLogger(path string, flag int) logger {
 
 type Loggers []logger
 
+// Collection of builtin loggers.
 type Logger struct {
+	// Loggers for debug.
 	DEBUG Loggers
-	INFO  Loggers
-	WARN  Loggers
+
+	// Loggers for info.
+	INFO Loggers
+
+	// Loggers for warning.
+	WARN Loggers
+
+	// Loggers for error.
 	ERROR Loggers
 }
 
+// Debug prints the log using DEBUG loggers.
 func (l *Logger) Debug(format string, v ...interface{}) {
 	l.output(l.DEBUG, format, v...)
 }
 
+// Info prints the log using INFO loggers.
 func (l *Logger) Info(format string, v ...interface{}) {
 	l.output(l.INFO, format, v...)
 }
 
+// Warn prints the log using WARN loggers.
 func (l *Logger) Warn(format string, v ...interface{}) {
 	l.output(l.WARN, format, v...)
 }
 
+// Error prints the log using ERROR loggers.
 func (l *Logger) Error(format string, v ...interface{}) {
 	l.output(l.ERROR, format, v...)
 }

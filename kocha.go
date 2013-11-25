@@ -11,6 +11,7 @@ const (
 	StaticDir                       = "public"
 )
 
+// AppConfig represents a application-scope configuration.
 type AppConfig struct {
 	AppPath           string
 	AppName           string
@@ -23,12 +24,17 @@ type AppConfig struct {
 }
 
 var (
+	// Global logger
 	Log *Logger
 
-	appConfig   *AppConfig
+	// The configuration of application.
+	appConfig *AppConfig
+
+	// Whether the app has been initialized.
 	initialized bool = false
 )
 
+// Init initialize the app.
 func Init(config *AppConfig) {
 	appConfig = config
 	if appConfig.MaxClientBodySize < 1 {

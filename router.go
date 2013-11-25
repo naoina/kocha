@@ -23,6 +23,7 @@ type (
 
 type RouteTable []*Route
 
+// Route represents a route.
 type Route struct {
 	Name        string
 	Path        string
@@ -49,6 +50,9 @@ var (
 	pathRegexp        = regexp.MustCompile(`/(?:(?::([\w-]+))|(?:\*([\w-/]+))|[\w-]*)`)
 )
 
+// InitRouteTable returns initialized RouteTable.
+//
+// Returned RouteTable is always clean so that validate a route.
 func InitRouteTable(routeTable RouteTable) RouteTable {
 	for _, route := range routeTable {
 		if err := route.validate(); err != nil {
@@ -62,6 +66,7 @@ func InitRouteTable(routeTable RouteTable) RouteTable {
 	return routeTable
 }
 
+// Reverse returns path of route by name and any params.
 func Reverse(name string, v ...interface{}) string {
 	for _, route := range appConfig.RouteTable {
 		if route.Name == name {

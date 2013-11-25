@@ -4,17 +4,20 @@ import (
 	"strconv"
 )
 
+// Middleware is the interface that middleware.
 type Middleware interface {
 	Before(c *Controller)
 	After(c *Controller)
 }
 
 var (
+	// Default middlewares.
 	DefaultMiddlewares = []Middleware{
 		&ResponseContentTypeMiddleware{},
 	}
 )
 
+// Middleware that set Content-Type header.
 type ResponseContentTypeMiddleware struct{}
 
 func (m *ResponseContentTypeMiddleware) Before(c *Controller) {
