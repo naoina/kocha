@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/naoina/kocha"
-	"github.com/naoina/kocha/kocha/generators"
+	"github.com/naoina/kocha/kocha/generator"
 	"os"
 	"text/template"
 )
@@ -38,7 +38,7 @@ func (c *generateCommand) Usage() string {
 Generators:
 {{range $name, $ := .}}
     {{$name|printf "%-6s"}}{{end}}
-`)).Execute(&buf, generators.Generators)
+`)).Execute(&buf, generator.Generators)
 	return fmt.Sprintf(buf.String(), c.Name())
 }
 
@@ -52,7 +52,7 @@ func (c *generateCommand) Run() {
 	if generatorName == "" {
 		kocha.PanicOnError(c, "abort: no GENERATOR given")
 	}
-	generator := generators.Get(generatorName)
+	generator := generator.Get(generatorName)
 	if generator == nil {
 		kocha.PanicOnError(c, "abort: could not find generator: %v", generatorName)
 	}
