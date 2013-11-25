@@ -10,4 +10,4 @@ install:
 script:
   - go test github.com/naoina/kocha
   - go test github.com/naoina/kocha/kocha
-  - go test github.com/naoina/kocha/kocha/generators
+  - go test github.com/naoina/kocha/kocha/generator
