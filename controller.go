@@ -1,6 +1,9 @@
 package kocha
 
 import (
+	"bytes"
+	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -82,9 +85,12 @@ func (c *Controller) Render(context ...Context) Result {
 	if t == nil {
 		panic(errors.New("no such template: " + appConfig.TemplateSet.Ident(appConfig.AppName, c.Name, format)))
 	}
-	return &ResultTemplate{
-		Template: t,
-		Context:  ctx,
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, ctx); err != nil {
+		panic(err)
+	}
+	return &ResultContent{
+		Body: &buf,
 	}
 }
 
@@ -93,8 +99,12 @@ func (c *Controller) Render(context ...Context) Result {
 // ContentType set to "application/json" if not specified.
 func (c *Controller) RenderJSON(context interface{}) Result {
 	c.setContentTypeIfNotExists("application/json")
-	return &ResultJSON{
-		Context: context,
+	buf, err := json.Marshal(context)
+	if err != nil {
+		panic(err)
+	}
+	return &ResultContent{
+		Body: bytes.NewReader(buf),
 	}
 }
 
@@ -103,8 +113,12 @@ func (c *Controller) RenderJSON(context interface{}) Result {
 // ContentType set to "application/xml" if not specified.
 func (c *Controller) RenderXML(context interface{}) Result {
 	c.setContentTypeIfNotExists("application/xml")
-	return &ResultXML{
-		Context: context,
+	buf, err := xml.Marshal(context)
+	if err != nil {
+		panic(err)
+	}
+	return &ResultContent{
+		Body: bytes.NewReader(buf),
 	}
 }
 
@@ -113,8 +127,8 @@ func (c *Controller) RenderXML(context interface{}) Result {
 // ContentType set to "text/plain" if not specified.
 func (c *Controller) RenderText(content string) Result {
 	c.setContentTypeIfNotExists("text/plain")
-	return &ResultText{
-		Content: content,
+	return &ResultContent{
+		Body: bytes.NewReader([]byte(content)),
 	}
 }
 
@@ -145,13 +159,16 @@ func (c *Controller) RenderError(statusCode int, context ...Context) Result {
 	t := appConfig.TemplateSet.Get(appConfig.AppName, name, format)
 	if t == nil {
 		c.Response.ContentType = "text/plain"
-		return &ResultText{
-			Content: http.StatusText(statusCode),
+		return &ResultContent{
+			Body: bytes.NewReader([]byte(http.StatusText(statusCode))),
 		}
 	}
-	return &ResultTemplate{
-		Template: t,
-		Context:  ctx,
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, ctx); err != nil {
+		panic(err)
+	}
+	return &ResultContent{
+		Body: &buf,
 	}
 }
 
@@ -184,7 +201,7 @@ func (c *Controller) SendFile(path string) Result {
 		c.Response.ContentType = detectContentType(file)
 	}
 	return &ResultContent{
-		Reader: file,
+		Body: file,
 	}
 }
 

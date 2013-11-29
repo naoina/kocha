@@ -135,6 +135,25 @@ func TestServer(t *testing.T) {
 		t.Errorf("Expect %v, but %v", http.StatusTeapot, w.Code)
 	}
 
+	func() {
+		defer func() {
+			if err := recover(); err != nil {
+				t.Errorf("Expect doesn't panic, but panic")
+			}
+		}()
+		w = httptest.NewRecorder()
+		req, err = http.NewRequest("GET", "/panic_in_render", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		handler(w, req)
+		status = w.Code
+		if !reflect.DeepEqual(status, http.StatusInternalServerError) {
+			t.Errorf("Expect %v, but %v", http.StatusInternalServerError)
+		}
+	}()
+
+	// middleware tests
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("GET", "/", nil)
 	if err != nil {

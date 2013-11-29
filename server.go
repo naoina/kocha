@@ -37,10 +37,14 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 		result []reflect.Value
 	)
 	defer func() {
+		defer func() {
+			if err := recover(); err != nil {
+				logStackAndError(err)
+				http.Error(response, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+		}()
 		if err := recover(); err != nil {
-			buf := make([]byte, 4096)
-			runtime.Stack(buf, false)
-			Log.Error("%v\n%v", err, string(buf))
+			logStackAndError(err)
 			c := NewErrorController(http.StatusInternalServerError)
 			if cc == nil {
 				cc = &Controller{}
@@ -193,4 +197,10 @@ func (c *waitableConn) Close() error {
 	}
 	c.wg.Done()
 	return nil
+}
+
+func logStackAndError(err interface{}) {
+	buf := make([]byte, 4096)
+	runtime.Stack(buf, false)
+	Log.Error("%v\n%v", err, string(buf))
 }

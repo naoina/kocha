@@ -82,6 +82,15 @@ func newTestAppConfig() *AppConfig {
 				RegexpPath: regexp.MustCompile(`^/teapot$`),
 			},
 			{
+				Name:       "panic_in_render",
+				Path:       "/panic_in_render",
+				Controller: FixturePanicInRenderTestCtrl{},
+				MethodTypes: map[string]MethodArgs{
+					"Get": MethodArgs{},
+				},
+				RegexpPath: regexp.MustCompile(`^/panic_in_render$`),
+			},
+			{
 				Name:       "static",
 				Path:       "/static/*path",
 				Controller: StaticServe{},
@@ -101,4 +110,10 @@ func newTestAppConfig() *AppConfig {
 			SignedKey: "abcdefghijklmn",
 		},
 	}
+}
+
+type FixturePanicInRenderTestCtrl struct{ *Controller }
+
+func (c *FixturePanicInRenderTestCtrl) Get() Result {
+	return c.RenderXML(Context{}) // Context is unsupported type in XML.
 }

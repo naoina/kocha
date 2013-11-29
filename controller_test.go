@@ -19,24 +19,26 @@ func newControllerTestAppConfig() *AppConfig {
 		AppName: "testAppName",
 		TemplateSet: TemplateSet{
 			"testAppName": map[string]*template.Template{
-				"testctrlr.html":  template.Must(template.New("tmpl1").Parse(`tmpl1`)),
-				"testctrlr.json":  template.Must(template.New("tmpl2").Parse(`{"tmpl2":"content"}`)),
-				"errors/500.html": template.Must(template.New("tmpl3").Parse(`500 error`)),
-				"errors/400.html": template.Must(template.New("tmpl4").Parse(`400 error`)),
-				"errors/500.json": template.Must(template.New("tmpl5").Parse(`{"error":500}`)),
+				"testctrlr.html":     template.Must(template.New("tmpl1").Parse(`tmpl1`)),
+				"testctrlr_ctx.html": template.Must(template.New("tmpl1_ctx").Parse(`tmpl_ctx: {{.}}`)),
+				"testctrlr.json":     template.Must(template.New("tmpl2").Parse(`{"tmpl2":"content"}`)),
+				"testctrlr_ctx.json": template.Must(template.New("tmpl2_ctx").Parse("tmpl2_ctx: {{.}}")),
+				"errors/500.html":    template.Must(template.New("tmpl3").Parse(`500 error`)),
+				"errors/400.html":    template.Must(template.New("tmpl4").Parse(`400 error`)),
+				"errors/500.json":    template.Must(template.New("tmpl5").Parse(`{"error":500}`)),
 			},
 		},
 	}
 }
 
-func newTestController() *Controller {
+func newTestController(name string) *Controller {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		panic(err)
 	}
 	w := httptest.NewRecorder()
 	return &Controller{
-		Name:     "testctrlr",
+		Name:     name,
 		Request:  NewRequest(req),
 		Response: NewResponse(w),
 		Params:   Params{},
@@ -108,7 +110,7 @@ func TestControllerRender_with_too_many_contexts(t *testing.T) {
 			t.Error("panic doesn't happened")
 		}
 	}()
-	c := newTestController()
+	c := newTestController("testctrlr")
 	c.Render(Context{}, Context{})
 }
 
@@ -118,12 +120,13 @@ func TestControllerRender_without_Context(t *testing.T) {
 	defer func() {
 		appConfig = oldAppConfig
 	}()
-	c := newTestController()
-	actual := c.Render()
-	expected := &ResultTemplate{
-		Template: appConfig.TemplateSet["testAppName"]["testctrlr.html"],
-		Context:  nil,
+	c := newTestController("testctrlr")
+	buf, err := ioutil.ReadAll(c.Render().(*ResultContent).Body)
+	if err != nil {
+		t.Fatal(err)
 	}
+	actual := string(buf)
+	expected := "tmpl1"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -135,16 +138,17 @@ func TestControllerRender_with_Context(t *testing.T) {
 	defer func() {
 		appConfig = oldAppConfig
 	}()
-	c := newTestController()
+	c := newTestController("testctrlr_ctx")
 	ctx := Context{
 		"c1": "v1",
 		"c2": "v2",
 	}
-	actual := c.Render(ctx)
-	expected := &ResultTemplate{
-		Template: appConfig.TemplateSet["testAppName"]["testctrlr.html"],
-		Context:  ctx,
+	buf, err := ioutil.ReadAll(c.Render(ctx).(*ResultContent).Body)
+	if err != nil {
+		t.Fatal(err)
 	}
+	actual := string(buf)
+	expected := "tmpl_ctx: map[c1:v1 c2:v2]"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -159,13 +163,14 @@ func TestControllerRender_with_ContentType(t *testing.T) {
 	defer func() {
 		appConfig = oldAppConfig
 	}()
-	c := newTestController()
+	c := newTestController("testctrlr")
 	c.Response.ContentType = "application/json"
-	actual := c.Render()
-	expected := &ResultTemplate{
-		Template: appConfig.TemplateSet["testAppName"]["testctrlr.json"],
-		Context:  nil,
+	buf, err := ioutil.ReadAll(c.Render().(*ResultContent).Body)
+	if err != nil {
+		t.Fatal(err)
 	}
+	actual := string(buf)
+	expected := `{"tmpl2":"content"}`
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -180,7 +185,7 @@ func TestControllerRender_with_missing_Template_in_AppName(t *testing.T) {
 			t.Error("panic doesn't happened")
 		}
 	}()
-	c := newTestController()
+	c := newTestController("testctrlr")
 	appConfig.AppName = "unknownAppName"
 	c.Render()
 }
@@ -194,17 +199,19 @@ func TestControllerRender_with_missing_Template(t *testing.T) {
 			t.Error("panic doesn't happened")
 		}
 	}()
-	c := newTestController()
+	c := newTestController("testctrlr")
 	c.Name = "unknownctrlr"
 	c.Render()
 }
 
 func TestControllerRenderJSON(t *testing.T) {
-	c := newTestController()
-	actual := c.RenderJSON(struct{ A, B string }{"hoge", "foo"})
-	expected := &ResultJSON{
-		Context: struct{ A, B string }{"hoge", "foo"},
+	c := newTestController("testctrlr")
+	buf, err := ioutil.ReadAll(c.RenderJSON(struct{ A, B string }{"hoge", "foo"}).(*ResultContent).Body)
+	if err != nil {
+		t.Fatal(err)
 	}
+	actual := string(buf)
+	expected := `{"A":"hoge","B":"foo"}`
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -214,14 +221,18 @@ func TestControllerRenderJSON(t *testing.T) {
 }
 
 func TestControllerRenderXML(t *testing.T) {
-	c := newTestController()
+	c := newTestController("testctrlr")
 	ctx := struct {
 		XMLName xml.Name `xml:"user"`
 		A       string   `xml:"id"`
 		B       string   `xml:"name"`
 	}{A: "hoge", B: "foo"}
-	actual := c.RenderXML(ctx)
-	expected := &ResultXML{ctx}
+	buf, err := ioutil.ReadAll(c.RenderXML(ctx).(*ResultContent).Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := string(buf)
+	expected := "<user><id>hoge</id><name>foo</name></user>"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -231,9 +242,13 @@ func TestControllerRenderXML(t *testing.T) {
 }
 
 func TestControllerRenderText(t *testing.T) {
-	c := newTestController()
-	actual := c.RenderText("test_content_data")
-	expected := &ResultText{"test_content_data"}
+	c := newTestController("testctrlr")
+	buf, err := ioutil.ReadAll(c.RenderText("test_content_data").(*ResultContent).Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := string(buf)
+	expected := "test_content_data"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -248,12 +263,13 @@ func TestControllerRenderError(t *testing.T) {
 	defer func() {
 		appConfig = oldAppConfig
 	}()
-	c := newTestController()
-	var actual interface{} = c.RenderError(http.StatusInternalServerError)
-	var expected interface{} = &ResultTemplate{
-		Template: appConfig.TemplateSet["testAppName"]["errors/500.html"],
-		Context:  nil,
+	c := newTestController("testctrlr")
+	buf, err := ioutil.ReadAll(c.RenderError(http.StatusInternalServerError).(*ResultContent).Body)
+	if err != nil {
+		t.Fatal(err)
 	}
+	var actual interface{} = string(buf)
+	var expected interface{} = "500 error"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -263,12 +279,13 @@ func TestControllerRenderError(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	c = newTestController()
-	actual = c.RenderError(http.StatusBadRequest)
-	expected = &ResultTemplate{
-		Template: appConfig.TemplateSet["testAppName"]["errors/400.html"],
-		Context:  nil,
+	c = newTestController("testctrlr")
+	buf, err = ioutil.ReadAll(c.RenderError(http.StatusBadRequest).(*ResultContent).Body)
+	if err != nil {
+		t.Fatal(err)
 	}
+	actual = string(buf)
+	expected = "400 error"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -278,13 +295,14 @@ func TestControllerRenderError(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	c = newTestController()
+	c = newTestController("testctrlr")
 	c.Response.ContentType = "application/json"
-	actual = c.RenderError(http.StatusInternalServerError)
-	expected = &ResultTemplate{
-		Template: appConfig.TemplateSet["testAppName"]["errors/500.json"],
-		Context:  nil,
+	buf, err = ioutil.ReadAll(c.RenderError(http.StatusInternalServerError).(*ResultContent).Body)
+	if err != nil {
+		t.Fatal(err)
 	}
+	actual = string(buf)
+	expected = `{"error":500}`
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -295,7 +313,7 @@ func TestControllerRenderError(t *testing.T) {
 	}
 
 	func() {
-		c = newTestController()
+		c = newTestController("testctrlr")
 		defer func() {
 			if err := recover(); err == nil {
 				t.Errorf("panic doesn't happened")
@@ -306,7 +324,7 @@ func TestControllerRenderError(t *testing.T) {
 	}()
 
 	func() {
-		c = newTestController()
+		c = newTestController("testctrlr")
 		defer func() {
 			if err := recover(); err == nil {
 				t.Errorf("panic doesn't happened")
@@ -315,11 +333,13 @@ func TestControllerRenderError(t *testing.T) {
 		c.RenderError(http.StatusInternalServerError, nil, nil)
 	}()
 
-	c = newTestController()
-	actual = c.RenderError(http.StatusTeapot)
-	expected = &ResultText{
-		Content: http.StatusText(http.StatusTeapot),
+	c = newTestController("testctrlr")
+	buf, err = ioutil.ReadAll(c.RenderError(http.StatusTeapot).(*ResultContent).Body)
+	if err != nil {
+		t.Fatal(err)
 	}
+	actual = string(buf)
+	expected = http.StatusText(http.StatusTeapot)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -342,17 +362,18 @@ func TestControllerSendFile(t *testing.T) {
 		if _, err := tmpFile.WriteString("foobarbaz"); err != nil {
 			t.Fatal(err)
 		}
-		c := newTestController()
+		c := newTestController("testctrlr")
 		result, ok := c.SendFile(tmpFile.Name()).(*ResultContent)
 		if !ok {
 			t.Errorf("Expect %T, but %T", &ResultContent{}, result)
 		}
 
-		actual, err := ioutil.ReadAll(result.Reader)
+		buf, err := ioutil.ReadAll(result.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
-		expected := []byte("foobarbaz")
+		actual := string(buf)
+		expected := "foobarbaz"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
@@ -379,17 +400,18 @@ func TestControllerSendFile(t *testing.T) {
 		if _, err := tmpFile.WriteString("foobarbaz"); err != nil {
 			t.Fatal(err)
 		}
-		c := newTestController()
+		c := newTestController("testctrlr")
 		result, ok := c.SendFile(filepath.Base(tmpFile.Name())).(*ResultContent)
 		if !ok {
 			t.Errorf("Expect %T, but %T", &ResultContent{}, result)
 		}
 
-		actual, err := ioutil.ReadAll(result.Reader)
+		buf, err := ioutil.ReadAll(result.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
-		expected := []byte("foobarbaz")
+		actual := string(buf)
+		expected := "foobarbaz"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
@@ -402,12 +424,16 @@ func TestControllerSendFile(t *testing.T) {
 		defer func() {
 			appConfig = oldAppConfig
 		}()
-		c := newTestController()
-		result, ok := c.SendFile("unknown/path").(*ResultText)
+		c := newTestController("testctrlr")
+		result, ok := c.SendFile("unknown/path").(*ResultContent)
 		if !ok {
-			t.Errorf("Expect %T, but %T", &ResultText{}, result)
+			t.Errorf("Expect %T, but %T", &ResultContent{}, result)
 		}
-		actual := result.Content
+		buf, err := ioutil.ReadAll(result.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual := string(buf)
 		expected := http.StatusText(http.StatusNotFound)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
@@ -425,7 +451,7 @@ func TestControllerSendFile(t *testing.T) {
 		if _, err := tmpFile.WriteString("foobarbaz"); err != nil {
 			t.Fatal(err)
 		}
-		c := newTestController()
+		c := newTestController("testctrlr")
 		c.SendFile(tmpFile.Name())
 		actual := c.Response.ContentType
 		expected := "text/plain; charset=utf-8"
@@ -454,17 +480,18 @@ func TestControllerSendFile(t *testing.T) {
 			includedResources = make(map[string]*resource)
 		}()
 		includedResources["testrcname"] = &resource{[]byte("foobarbaz")}
-		c := newTestController()
+		c := newTestController("testctrlr")
 		result, ok := c.SendFile("testrcname").(*ResultContent)
 		if !ok {
 			t.Errorf("Expect %T, but %T", &ResultContent{}, result)
 		}
 
-		actual, err := ioutil.ReadAll(result.Reader)
+		buf, err := ioutil.ReadAll(result.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
-		expected := []byte("foobarbaz")
+		actual := string(buf)
+		expected := "foobarbaz"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
@@ -475,7 +502,7 @@ func TestControllerSendFile(t *testing.T) {
 		defer func() {
 			includedResources = make(map[string]*resource)
 		}()
-		c := newTestController()
+		c := newTestController("testctrlr")
 		c.Response.ContentType = ""
 		includedResources["testrcname"] = &resource{[]byte("\x89PNG\x0d\x0a\x1a\x0a")}
 		c.SendFile("testrcname")
@@ -488,7 +515,7 @@ func TestControllerSendFile(t *testing.T) {
 }
 
 func TestControllerRedirect(t *testing.T) {
-	c := newTestController()
+	c := newTestController("testctrlr")
 	actual := c.Redirect("/path/to/redirect/permanently", true)
 	expected := &ResultRedirect{
 		Request:     c.Request,
@@ -570,10 +597,12 @@ func TestErrorControllerGet(t *testing.T) {
 	}
 	c.Controller.Request = NewRequest(req)
 	c.Controller.Response = NewResponse(w)
-	actual := c.Get()
-	expected := &ResultText{
-		Content: http.StatusText(http.StatusTeapot),
+	buf, err := ioutil.ReadAll(c.Get().(*ResultContent).Body)
+	if err != nil {
+		t.Fatal(err)
 	}
+	actual := string(buf)
+	expected := http.StatusText(http.StatusTeapot)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}

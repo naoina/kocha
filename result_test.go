@@ -2,8 +2,6 @@ package kocha
 
 import (
 	"bytes"
-	"encoding/xml"
-	"html/template"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,64 +9,30 @@ import (
 	"testing"
 )
 
-func TestResultTemplateProc(t *testing.T) {
-	result := &ResultTemplate{
-		Template: template.Must(template.New("test_template").Parse(`{{.key1}}test{{.key2}}`)),
-		Context: Context{
-			"key1": "value1",
-			"key2": "value2",
-		},
-	}
+func TestResultContentProc(t *testing.T) {
+	buf := bytes.NewBufferString("foobar")
+	result := &ResultContent{Body: buf}
 	w := httptest.NewRecorder()
 	res := NewResponse(w)
 	result.Proc(res)
-	expected := `value1testvalue2`
-	actual := w.Body.String()
+	var actual interface{} = w.Body.String()
+	var expected interface{} = "foobar"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
-}
 
-func TestResultJSONProc(t *testing.T) {
-	result := &ResultJSON{
-		Context: struct{ A, B string }{"ctx1", "testctx2"},
-	}
-	w := httptest.NewRecorder()
-	res := NewResponse(w)
+	closer := &testCloser{bytes.NewBufferString("brown fox"), false}
+	result = &ResultContent{Body: closer}
+	w = httptest.NewRecorder()
+	res = NewResponse(w)
 	result.Proc(res)
-	expected := `{"A":"ctx1","B":"testctx2"}
-`
-	actual := w.Body.String()
+	actual = w.Body.String()
+	expected = "brown fox"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
-}
-
-func TestResultXMLProc(t *testing.T) {
-	result := &ResultXML{
-		Context: struct {
-			XMLName xml.Name `xml:"user"`
-			A       string   `xml:"id"`
-			B       string   `xml:"name"`
-		}{A: "testId", B: "testName"},
-	}
-	w := httptest.NewRecorder()
-	res := NewResponse(w)
-	result.Proc(res)
-	expected := `<user><id>testId</id><name>testName</name></user>`
-	actual := w.Body.String()
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-}
-
-func TestResultTextProc(t *testing.T) {
-	result := &ResultText{"test_content"}
-	w := httptest.NewRecorder()
-	res := NewResponse(w)
-	result.Proc(res)
-	expected := `test_content`
-	actual := w.Body.String()
+	actual = closer.Closed
+	expected = true
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -113,35 +77,6 @@ func TestResultRedirectProc(t *testing.T) {
 	}
 	actual = w.Header().Get("Location")
 	expected = "/path/to/redirect/permanently"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-}
-
-func TestResultContentProc(t *testing.T) {
-	buf := bytes.NewBufferString("foobar")
-	result := &ResultContent{Reader: buf}
-	w := httptest.NewRecorder()
-	res := NewResponse(w)
-	result.Proc(res)
-	var actual interface{} = w.Body.String()
-	var expected interface{} = "foobar"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-
-	closer := &testCloser{bytes.NewBufferString("brown fox"), false}
-	result = &ResultContent{Reader: closer}
-	w = httptest.NewRecorder()
-	res = NewResponse(w)
-	result.Proc(res)
-	actual = w.Body.String()
-	expected = "brown fox"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-	actual = closer.Closed
-	expected = true
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
