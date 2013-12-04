@@ -53,73 +53,137 @@ var (
 	}
 )
 
-type TemplateSet map[string]map[string]*template.Template
+type TemplateSet map[string]AppTemplateSet
+type AppTemplateSet map[string]LayoutTemplateSet
+type LayoutTemplateSet map[string]FileExtTemplateSet
+type FileExtTemplateSet map[string]*template.Template
 
 // Get gets a parsed template.
-func (t TemplateSet) Get(appName, name, format string) *template.Template {
-	return t[appName][fmt.Sprintf("%s.%s", ToSnakeCase(name), format)]
+func (t TemplateSet) Get(appName, layoutName, name, format string) *template.Template {
+	return t[appName][layoutName][format][ToSnakeCase(name)]
 }
 
-func (t TemplateSet) Ident(appName, name, format string) string {
-	return fmt.Sprintf("%s:%s.%s", appName, ToSnakeCase(name), format)
+func (t TemplateSet) Ident(appName, layoutName, name, format string) string {
+	return fmt.Sprintf("%s:%s %s.%s", appName, layoutName, ToSnakeCase(name), format)
 }
 
 // TemplateSetFromPaths returns TemplateSet constructed from templateSetPaths.
 func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {
-	layoutPaths := make(map[string]map[string]string)
-	templatePaths := make(map[string]map[string]string)
+	layoutPaths := make(map[string]map[string]map[string]string)
+	templatePaths := make(map[string]map[string]map[string]string)
+	templateSet := make(TemplateSet)
 	for appName, paths := range templateSetPaths {
-		layoutPaths[appName] = make(map[string]string)
-		templatePaths[appName] = make(map[string]string)
+		layoutPaths[appName] = make(map[string]map[string]string)
+		templatePaths[appName] = make(map[string]map[string]string)
 		for _, rootPath := range paths {
-			if err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
-				if info.IsDir() {
-					return nil
-				}
-				name, err := filepath.Rel(rootPath, path)
-				if err != nil {
-					return err
-				}
-				if filepath.HasPrefix(filepath.ToSlash(name), "layouts/") {
-					if layoutPath, ok := layoutPaths[appName][name]; ok {
-						return fmt.Errorf("duplicate name of layout file:\n  1. %s\n  2. %s\n", layoutPath, path)
-					}
-					layoutPaths[appName][name] = path
-				} else {
-					if templatePath, ok := templatePaths[appName][name]; ok {
-						return fmt.Errorf("duplicate name of template file:\n  1. %s\n  2. %s\n", templatePath, path)
-					}
-					templatePaths[appName][name] = path
-				}
-				return nil
-			}); err != nil {
+			layoutDir := filepath.Join(rootPath, "layouts")
+			if err := collectLayoutPaths(layoutPaths[appName], layoutDir); err != nil {
+				panic(err)
+			}
+			if err := collectTemplatePaths(templatePaths[appName], rootPath, layoutDir); err != nil {
 				panic(err)
 			}
 		}
+		templateSet[appName] = make(AppTemplateSet)
 	}
-	templateSet := make(TemplateSet)
-	for layoutAppName, layouts := range layoutPaths {
-		templateSet[layoutAppName] = make(map[string]*template.Template)
-		for layoutName, layoutPath := range layouts {
-			layoutBytes, err := ioutil.ReadFile(layoutPath)
-			if err != nil {
-				panic(err)
-			}
-			layoutTemplate := template.Must(template.New("layout").Funcs(TemplateFuncs).Parse(string(layoutBytes)))
-			templateSet[layoutAppName][layoutName] = layoutTemplate
-			for templateAppName, templates := range templatePaths {
-				templateSet[templateAppName] = make(map[string]*template.Template)
-				for templateName, templatePath := range templates {
-					// do not use the layoutTemplate.Clone() in order to retrieve layout as string by `kocha build`
-					layout := template.Must(template.New("layout").Funcs(TemplateFuncs).Parse(string(layoutBytes)))
-					t := template.Must(layout.ParseFiles(templatePath))
-					templateSet[templateAppName][templateName] = t
-				}
-			}
+	for appName, templates := range templatePaths {
+		if err := buildSingleAppTemplateSet(templateSet[appName], templates); err != nil {
+			panic(err)
+		}
+	}
+	for appName, layouts := range layoutPaths {
+		if err := buildLayoutAppTemplateSet(templateSet[appName], layouts, templatePaths[appName]); err != nil {
+			panic(err)
 		}
 	}
 	return templateSet
+}
+
+func collectLayoutPaths(layoutPaths map[string]map[string]string, layoutDir string) error {
+	return filepath.Walk(layoutDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		baseName, err := filepath.Rel(layoutDir, path)
+		if err != nil {
+			return err
+		}
+		name, ext := SplitExt(baseName)
+		if _, exists := layoutPaths[name]; !exists {
+			layoutPaths[name] = make(map[string]string)
+		}
+		if layoutPath, exists := layoutPaths[name][ext]; exists {
+			return fmt.Errorf("duplicate name of layout file:\n  1. %s\n  2. %s\n", layoutPath, path)
+		}
+		layoutPaths[name][ext] = path
+		return nil
+	})
+}
+
+func collectTemplatePaths(templatePaths map[string]map[string]string, templateDir, excludeDir string) error {
+	return filepath.Walk(templateDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			if path == excludeDir {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		baseName, err := filepath.Rel(templateDir, path)
+		if err != nil {
+			return err
+		}
+		name, ext := SplitExt(baseName)
+		if _, exists := templatePaths[ext]; !exists {
+			templatePaths[ext] = make(map[string]string)
+		}
+		if templatePath, exists := templatePaths[ext][name]; exists {
+			return fmt.Errorf("duplicate name of template file:\n  1. %s\n  2. %s\n", templatePath, path)
+		}
+		templatePaths[ext][name] = path
+		return nil
+	})
+}
+
+func buildSingleAppTemplateSet(appTemplateSet AppTemplateSet, templates map[string]map[string]string) error {
+	layoutTemplateSet := make(LayoutTemplateSet)
+	for ext, templateInfos := range templates {
+		layoutTemplateSet[ext] = make(FileExtTemplateSet)
+		for name, path := range templateInfos {
+			templateBytes, err := ioutil.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			t := template.Must(template.New(name).Funcs(TemplateFuncs).Parse(string(templateBytes)))
+			layoutTemplateSet[ext][name] = t
+		}
+	}
+	appTemplateSet[""] = layoutTemplateSet
+	return nil
+}
+
+func buildLayoutAppTemplateSet(appTemplateSet AppTemplateSet, layouts map[string]map[string]string, templates map[string]map[string]string) error {
+	for layoutName, layoutInfos := range layouts {
+		layoutTemplateSet := make(LayoutTemplateSet)
+		for ext, layoutPath := range layoutInfos {
+			layoutTemplateSet[ext] = make(FileExtTemplateSet)
+			layoutBytes, err := ioutil.ReadFile(layoutPath)
+			if err != nil {
+				return err
+			}
+			for name, path := range templates[ext] {
+				// do not use the layoutTemplate.Clone() in order to retrieve layout as string by `kocha build`
+				layout := template.Must(template.New("layout").Funcs(TemplateFuncs).Parse(string(layoutBytes)))
+				t := template.Must(layout.ParseFiles(path))
+				layoutTemplateSet[ext][name] = t
+			}
+		}
+		appTemplateSet[layoutName] = layoutTemplateSet
+	}
+	return nil
 }

@@ -1,0 +1,4 @@
+{
+  "layout": "application",
+  {{template "content" .}}
+}

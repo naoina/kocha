@@ -10,6 +10,7 @@ func TestConst(t *testing.T) {
 		DefaultHttpAddr:          "0.0.0.0",
 		DefaultHttpPort:          80,
 		DefaultMaxClientBodySize: 1024 * 1024 * 10,
+		DefaultLayout:            "app",
 		StaticDir:                "public",
 	} {
 		if !reflect.DeepEqual(actual, expected) {

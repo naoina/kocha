@@ -175,34 +175,51 @@ func TestTemplateFuncs_date(t *testing.T) {
 
 func TestTemplateSet_Get(t *testing.T) {
 	templateSet := TemplateSet{
-		"testAppName": map[string]*template.Template{
-			"test_tmpl1.html": template.Must(template.New("test_tmpl1").Parse(``)),
-			"test_tmpl1.js":   template.Must(template.New("test_tmpl1").Parse(``)),
+		"testAppName": {
+			"app": {
+				"html": {
+					"test_tmpl1": template.Must(template.New("test_tmpl1").Parse(``)),
+				},
+				"js": {
+					"test_tmpl1": template.Must(template.New("test_tmpl1").Parse(``)),
+				},
+			},
+			"anotherLayout": {
+				"html": {
+					"test_tmpl1": template.Must(template.New("test_tmpl1").Parse(``)),
+				},
+			},
 		},
 	}
-	actual := templateSet.Get("testAppName", "test_tmpl1", "html")
-	expected := templateSet["testAppName"]["test_tmpl1.html"]
+	actual := templateSet.Get("testAppName", "app", "test_tmpl1", "html")
+	expected := templateSet["testAppName"]["app"]["html"]["test_tmpl1"]
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	actual = templateSet.Get("testAppName", "test_tmpl1", "js")
-	expected = templateSet["testAppName"]["test_tmpl1.js"]
+	actual = templateSet.Get("testAppName", "app", "test_tmpl1", "js")
+	expected = templateSet["testAppName"]["app"]["js"]["test_tmpl1"]
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	actual = templateSet.Get("unknownAppName", "test_tmpl1", "html")
+	actual = templateSet.Get("testAppName", "anotherLayout", "test_tmpl1", "html")
+	expected = templateSet["testAppName"]["anotherLayout"]["html"]["test_tmpl1"]
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	actual = templateSet.Get("unknownAppName", "app", "test_tmpl1", "html")
 	if actual != nil {
 		t.Errorf("Expect %v, but %v", nil, actual)
 	}
 
-	actual = templateSet.Get("testAppName", "unknown_tmpl1", "html")
+	actual = templateSet.Get("testAppName", "app", "unknown_tmpl1", "html")
 	if actual != nil {
 		t.Errorf("Expect %v, but %v", nil, actual)
 	}
 
-	actual = templateSet.Get("testAppName", "test_tmpl1", "xml")
+	actual = templateSet.Get("testAppName", "app", "test_tmpl1", "xml")
 	if actual != nil {
 		t.Errorf("Expect %v, but %v", nil, actual)
 	}
@@ -211,13 +228,13 @@ func TestTemplateSet_Get(t *testing.T) {
 func TestTemplateSet_Ident(t *testing.T) {
 	templateSet := TemplateSet{}
 	for expected, args := range map[string][]string{
-		"a:b.html":   []string{"a", "b", "html"},
-		"b:a.html":   []string{"b", "a", "html"},
-		"a:b.js":     []string{"a", "b", "js"},
-		"a:b_c.html": []string{"a", "bC", "html"},
-		"a:b_c_d.js": []string{"a", "BCD", "js"},
+		"a:b c.html":   []string{"a", "b", "c", "html"},
+		"b:a c.html":   []string{"b", "a", "c", "html"},
+		"a:b c.js":     []string{"a", "b", "c", "js"},
+		"a:b c_d.html": []string{"a", "b", "cD", "html"},
+		"a:b c_d_e.js": []string{"a", "b", "CDE", "js"},
 	} {
-		actual := templateSet.Ident(args[0], args[1], args[2])
+		actual := templateSet.Ident(args[0], args[1], args[2], args[3])
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
@@ -230,34 +247,76 @@ func TestTemplateSetFromPaths(t *testing.T) {
 			filepath.Join("testdata", "app", "views"),
 		},
 	})
-	expected := map[string]map[string]string{
-		"appName": map[string]string{
-			"fixture_date_test_ctrl.html":   "This is layout\n\nThis is date\n\n",
-			"fixture_root_test_ctrl.html":   "This is layout\n\nThis is root\n\n",
-			"fixture_user_test_ctrl.html":   "This is layout\n\nThis is user\n\n",
-			"fixture_teapot_test_ctrl.html": "This is layout\n\nI'm a tea pot\n\n",
-			"errors/500.html":               "This is layout\n\n500 error\n\n",
+	expected := map[string]map[string]map[string]map[string]string{
+		"appName": {
+			"": {
+				"html": {
+					"fixture_date_test_ctrl":   "\nsingle date\n",
+					"fixture_root_test_ctrl":   "\nsingle root\n",
+					"fixture_user_test_ctrl":   "\nsingle user\n",
+					"fixture_teapot_test_ctrl": "\nsingle tea pot\n",
+					"errors/500":               "\nsingle 500 error\n",
+				},
+				"json": {
+					"fixture_teapot_test_ctrl": "\n{\"single\":\"tea pot\"}\n",
+				},
+			},
+			"application": {
+				"html": {
+					"fixture_date_test_ctrl":   "This is layout\n\nThis is date\n\n",
+					"fixture_root_test_ctrl":   "This is layout\n\nThis is root\n\n",
+					"fixture_user_test_ctrl":   "This is layout\n\nThis is user\n\n",
+					"fixture_teapot_test_ctrl": "This is layout\n\nI'm a tea pot\n\n",
+					"errors/500":               "This is layout\n\n500 error\n\n",
+				},
+				"json": {
+					"fixture_teapot_test_ctrl": "{\n  \"layout\": \"application\",\n  \n{\"status\":418, \"text\":\"I'm a tea pot\"}\n\n}\n",
+				},
+			},
+			"sub": {
+				"html": {
+					"fixture_date_test_ctrl":   "This is sub\n\nThis is date\n\n",
+					"fixture_root_test_ctrl":   "This is sub\n\nThis is root\n\n",
+					"fixture_user_test_ctrl":   "This is sub\n\nThis is user\n\n",
+					"fixture_teapot_test_ctrl": "This is sub\n\nI'm a tea pot\n\n",
+					"errors/500":               "This is sub\n\n500 error\n\n",
+				},
+			},
 		},
 	}
-	for appName, actualMap := range actual {
-		tmpls, ok := expected[appName]
+	for appName, actualAppTemplateSet := range actual {
+		appTemplateSet, ok := expected[appName]
 		if !ok {
-			t.Errorf("%v is unexpected", appName)
+			t.Errorf("appName %v is unexpected", appName)
 			continue
 		}
-		for name, actualTemplate := range actualMap {
-			expectedContent, ok := tmpls[name]
+		for layoutName, actualLayoutTemplateSet := range actualAppTemplateSet {
+			layoutTemplates, ok := appTemplateSet[layoutName]
 			if !ok {
-				t.Errorf("%v is unexpected", name)
+				t.Errorf("layout %v is unexpected", layoutName)
 				continue
 			}
-			var actualContent bytes.Buffer
-			if err := actualTemplate.Execute(&actualContent, nil); err != nil {
-				t.Error(err)
-				continue
-			}
-			if !reflect.DeepEqual(actualContent.String(), expectedContent) {
-				t.Errorf("Expect %q, but %q", expectedContent, actualContent.String())
+			for ext, actualFileExtTemplateSet := range actualLayoutTemplateSet {
+				templates, ok := layoutTemplates[ext]
+				if !ok {
+					t.Errorf("ext %v is unexpected", ext)
+					continue
+				}
+				for name, actualTemplate := range actualFileExtTemplateSet {
+					expectedContent, ok := templates[name]
+					if !ok {
+						t.Errorf("name %v is unexpected", name)
+						continue
+					}
+					var actualContent bytes.Buffer
+					if err := actualTemplate.Execute(&actualContent, nil); err != nil {
+						t.Error(err)
+						continue
+					}
+					if !reflect.DeepEqual(actualContent.String(), expectedContent) {
+						t.Errorf("Expect %q, but %q", expectedContent, actualContent.String())
+					}
+				}
 			}
 		}
 	}

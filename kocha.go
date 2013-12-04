@@ -8,6 +8,7 @@ const (
 	DefaultHttpAddr          string = "0.0.0.0"
 	DefaultHttpPort          int    = 80
 	DefaultMaxClientBodySize        = 1024 * 1024 * 10 // 10MB
+	DefaultLayout                   = "app"
 	StaticDir                       = "public"
 )
 
