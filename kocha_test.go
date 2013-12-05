@@ -10,7 +10,6 @@ func TestConst(t *testing.T) {
 		DefaultHttpAddr:          "0.0.0.0",
 		DefaultHttpPort:          80,
 		DefaultMaxClientBodySize: 1024 * 1024 * 10,
-		DefaultLayout:            "app",
 		StaticDir:                "public",
 	} {
 		if !reflect.DeepEqual(actual, expected) {
@@ -25,9 +24,10 @@ func TestInit(t *testing.T) {
 		initialized = false
 	}()
 	config := &AppConfig{
-		AppPath:     "testpath",
-		AppName:     "testappname",
-		TemplateSet: nil,
+		AppPath:       "testpath",
+		AppName:       "testappname",
+		DefaultLayout: "testapp",
+		TemplateSet:   nil,
 		RouteTable: RouteTable{
 			{
 				Name:        "route1",

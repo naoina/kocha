@@ -12,9 +12,10 @@ var (
 	Addr      = "0.0.0.0"
 	Port      = 9100
 	AppConfig = &kocha.AppConfig{
-		AppPath:    rootPath,
-		AppName:    AppName,
-		RouteTable: kocha.InitRouteTable(kocha.RouteTable(Routes())),
+		AppPath:       rootPath,
+		AppName:       AppName,
+		RouteTable:    kocha.InitRouteTable(kocha.RouteTable(Routes())),
+		DefaultLayout: "app",
 		TemplateSet: kocha.TemplateSetFromPaths(map[string][]string{
 			AppName: []string{
 				filepath.Join(rootPath, "app", "views"),

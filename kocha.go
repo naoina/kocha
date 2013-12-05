@@ -8,7 +8,6 @@ const (
 	DefaultHttpAddr          string = "0.0.0.0"
 	DefaultHttpPort          int    = 80
 	DefaultMaxClientBodySize        = 1024 * 1024 * 10 // 10MB
-	DefaultLayout                   = "app"
 	StaticDir                       = "public"
 )
 
@@ -16,6 +15,7 @@ const (
 type AppConfig struct {
 	AppPath           string
 	AppName           string
+	DefaultLayout     string
 	TemplateSet       TemplateSet
 	RouteTable        RouteTable
 	Logger            *Logger

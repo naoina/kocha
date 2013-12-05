@@ -72,7 +72,7 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 		panic(fmt.Errorf("BUG: Controller field must be struct of %T or that pointer, but %T", cc, c))
 	}
 	cc.Name = ac.Type().Name()
-	cc.Layout = DefaultLayout
+	cc.Layout = appConfig.DefaultLayout
 	cc.Request = request
 	cc.Response = response
 	cc.Params.Values = request.Form

@@ -7,8 +7,9 @@ import (
 
 func newTestAppConfig() *AppConfig {
 	return &AppConfig{
-		AppPath: "apppath/appname",
-		AppName: "appname",
+		AppPath:       "apppath/appname",
+		AppName:       "appname",
+		DefaultLayout: "app",
 		TemplateSet: TemplateSet{
 			"appname": {
 				"app": {
