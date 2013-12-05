@@ -13,16 +13,6 @@ import (
 
 var (
 	TemplateFuncs = template.FuncMap{
-		"eq": func(a, b interface{}) bool {
-			// TODO: remove in Go 1.2
-			//       see http://tip.golang.org/pkg/text/template/#hdr-Functions
-			return a == b
-		},
-		"ne": func(a, b interface{}) bool {
-			// TODO: remove in Go 1.2
-			//       see http://tip.golang.org/pkg/text/template/#hdr-Functions
-			return a != b
-		},
 		"in": func(a, b interface{}) bool {
 			v := reflect.ValueOf(a)
 			switch v.Kind() {
