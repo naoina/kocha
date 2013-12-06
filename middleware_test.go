@@ -108,7 +108,7 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 		defer func() {
 			Log.ERROR = origLoggers
 		}()
-		store := &SessionCookieStore{}
+		store := newTestSessionCookieStore()
 		sess := make(Session)
 		cookie := &http.Cookie{
 			Name:  appConfig.Session.Name,
@@ -140,7 +140,7 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 		defer func() {
 			Log.ERROR = origLoggers
 		}()
-		store := &SessionCookieStore{}
+		store := newTestSessionCookieStore()
 		sess := make(Session)
 		sess[SessionExpiresKey] = "invalid format"
 		cookie := &http.Cookie{
@@ -169,7 +169,7 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 		defer func() {
 			Log.INFO = origLoggers
 		}()
-		store := &SessionCookieStore{}
+		store := newTestSessionCookieStore()
 		sess := make(Session)
 		sess[SessionExpiresKey] = "1383820442"
 		cookie := &http.Cookie{
@@ -195,7 +195,7 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 	}()
 
 	// test
-	store := &SessionCookieStore{}
+	store := newTestSessionCookieStore()
 	sess := make(Session)
 	sess[SessionExpiresKey] = "1383820443"
 	sess["brown fox"] = "lazy dog"

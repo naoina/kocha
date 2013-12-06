@@ -40,7 +40,7 @@ func Test_SessionCookieStore(t *testing.T) {
 	if err := quick.Check(func(k, v string) bool {
 		expected := make(Session)
 		expected[k] = v
-		store := &SessionCookieStore{}
+		store := newTestSessionCookieStore()
 		r := store.Save(expected)
 		actual := store.Load(r)
 		return reflect.DeepEqual(actual, expected)
@@ -56,7 +56,7 @@ func Test_SessionCookieStore(t *testing.T) {
 				t.Error("Expect %T, but %T", ErrSession{}, err)
 			}
 		}()
-		store := &SessionCookieStore{}
+		store := newTestSessionCookieStore()
 		store.Load("invalid")
 	}()
 }

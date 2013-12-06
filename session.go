@@ -31,8 +31,6 @@ type SessionConfig struct {
 	// 0 is for persistent.
 	SessionExpires time.Duration
 	HttpOnly       bool
-	SecretKey      string
-	SignedKey      string
 }
 
 // SessionStore is the interface that session store.
@@ -114,7 +112,13 @@ func NewErrSessionExpected(msg string) error {
 //
 // This session store will be a session save to client-side cookie.
 // Session cookie for save is encoded, encrypted and signed.
-type SessionCookieStore struct{}
+type SessionCookieStore struct {
+	// key for the encryption.
+	SecretKey string
+
+	// Key for the cookie singing.
+	SigningKey string
+}
 
 // Save saves and returns the key of session cookie.
 // Actually, key is session cookie data itself.
@@ -161,7 +165,7 @@ func (store *SessionCookieStore) Load(key string) (sess Session) {
 
 // encrypt returns encrypted data by AES-256-CBC.
 func (store *SessionCookieStore) encrypt(buf []byte) ([]byte, error) {
-	block, err := aes.NewCipher([]byte(appConfig.Session.SecretKey))
+	block, err := aes.NewCipher([]byte(store.SecretKey))
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +186,7 @@ func (store *SessionCookieStore) encrypt(buf []byte) ([]byte, error) {
 
 // decrypt returns decrypted data from crypted data by AES-256-CBC.
 func (store *SessionCookieStore) decrypt(buf []byte) ([]byte, error) {
-	block, err := aes.NewCipher([]byte(appConfig.Session.SecretKey))
+	block, err := aes.NewCipher([]byte(store.SecretKey))
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +248,7 @@ func (store *SessionCookieStore) verify(src []byte) (unsigned []byte, err error)
 
 // hash returns hashed data by HMAC-SHA1.
 func (store *SessionCookieStore) hash(src []byte) []byte {
-	hash := hmac.New(sha1.New, []byte(appConfig.Session.SignedKey))
+	hash := hmac.New(sha1.New, []byte(store.SigningKey))
 	hash.Write(src)
 	return hash.Sum(nil)
 }

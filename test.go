@@ -111,11 +111,16 @@ func newTestAppConfig() *AppConfig {
 		},
 		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
 		Session: SessionConfig{
-			Name:      "test_session",
-			Store:     &SessionCookieStore{},
-			SecretKey: "abcdefghijklmnopqrstuvwxyzABCDEF",
-			SignedKey: "abcdefghijklmn",
+			Name:  "test_session",
+			Store: newTestSessionCookieStore(),
 		},
+	}
+}
+
+func newTestSessionCookieStore() *SessionCookieStore {
+	return &SessionCookieStore{
+		SecretKey:  "abcdefghijklmnopqrstuvwxyzABCDEF",
+		SigningKey: "abcdefghijklmn",
 	}
 }
 

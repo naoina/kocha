@@ -24,8 +24,12 @@ var (
 
 		// Session settings
 		Session: kocha.SessionConfig{
-			Name:  "{{.appName}}_session",
-			Store: &kocha.SessionCookieStore{},
+			Name: "{{.appName}}_session",
+			Store: &kocha.SessionCookieStore{
+				// AUTO-GENERATED Random keys. DO NOT EDIT.
+				SecretKey:  "{{.secretKey}}",
+				SigningKey: "{{.signedKey}}",
+			},
 
 			// Expiration of session cookie, in seconds, from now.
 			// Persistent if -1, For not specify, set 0.
@@ -35,10 +39,6 @@ var (
 			// Perssitent if -1, For not specify, set 0.
 			SessionExpires: time.Duration(90) * time.Hour * 24,
 			HttpOnly:       false,
-
-			// AUTO-GENERATED Random keys. DO NOT EDIT.
-			SecretKey: "{{.secretKey}}",
-			SignedKey: "{{.signedKey}}",
 		},
 
 		MaxClientBodySize: 1024 * 1024 * 10, // 10MB
