@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
-	"errors"
 	"fmt"
+	"github.com/daviddengcn/go-colortext"
 	htmltemplate "html/template"
 	"io"
 	"io/ioutil"
@@ -172,72 +172,67 @@ func confirmOverwrite(dstPath string) bool {
 	}
 }
 
-type colorfunc func(string, ...interface{}) string
-
-func Red(s string, a ...interface{}) string {
-	return color(31, s, a...)
+func PrintRed(s string, a ...interface{}) {
+	printColor(ct.Red, s, a...)
 }
 
-func Green(s string, a ...interface{}) string {
-	return color(32, s, a...)
+func PrintGreen(s string, a ...interface{}) {
+	printColor(ct.Green, s, a...)
 }
 
-func Yellow(s string, a ...interface{}) string {
-	return color(33, s, a...)
+func PrintYellow(s string, a ...interface{}) {
+	printColor(ct.Yellow, s, a...)
 }
 
-func Blue(s string, a ...interface{}) string {
-	return color(34, s, a...)
+func PrintBlue(s string, a ...interface{}) {
+	printColor(ct.Blue, s, a...)
 }
 
-func Magenta(s string, a ...interface{}) string {
-	return color(35, s, a...)
+func PrintMagenta(s string, a ...interface{}) {
+	printColor(ct.Magenta, s, a...)
 }
 
-func Cyan(s string, a ...interface{}) string {
-	return color(36, s, a...)
+func PrintCyan(s string, a ...interface{}) {
+	printColor(ct.Cyan, s, a...)
 }
 
-func color(colorCode int, s string, a ...interface{}) string {
-	switch length := len(a); {
-	case length == 0:
-		a = append(a, "%s")
-	case length > 1:
-		panic(errors.New("too many arguments"))
-	}
-	return fmt.Sprintf(fmt.Sprintf("\x1b[%d;1m%s\x1b[0m", colorCode, a[0]), s)
+func printColor(color ct.Color, format string, a ...interface{}) {
+	ct.ChangeColor(color, true, ct.None, false)
+	fmt.Printf(format, a...)
+	ct.ResetColor()
 }
 
 func PrintIdentical(path string) {
-	printPathStatus(Blue, "identical", path)
+	printPathStatus(ct.Blue, "identical", path)
 }
 
 func PrintConflict(path string) {
-	printPathStatus(Red, "conflict", path)
+	printPathStatus(ct.Red, "conflict", path)
 }
 
 func PrintSkip(path string) {
-	printPathStatus(Cyan, "skip", path)
+	printPathStatus(ct.Cyan, "skip", path)
 }
 
 func PrintOverwrite(path string) {
-	printPathStatus(Cyan, "overwrite", path)
+	printPathStatus(ct.Cyan, "overwrite", path)
 }
 
 func PrintCreate(path string) {
-	printPathStatus(Green, "create", path)
+	printPathStatus(ct.Green, "create", path)
 }
 
 func PrintExist(path string) {
-	printPathStatus(Blue, "exist", path)
+	printPathStatus(ct.Blue, "exist", path)
 }
 
 func PrintCreateDirectory(path string) {
-	printPathStatus(Green, "create directory", path)
+	printPathStatus(ct.Green, "create directory", path)
 }
 
-func printPathStatus(f colorfunc, message, s string) {
-	fmt.Println(f(message, "%20s"), "", s)
+func printPathStatus(color ct.Color, message, s string) {
+	printColor(color, "%20s", message)
+	fmt.Println("", s)
 }
 
 // GoString returns Go-syntax representation of the value.

@@ -101,7 +101,7 @@ func (c *buildCommand) Run() {
 	c.execCmd("go", "run", builderFilePath)
 	c.execCmd("go", "build", "-o", appName, mainFilePath)
 	fmt.Printf("build all-in-one binary to %v\n", filepath.Join(dir, appName))
-	fmt.Println(kocha.Green("Build successful"))
+	kocha.PrintGreen("Build successful!\n")
 	if err := os.RemoveAll(tmpDir); err != nil {
 		panic(err)
 	}
