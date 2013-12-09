@@ -1,6 +1,6 @@
 # Kocha  [![Build Status](https://travis-ci.org/naoina/kocha.png?branch=master)](https://travis-ci.org/naoina/kocha)
 
-A web application framework for [Go](http://golang.org/)
+A convenient web application framework for [Go](http://golang.org/)
 
 ## Getting started
 
@@ -16,12 +16,12 @@ A web application framework for [Go](http://golang.org/)
 
         kocha new myapp
 
-    where "myapp" is the application name.
+    Where "myapp" is the application name.
 
 3. Change directory and run the application:
 
         cd myapp
-        go run dev.go
+        kocha run
 
     or
 
@@ -29,11 +29,9 @@ A web application framework for [Go](http://golang.org/)
         go build -o myapp dev.go
         ./myapp
 
-Run `kocha -h` for more information.
-
 ## Documentation
 
-TODO
+See http://naoina.github.io/kocha/ for more information.
 
 ## License
 
