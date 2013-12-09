@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>{{ page.title }}{% if page.title %} | {% endif %}Kocha web application framework for Go</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <link href="{{ page.root }}/css/syntax.css" rel="stylesheet">
+  <link href="{{ page.root }}/css/semantic.min.css" rel="stylesheet">
+  <link href="{{ page.root }}/css/main.css" rel="stylesheet">
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+  <script src="{{ page.root }}/javascripts/semantic.min.js"></script>
+  <script async src="{{ page.root }}/javascripts/bootstrap.min.js"></script>
+</head>
+<body data-spy="scroll" data-target="#kocha-sidemenu">
+
+<div class="ui fixed transparent inverted main menu">
+  <a class="item" href="{{ page.root }}/"><strong>Kocha</strong></a>
+  <div class="ui top right pointing mobile only dropdown item">
+    <i class="reorder icon"></i>
+    <div class="menu">
+      {% include top_menu_items.html %}
+    </div>
+  </div>
+  {% if page.nav %}
+  <div class="ui mobile only top right pointing dropdown item">
+    {% for item in page.nav %}
+    {% capture url %}/{{ item.path }}{% endcapture %}
+    {% if page.url == url %}
+    {% assign text = item.name %}
+    {% endif %}
+    {% endfor %}
+    <div class="text">{{ text }}</div>
+    <i class="dropdown icon"></i>
+    <div class="menu">
+      {% include menu_items.html %}
+    </div>
+  </div>
+  {% endif %}
+  <div class="hidden mobile right menu">
+    {% include top_menu_items.html %}
+  </div>
+</div>
+
+<div class="content">
+  {{ content }}
+</div>
+
+<div class="footer">
+  <p>Code licensed under the <a href="https://github.com/naoina/kocha/blob/master/LICENSE">MIT License</a>, documentation licensed under <a href="//creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>.</p>
+</div>
+
+<script>
+$('.ui.mobile.only.dropdown').dropdown({
+  debug: false
+}).find('a.item').on('click touchstart', function () {
+  location.href = $(this).attr('href');
+  return false;
+});
+</script>
+</body>
+</html>

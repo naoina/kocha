@@ -1,0 +1,8 @@
+markdown: redcarpet
+pygments: true
+safe: true
+lsi: false
+redcarpet:
+  extensions: ["autolink", "hard_wrap"]
+
+godoc: //godoc.org/github.com/naoina/kocha

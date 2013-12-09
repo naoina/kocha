@@ -1,0 +1,16 @@
+---
+layout: default
+---
+
+<div class="ui vertical segment kocha-content" id="kocha-sidemenu">
+  <div class="ui relaxed grid">
+    <div class="kocha-sidemenu-column column hidden mobile">
+      <div class="ui fixed secondary vertical pointing menu">
+        {% include menu_items.html %}
+      </div>
+    </div>
+    <div class="kocha-content-column column">
+      {{ content }}
+    </div>
+  </div>
+</div>

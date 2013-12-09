@@ -1,0 +1,14 @@
+{% for item in page.nav %}
+{% capture url %}/{{ item.path }}{% endcapture %}
+{% if page.url == url %}
+<a class="active item selected" href="#{{ item.name|replace:' ','-' }}" data-text="{{ item.name }}">{{ item.name }}</a>
+{% else %}
+<a class="item" href="{{ page.root }}{{ url }}" data-text="{{ item.name }}">{{ item.name }}</a>
+{% endif %}
+{% if page.url == url && page.subnav %}
+{% for subitem in page.subnav %}
+{% capture suburl %}{{ url }}#{{ subitem.path }}{% endcapture %}
+<a class="kocha-sub item hidden mobile" href="#{{ subitem.path }}">{{ subitem.name }}</a>
+{% endfor %}
+{% endif %}
+{% endfor %}
