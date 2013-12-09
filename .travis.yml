@@ -2,7 +2,6 @@ language: go
 
 go:
   - 1.2
-  - tip
 
 install:
   - go get -v github.com/naoina/kocha/kocha
