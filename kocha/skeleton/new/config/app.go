@@ -9,7 +9,7 @@ import (
 
 var (
 	AppName   = "{{.appName}}"
-	Addr      = "0.0.0.0"
+	Addr      = "127.0.0.1"
 	Port      = 9100
 	AppConfig = &kocha.AppConfig{
 		AppPath:       rootPath,

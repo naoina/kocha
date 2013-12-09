@@ -98,9 +98,13 @@ func (c *buildCommand) Run() {
 		kocha.PanicOnError(c, "abort: failed to write file: %v", err)
 	}
 	file.Close()
+	execName := appName
+	if runtime.GOOS == "windows" {
+		execName += ".exe"
+	}
 	c.execCmd("go", "run", builderFilePath)
-	c.execCmd("go", "build", "-o", appName, mainFilePath)
-	fmt.Printf("build all-in-one binary to %v\n", filepath.Join(dir, appName))
+	c.execCmd("go", "build", "-o", execName, mainFilePath)
+	fmt.Printf("build all-in-one binary to %v\n", filepath.Join(dir, execName))
 	kocha.PrintGreen("Build successful!\n")
 	if err := os.RemoveAll(tmpDir); err != nil {
 		panic(err)

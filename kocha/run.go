@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 )
 
 // Default environment
@@ -47,17 +48,20 @@ func (c *runCommand) Run() {
 	if err != nil {
 		panic(err)
 	}
-	appName := filepath.Base(dir)
+	execName := filepath.Base(dir)
+	if runtime.GOOS == "windows" {
+		execName += ".exe"
+	}
 	src := env + ".go"
 	for {
-		c.watchApp(dir, appName, src)
+		c.watchApp(dir, execName, src)
 	}
 }
 
-func (c *runCommand) watchApp(dir, appName, src string) {
-	cmd := c.execCmd("go", "build", "-o", appName, src)
+func (c *runCommand) watchApp(dir, execName, src string) {
+	cmd := c.execCmd("go", "build", "-o", execName, src)
 	if err := cmd.Wait(); err == nil {
-		cmd = c.execCmd(filepath.Join(dir, appName))
+		cmd = c.execCmd(filepath.Join(dir, execName))
 	}
 	defer cmd.Process.Kill()
 	watcher, err := fsnotify.NewWatcher()

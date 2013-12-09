@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"os"
 	"reflect"
 	"testing"
 )
@@ -34,29 +33,6 @@ func Test_runCommand(t *testing.T) {
 }
 
 func Test_runCommand_Run(t *testing.T) {
-	devnull, err := os.OpenFile(os.DevNull, os.O_WRONLY, os.ModePerm)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer devnull.Close()
-	origStdout, origStderr := os.Stdout, os.Stderr
-	os.Stdout, os.Stderr = devnull, devnull
-	defer func() {
-		os.Stdout, os.Stderr = origStdout, origStderr
-	}()
-	func() {
-		cmd := &runCommand{}
-		flags := flag.NewFlagSet("testflags", flag.ExitOnError)
-		cmd.DefineFlags(flags)
-		flags.Parse([]string{})
-		defer func() {
-			if err := recover(); err == nil {
-				t.Error("Expect panic, but not occurred")
-			}
-		}()
-		cmd.Run()
-	}()
-
 	// The below tests do not end because runCommand.Run() have an infinite loop.
 	// Any ideas?
 

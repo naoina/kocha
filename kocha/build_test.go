@@ -104,8 +104,12 @@ func Test_buildCommandRun(t *testing.T) {
 		os.Stdout, os.Stderr = oldStdout, oldStderr
 	}()
 	cmd.Run()
-	if _, err := os.Stat(filepath.Join(dstPath, appName)); err != nil {
-		t.Errorf("Expect %v is exists, but not exists", appName)
+	execName := appName
+	if runtime.GOOS == "windows" {
+		execName += ".exe"
+	}
+	if _, err := os.Stat(filepath.Join(dstPath, execName)); err != nil {
+		t.Errorf("Expect %v is exists, but not exists", execName)
 	}
 	tmpDir := filepath.Join(dstPath, "tmp")
 	if _, err := os.Stat(tmpDir); err == nil {
