@@ -83,12 +83,16 @@ func (c *buildCommand) Run() {
 	defer file.Close()
 	builderTemplatePath := filepath.ToSlash(filepath.Join(skeletonDir, "builder.go"))
 	t := template.Must(template.ParseFiles(builderTemplatePath))
+	var resources map[string]string
+	if c.all {
+		resources = c.collectResourcePaths(filepath.Join(dir, kocha.StaticDir))
+	}
 	data := map[string]interface{}{
 		"configImportPath":      configPkg.ImportPath,
 		"controllersImportPath": controllersPkg.ImportPath,
 		"mainTemplate":          string(mainTemplate),
 		"mainFilePath":          mainFilePath,
-		"resources":             c.collectResourcePaths(filepath.Join(dir, kocha.StaticDir)),
+		"resources":             resources,
 	}
 	if err := t.Execute(file, data); err != nil {
 		kocha.PanicOnError(c, "abort: failed to write file: %v", err)
