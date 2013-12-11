@@ -11,7 +11,9 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"text/template"
+	"time"
 )
 
 // buildCommand implements `command` interface for `build` command.
@@ -20,6 +22,9 @@ type buildCommand struct {
 
 	// Whether the build as the True All-in-One binary.
 	all bool
+
+	// Version tag
+	versionTag string
 }
 
 // Name returns name of `build` command.
@@ -44,6 +49,7 @@ func (c *buildCommand) Usage() string {
 
 func (c *buildCommand) DefineFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&c.all, "a", false, "make the true all-in-one binary")
+	fs.StringVar(&c.versionTag, "tag", "", "specify version tag")
 	c.flag = fs
 }
 
@@ -93,6 +99,7 @@ func (c *buildCommand) Run() {
 		"mainTemplate":          string(mainTemplate),
 		"mainFilePath":          mainFilePath,
 		"resources":             resources,
+		"version":               fmt.Sprintf("%s@%s", env, c.detectVersionTag()),
 	}
 	if err := t.Execute(file, data); err != nil {
 		kocha.PanicOnError(c, "abort: failed to write file: %v", err)
@@ -149,4 +156,48 @@ func (c *buildCommand) collectResourcePaths(root string) map[string]string {
 		return nil
 	})
 	return result
+}
+
+func (c *buildCommand) detectVersionTag() string {
+	if c.versionTag != "" {
+		return c.versionTag
+	}
+	var repo string
+	for _, dir := range []string{".git", ".hg"} {
+		if info, err := os.Stat(dir); err == nil && info.IsDir() {
+			repo = dir
+			break
+		}
+	}
+	version := time.Now().Format(time.RFC1123Z)
+	switch repo {
+	case ".git":
+		bin, err := exec.LookPath("git")
+		if err != nil {
+			fmt.Println("WARNING: git repository found, but `git` command not found. version uses \"%s\"", version)
+			break
+		}
+		line, err := exec.Command(bin, "rev-parse", "HEAD").Output()
+		if err != nil {
+			kocha.PanicOnError(c, "abort: unexpected error: %v\nplease specify version explicitly with '-tag' option for avoid the this error.", err)
+		}
+		version = strings.TrimSpace(string(line))
+	case ".hg":
+		bin, err := exec.LookPath("hg")
+		if err != nil {
+			fmt.Println("WARNING: hg repository found, but `hg` command not found. version uses \"%s\"", version)
+			break
+		}
+		line, err := exec.Command(bin, "identify").Output()
+		if err != nil {
+			kocha.PanicOnError(c, "abort: unexpected error: %v\nplease specify version explicitly with '-tag' option for avoid the this error.", err)
+		}
+		version = strings.TrimSpace(string(line))
+	}
+	if version == "" {
+		// Probably doesn't reach here.
+		version = time.Now().Format(time.RFC1123Z)
+		fmt.Println("WARNING: version is empty, use \"%s\"", version)
+	}
+	return version
 }

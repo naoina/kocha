@@ -3,13 +3,25 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"{{.controllersImportPath}}"
 	"github.com/naoina/kocha"
 	"html/template"
+	"os"
+	"path/filepath"
 	"regexp"
 )
 
+const Version = "{{.version}}"
+
 func main() {
+	showVersion := flag.Bool("v", false, "show version")
+	flag.Parse()
+	if *showVersion {
+		fmt.Printf("%s version %s\n", filepath.Base(os.Args[0]), Version)
+		return
+	}
 	kocha.Init({{.appConfig|goString}})
 	{{range $name, $data := .resources}}
 	kocha.AddResource("{{$name}}", kocha.Gunzip({{$data|printf "%q"}}))

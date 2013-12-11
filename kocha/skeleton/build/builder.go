@@ -45,6 +45,7 @@ func main() {
 		"config":                kocha.Config(appConfig.AppName),
 		"controllersImportPath": "{{.controllersImportPath}}",
 		"resources":             resources,
+		"version":               "{{.version}}",
 	}
 	if err := t.Execute(file, data); err != nil {
 		panic(err)

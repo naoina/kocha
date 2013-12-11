@@ -75,8 +75,7 @@ func main() {
 {{if .}}
 Options:
 {{range .}}
-    -{{.Name|printf "%-12s"}} {{.Usage}}
-{{end}}{{end}}
+    -{{.Name|printf "%-12s"}} {{.Usage}}{{end}}{{end}}
 `)).Execute(&buf, flags)
 				fmt.Fprintf(os.Stderr, buf.String(), progName, cmd.Usage())
 			}

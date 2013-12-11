@@ -2,9 +2,11 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"go/build"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -104,15 +106,27 @@ func Test_buildCommandRun(t *testing.T) {
 		os.Stdout, os.Stderr = oldStdout, oldStderr
 	}()
 	cmd.Run()
+	tmpDir := filepath.Join(dstPath, "tmp")
+	if _, err := os.Stat(tmpDir); err == nil {
+		t.Errorf("Expect %v was removed, but exists", tmpDir)
+	}
+
 	execName := appName
 	if runtime.GOOS == "windows" {
 		execName += ".exe"
 	}
-	if _, err := os.Stat(filepath.Join(dstPath, execName)); err != nil {
-		t.Errorf("Expect %v is exists, but not exists", execName)
+	execPath := filepath.Join(dstPath, execName)
+	if _, err := os.Stat(execPath); err != nil {
+		t.Fatalf("Expect %v is exists, but not exists", execName)
 	}
-	tmpDir := filepath.Join(dstPath, "tmp")
-	if _, err := os.Stat(tmpDir); err == nil {
-		t.Errorf("Expect %v was removed, but exists", tmpDir)
+
+	output, err := exec.Command(execPath, "-v").CombinedOutput()
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := string(output)
+	expected := fmt.Sprintf("%s version dev@", execName)
+	if !strings.HasPrefix(actual, expected) {
+		t.Errorf("Expect starts with %v, but %v", expected, actual)
 	}
 }
