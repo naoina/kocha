@@ -40,7 +40,8 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 		defer func() {
 			if err := recover(); err != nil {
 				logStackAndError(err)
-				http.Error(response, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				response.StatusCode = http.StatusInternalServerError
+				http.Error(response, http.StatusText(response.StatusCode), response.StatusCode)
 			}
 		}()
 		if err := recover(); err != nil {
@@ -54,6 +55,9 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 			c.Controller = cc
 			r := c.Get()
 			result = []reflect.Value{reflect.ValueOf(r)}
+		}
+		for _, m := range appConfig.Middlewares {
+			m.After(cc)
 		}
 		response.WriteHeader(response.StatusCode)
 		result[0].Interface().(Result).Proc(response)
@@ -84,10 +88,6 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 	}
 	ccValue.Set(reflect.ValueOf(*cc))
 	result = method.Call(args)
-	for _, m := range appConfig.Middlewares {
-		m.After(cc)
-	}
-	ccValue.Set(reflect.ValueOf(*cc))
 }
 
 // Run starts Kocha app.

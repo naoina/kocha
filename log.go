@@ -34,8 +34,8 @@ func initLogger(logger *Logger) *Logger {
 		}
 	}
 	setPrefix(logger.DEBUG, "[DEBUG] ")
-	setPrefix(logger.INFO, "[INFO]  ")
-	setPrefix(logger.WARN, "[WARN]  ")
+	setPrefix(logger.INFO, "[INFO] ")
+	setPrefix(logger.WARN, "[WARN] ")
 	setPrefix(logger.ERROR, "[ERROR] ")
 	return logger
 }

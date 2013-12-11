@@ -72,3 +72,14 @@ func (m *SessionMiddleware) After(c *Controller) {
 	cookie.Value = appConfig.Session.Store.Save(c.Session)
 	c.Response.SetCookie(cookie)
 }
+
+// Request logging middleware.
+type RequestLoggingMiddleware struct{}
+
+func (m *RequestLoggingMiddleware) Before(c *Controller) {
+	// do nothing.
+}
+
+func (m *RequestLoggingMiddleware) After(c *Controller) {
+	Log.Info(`"%v %v %v" %v`, c.Request.Method, c.Request.RequestURI, c.Request.Proto, c.Response.StatusCode)
+}
