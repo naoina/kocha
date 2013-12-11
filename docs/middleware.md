@@ -45,3 +45,7 @@ This middleware is enabled by default.
 ### SessionMiddleware *([godoc]({{ site.godoc }}#SessionMiddleware))*
 
 SessionMiddleware will autosave and autoload a session on around a request processing.
+
+### RequestLoggingMiddleware *([godoc]({{ site.godoc }}#RequestLoggingMiddleware))*
+
+RequestLoggingMiddleware will output the access log. This is for development purposes.
