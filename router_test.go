@@ -105,6 +105,54 @@ func TestInitRouteTable(t *testing.T) {
 			})
 		}()
 	}
+
+	// test for validate the single argument mismatch between controller method and route parameter.
+	func() {
+		defer func() {
+			if err := recover(); err == nil {
+				t.Errorf("panic doesn't happened")
+			}
+		}()
+		InitRouteTable(RouteTable{
+			{
+				Name:       "testroute",
+				Path:       "/",
+				Controller: FixtureUserTestCtrl{},
+			},
+		})
+	}()
+
+	// test for validate the duplicated route parameters.
+	func() {
+		defer func() {
+			if err := recover(); err == nil {
+				t.Errorf("panic doesn't happened")
+			}
+		}()
+		InitRouteTable(RouteTable{
+			{
+				Name:       "testroute",
+				Path:       "/:id/:id",
+				Controller: FixtureUserTestCtrl{},
+			},
+		})
+	}()
+
+	// test for validate the multiple arguments mismatch between controller method and route parameters.
+	func() {
+		defer func() {
+			if err := recover(); err == nil {
+				t.Errorf("panic doesn't happened")
+			}
+		}()
+		InitRouteTable(RouteTable{
+			{
+				Name:       "testroute",
+				Path:       "/",
+				Controller: FixtureDateTestCtrl{},
+			},
+		})
+	}()
 }
 
 func TestReverse(t *testing.T) {

@@ -55,13 +55,13 @@ var (
 // Returned RouteTable is always clean so that validate a route.
 func InitRouteTable(routeTable RouteTable) RouteTable {
 	for _, route := range routeTable {
+		route.buildMethodTypes()
+		route.buildRegexpPath()
+	}
+	for _, route := range routeTable {
 		if err := route.validate(); err != nil {
 			panic(err)
 		}
-	}
-	for _, route := range routeTable {
-		route.buildMethodTypes()
-		route.buildRegexpPath()
 	}
 	return routeTable
 }
@@ -271,10 +271,74 @@ func (route *Route) buildRegexpPath() {
 	route.RegexpPath = regexp.MustCompile(fmt.Sprintf("^%s$", regexpBuf.String()))
 }
 
-func (r *Route) validate() error {
-	c := reflect.ValueOf(r.Controller)
+func (route *Route) validate() error {
+	for _, f := range []func() error{
+		route.validateRouteParameters,
+		route.validateControllerType,
+	} {
+		if err := f(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (route *Route) validateRouteParameters() error {
+	var (
+		errors   []string
+		dupNames []string
+	)
+	params := make(map[string]bool)
+	for _, paths := range pathRegexp.FindAllStringSubmatch(route.Path, -1) {
+		if name := paths[1] + paths[2]; name != "" {
+			if _, found := params[name]; found {
+				dupNames = append(dupNames, name)
+				continue
+			}
+			params[name] = true
+		}
+	}
+	if length := len(dupNames); length > 0 {
+		var format string
+		switch {
+		case length == 1:
+			format = "route parameter `%v` is duplicated in the route '%v'"
+		case length > 1:
+			format = "route parameters `%v` are duplicated in the route '%v'"
+		}
+		names := strings.Join(dupNames, "`, `")
+		errors = append(errors, fmt.Sprintf(format, names, route.Name))
+	}
+	for methodName, args := range route.MethodTypes {
+		var defNames []string
+		for name := range args {
+			if !params[name] {
+				defNames = append(defNames, name)
+			}
+		}
+		if length := len(defNames); length > 0 {
+			var format string
+			switch {
+			case length == 1:
+				format = "argument `%v` is defined in `%v.%v`, but route parameter is not defined"
+			case length > 1:
+				format = "arguments `%v` are defined in `%v.%v`, but route parameters are not defined"
+			}
+			controllerName := reflect.TypeOf(route.Controller).Name()
+			names := strings.Join(defNames, "`, `")
+			errors = append(errors, fmt.Sprintf(format, names, controllerName, methodName))
+		}
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, "\n"+strings.Repeat(" ", len("panic: "))))
+	}
+	return nil
+}
+
+func (route *Route) validateControllerType() error {
+	c := reflect.ValueOf(route.Controller)
 	if c.Kind() != reflect.Struct || !c.FieldByName("Controller").IsValid() {
-		return fmt.Errorf(`Controller of route "%s" must be any type of embedded %T or that pointer, but %T`, r.Name, Controller{}, r.Controller)
+		return fmt.Errorf(`Controller of route "%s" must be any type of embedded %T or that pointer, but %T`, route.Name, Controller{}, route.Controller)
 	}
 	switch cc := c.FieldByName("Controller").Interface().(type) {
 	case Controller:
