@@ -20,7 +20,7 @@ type AppConfig struct {
 	RouteTable        RouteTable
 	Logger            *Logger
 	Middlewares       []Middleware
-	Session           SessionConfig
+	Session           *SessionConfig
 	MaxClientBodySize int64
 }
 
@@ -40,6 +40,9 @@ func Init(config *AppConfig) {
 	appConfig = config
 	if appConfig.MaxClientBodySize < 1 {
 		appConfig.MaxClientBodySize = DefaultMaxClientBodySize
+	}
+	if err := appConfig.Session.Validate(); err != nil {
+		panic(err)
 	}
 	Log = initLogger(appConfig.Logger)
 	initialized = true

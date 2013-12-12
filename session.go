@@ -9,6 +9,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"github.com/ugorji/go/codec"
 	"io"
 	"net/http"
@@ -33,10 +34,43 @@ type SessionConfig struct {
 	HttpOnly       bool
 }
 
+func (config *SessionConfig) Validate() error {
+	var sm *SessionMiddleware
+	for _, m := range appConfig.Middlewares {
+		if middleware, ok := m.(*SessionMiddleware); ok {
+			sm = middleware
+		}
+	}
+	if sm != nil {
+		if config == nil {
+			return fmt.Errorf("Because %T is nil, %T cannot be used", config, *sm)
+		}
+		if config.Store == nil {
+			return fmt.Errorf("Because %T.Store is nil, %T cannot be used", *config, *sm)
+		}
+	}
+	if config == nil {
+		return nil
+	}
+	if config.Name == "" {
+		return fmt.Errorf("%T.Name must be specify", *config)
+	}
+	if config.Store != nil {
+		if err := config.Store.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SessionStore is the interface that session store.
 type SessionStore interface {
 	Save(sess Session) (key string)
 	Load(key string) (sess Session)
+
+	// Validate calls in boot time.
+	// Validate the session store specific values if you want. But highly recommended.
+	Validate() error
 }
 
 // Session represents a session data store.
@@ -161,6 +195,15 @@ func (store *SessionCookieStore) Load(key string) (sess Session) {
 		panic(err)
 	}
 	return sess
+}
+
+// Validate validates SecretKey size.
+func (store *SessionCookieStore) Validate() error {
+	switch len(store.SecretKey) {
+	case 16, 24, 32:
+		return nil
+	}
+	return fmt.Errorf("%T.SecretKey size must be 16, 24 or 32, but %v", *store, len(store.SecretKey))
 }
 
 // encrypt returns encrypted data by AES-256-CBC.

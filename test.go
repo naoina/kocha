@@ -110,7 +110,7 @@ func newTestAppConfig() *AppConfig {
 			},
 		},
 		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
-		Session: SessionConfig{
+		Session: &SessionConfig{
 			Name:  "test_session",
 			Store: newTestSessionCookieStore(),
 		},

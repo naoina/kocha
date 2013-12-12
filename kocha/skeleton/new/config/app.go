@@ -23,7 +23,7 @@ var (
 		}),
 
 		// Session settings
-		Session: kocha.SessionConfig{
+		Session: &kocha.SessionConfig{
 			Name: "{{.appName}}_session",
 			Store: &kocha.SessionCookieStore{
 				// AUTO-GENERATED Random keys. DO NOT EDIT.
