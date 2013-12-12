@@ -2,6 +2,7 @@ package kocha
 
 import (
 	"html/template"
+	"net/http"
 	"regexp"
 )
 
@@ -128,4 +129,62 @@ type FixturePanicInRenderTestCtrl struct{ *Controller }
 
 func (c *FixturePanicInRenderTestCtrl) Get() Result {
 	return c.RenderXML(Context{}) // Context is unsupported type in XML.
+}
+
+type FixtureUserTestCtrl struct {
+	*Controller
+}
+
+func (c *FixtureUserTestCtrl) Get(id int) Result {
+	return c.Render(Context{
+		"id": id,
+	})
+}
+
+type FixtureDateTestCtrl struct {
+	Controller
+}
+
+func (c *FixtureDateTestCtrl) Get(year, month int, day int, name string) Result {
+	return c.Render(Context{
+		"year":  year,
+		"month": month,
+		"day":   day,
+		"name":  name,
+	})
+}
+
+type FixtureErrorTestCtrl struct {
+	Controller
+}
+
+func (c *FixtureErrorTestCtrl) Get() Result {
+	panic("panic test")
+	return c.Render()
+}
+
+type FixtureJsonTestCtrl struct {
+	Controller
+}
+
+func (c *FixtureJsonTestCtrl) Get() Result {
+	c.Response.ContentType = "application/json"
+	return c.Render()
+}
+
+type FixtureRootTestCtrl struct {
+	*Controller
+}
+
+func (c *FixtureRootTestCtrl) Get() Result {
+	return c.Render()
+}
+
+type FixtureTeapotTestCtrl struct {
+	Controller
+}
+
+func (c *FixtureTeapotTestCtrl) Get() Result {
+	c.Response.StatusCode = http.StatusTeapot
+	return c.Render()
 }
