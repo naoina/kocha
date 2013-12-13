@@ -56,12 +56,22 @@ var (
 // Returned RouteTable is always clean so that validate a route.
 func InitRouteTable(routeTable RouteTable) RouteTable {
 	for _, route := range routeTable {
+		if err := route.validateControllerType(); err != nil {
+			panic(err)
+		}
 		route.buildMethodTypes()
+	}
+	for _, route := range routeTable {
 		route.buildRegexpPath()
 	}
 	for _, route := range routeTable {
-		if err := route.validate(); err != nil {
-			panic(err)
+		for _, validator := range []func() error{
+			route.validateControllerMethodSignature,
+			route.validateRouteParameters,
+		} {
+			if err := validator(); err != nil {
+				panic(err)
+			}
 		}
 	}
 	return routeTable
@@ -270,19 +280,6 @@ func (route *Route) buildRegexpPath() {
 		regexpBuf.WriteString(fmt.Sprintf(`/(?P<%s>%s)`, regexp.QuoteMeta(name), rePatStr))
 	}
 	route.RegexpPath = regexp.MustCompile(fmt.Sprintf("^%s$", regexpBuf.String()))
-}
-
-func (route *Route) validate() error {
-	for _, f := range []func() error{
-		route.validateRouteParameters,
-		route.validateControllerMethodSignature,
-		route.validateControllerType,
-	} {
-		if err := f(); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (route *Route) validateRouteParameters() error {
