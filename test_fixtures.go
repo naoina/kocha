@@ -188,3 +188,17 @@ func (c *FixtureTeapotTestCtrl) Get() Result {
 	c.Response.StatusCode = http.StatusTeapot
 	return c.Render()
 }
+
+type FixtureInvalidReturnValueTypeTestCtrl struct {
+	*Controller
+}
+
+func (c *FixtureInvalidReturnValueTypeTestCtrl) Get() string {
+	return ""
+}
+
+type FixtureInvalidNumberOfReturnValueTestCtrl struct{ *Controller }
+
+func (c *FixtureInvalidNumberOfReturnValueTestCtrl) Get() (Result, Result) {
+	return c.RenderText(""), c.RenderText("")
+}

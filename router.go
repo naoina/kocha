@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -274,6 +275,7 @@ func (route *Route) buildRegexpPath() {
 func (route *Route) validate() error {
 	for _, f := range []func() error{
 		route.validateRouteParameters,
+		route.validateControllerMethodSignature,
 		route.validateControllerType,
 	} {
 		if err := f(); err != nil {
@@ -327,6 +329,29 @@ func (route *Route) validateRouteParameters() error {
 			controllerName := reflect.TypeOf(route.Controller).Name()
 			names := strings.Join(defNames, "`, `")
 			errors = append(errors, fmt.Sprintf(format, names, controllerName, methodName))
+		}
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, "\n"+strings.Repeat(" ", len("panic: "))))
+	}
+	return nil
+}
+
+func (route *Route) validateControllerMethodSignature() error {
+	var errors []string
+	controller := reflect.TypeOf(route.Controller)
+	for methodName, _ := range route.MethodTypes {
+		meth, found := reflect.PtrTo(controller).MethodByName(methodName)
+		if !found {
+			return fmt.Errorf("BUG: method `%v` is not found in `%v.%v`", methodName, path.Base(controller.PkgPath()), controller.Name())
+		}
+		if num := meth.Type.NumOut(); num != 1 {
+			errors = append(errors, fmt.Sprintf("by %v.%v.%v, number of return value must be 1, but %v", path.Base(controller.PkgPath()), controller.Name(), meth.Name, num))
+			continue
+		}
+		resultType := reflect.TypeOf((*Result)(nil)).Elem()
+		if rtype := meth.Type.Out(0); !rtype.Implements(resultType) {
+			errors = append(errors, fmt.Sprintf("by %v.%v.%v, type of return value must be `%v`, but `%v`", path.Base(controller.PkgPath()), controller.Name(), meth.Name, resultType, rtype))
 		}
 	}
 	if len(errors) > 0 {

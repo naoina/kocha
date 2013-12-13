@@ -153,6 +153,27 @@ func TestInitRouteTable(t *testing.T) {
 			},
 		})
 	}()
+
+	// test for validate the invalid return value.
+	for _, v := range []interface{}{
+		FixtureInvalidReturnValueTypeTestCtrl{},
+		FixtureInvalidNumberOfReturnValueTestCtrl{},
+	} {
+		func() {
+			defer func() {
+				if err := recover(); err == nil {
+					t.Errorf("panic doesn't happened")
+				}
+			}()
+			InitRouteTable(RouteTable{
+				{
+					Name:       "testroute",
+					Path:       "/",
+					Controller: v,
+				},
+			})
+		}()
+	}
 }
 
 func TestReverse(t *testing.T) {
