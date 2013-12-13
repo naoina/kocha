@@ -56,6 +56,9 @@ var (
 // Returned RouteTable is always clean so that validate a route.
 func InitRouteTable(routeTable RouteTable) RouteTable {
 	for _, route := range routeTable {
+		route.normalize()
+	}
+	for _, route := range routeTable {
 		if err := route.validateControllerType(); err != nil {
 			panic(err)
 		}
@@ -166,6 +169,18 @@ func (route *Route) reverse(v ...interface{}) string {
 		panic(fmt.Errorf("parameter type mismatch: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
 	}
 	return normPath(path)
+}
+
+func (route *Route) normalize() {
+	v := reflect.ValueOf(route.Controller)
+	for v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.IsValid() {
+		route.Controller = v.Interface()
+	} else {
+		route.Controller = nil
+	}
 }
 
 func (route *Route) buildMethodTypes() {

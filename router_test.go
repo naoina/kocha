@@ -15,6 +15,11 @@ func TestInitRouteTable(t *testing.T) {
 			Controller: FixtureRootTestCtrl{},
 		},
 		{
+			Name:       "root_indirect",
+			Path:       "/indirect",
+			Controller: &FixtureRootTestCtrl{},
+		},
+		{
 			Name:       "user",
 			Path:       "/user/:id",
 			Controller: FixtureUserTestCtrl{},
@@ -39,6 +44,15 @@ func TestInitRouteTable(t *testing.T) {
 				"Get": MethodArgs{},
 			},
 			RegexpPath: regexp.MustCompile(`^/$`),
+		},
+		{
+			Name:       "root_indirect",
+			Path:       "/indirect",
+			Controller: FixtureRootTestCtrl{},
+			MethodTypes: map[string]MethodArgs{
+				"Get": MethodArgs{},
+			},
+			RegexpPath: regexp.MustCompile(`^/indirect$`),
 		},
 		{
 			Name:       "user",
