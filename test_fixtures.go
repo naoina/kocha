@@ -3,7 +3,6 @@ package kocha
 import (
 	"html/template"
 	"net/http"
-	"regexp"
 )
 
 func newTestAppConfig() *AppConfig {
@@ -27,7 +26,7 @@ func newTestAppConfig() *AppConfig {
 				},
 			},
 		},
-		RouteTable: RouteTable{
+		RouteTable: InitRouteTable(RouteTable{
 			{
 				Name:       "root",
 				Path:       "/",
@@ -35,7 +34,6 @@ func newTestAppConfig() *AppConfig {
 				MethodTypes: map[string]MethodArgs{
 					"Get": MethodArgs{},
 				},
-				RegexpPath: regexp.MustCompile(`^/$`),
 			},
 			{
 				Name:       "user",
@@ -46,7 +44,6 @@ func newTestAppConfig() *AppConfig {
 						"id": "int",
 					},
 				},
-				RegexpPath: regexp.MustCompile(`^/user/(?P<id>\d+)$`),
 			},
 			{
 				Name:       "date",
@@ -60,7 +57,6 @@ func newTestAppConfig() *AppConfig {
 						"name":  "string",
 					},
 				},
-				RegexpPath: regexp.MustCompile(`^/(?P<year>\d+)/(?P<month>\d+)/(?P<day>\d+)/user/(?P<name>[\w-]+)$`),
 			},
 			{
 				Name:       "error",
@@ -69,7 +65,6 @@ func newTestAppConfig() *AppConfig {
 				MethodTypes: map[string]MethodArgs{
 					"Get": MethodArgs{},
 				},
-				RegexpPath: regexp.MustCompile(`^/error$`),
 			},
 			{
 				Name:       "json",
@@ -78,7 +73,6 @@ func newTestAppConfig() *AppConfig {
 				MethodTypes: map[string]MethodArgs{
 					"Get": MethodArgs{},
 				},
-				RegexpPath: regexp.MustCompile(`^/json$`),
 			},
 			{
 				Name:       "teapot",
@@ -87,7 +81,6 @@ func newTestAppConfig() *AppConfig {
 				MethodTypes: map[string]MethodArgs{
 					"Get": MethodArgs{},
 				},
-				RegexpPath: regexp.MustCompile(`^/teapot$`),
 			},
 			{
 				Name:       "panic_in_render",
@@ -96,7 +89,6 @@ func newTestAppConfig() *AppConfig {
 				MethodTypes: map[string]MethodArgs{
 					"Get": MethodArgs{},
 				},
-				RegexpPath: regexp.MustCompile(`^/panic_in_render$`),
 			},
 			{
 				Name:       "static",
@@ -107,9 +99,8 @@ func newTestAppConfig() *AppConfig {
 						"path": "url.URL",
 					},
 				},
-				RegexpPath: regexp.MustCompile(`^/static/(?P<path>[\w-./]+)$`),
 			},
-		},
+		}),
 		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
 		Session: &SessionConfig{
 			Name:  "test_session",

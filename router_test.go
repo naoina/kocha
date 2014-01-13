@@ -3,7 +3,6 @@ package kocha
 import (
 	"net/http"
 	"reflect"
-	"regexp"
 	"testing"
 )
 
@@ -43,7 +42,6 @@ func TestInitRouteTable(t *testing.T) {
 			MethodTypes: map[string]MethodArgs{
 				"Get": MethodArgs{},
 			},
-			RegexpPath: regexp.MustCompile(`^/$`),
 		},
 		{
 			Name:       "root_indirect",
@@ -52,7 +50,6 @@ func TestInitRouteTable(t *testing.T) {
 			MethodTypes: map[string]MethodArgs{
 				"Get": MethodArgs{},
 			},
-			RegexpPath: regexp.MustCompile(`^/indirect$`),
 		},
 		{
 			Name:       "user",
@@ -63,7 +60,6 @@ func TestInitRouteTable(t *testing.T) {
 					"id": "int",
 				},
 			},
-			RegexpPath: regexp.MustCompile(`^/user/(?P<id>\d+)$`),
 		},
 		{
 			Name:       "date",
@@ -77,7 +73,6 @@ func TestInitRouteTable(t *testing.T) {
 					"name":  "string",
 				},
 			},
-			RegexpPath: regexp.MustCompile(`^/(?P<year>\d+)/(?P<month>\d+)/(?P<day>\d+)/user/(?P<name>[\w-]+)$`),
 		},
 		{
 			Name:       "static",
@@ -88,7 +83,6 @@ func TestInitRouteTable(t *testing.T) {
 					"path": "url.URL",
 				},
 			},
-			RegexpPath: regexp.MustCompile(`^/static/(?P<path>[\w-/.]+)$`),
 		},
 	}
 	if !reflect.DeepEqual(actual, expected) {
@@ -131,6 +125,22 @@ func TestInitRouteTable(t *testing.T) {
 			{
 				Name:       "testroute",
 				Path:       "/",
+				Controller: FixtureUserTestCtrl{},
+			},
+		})
+	}()
+
+	// test for validate the argument names mismatch between controller method and route parameter.
+	func() {
+		defer func() {
+			if err := recover(); err == nil {
+				t.Errorf("panic doesn't happened")
+			}
+		}()
+		InitRouteTable(RouteTable{
+			{
+				Name:       "testroute",
+				Path:       "/:name",
 				Controller: FixtureUserTestCtrl{},
 			},
 		})

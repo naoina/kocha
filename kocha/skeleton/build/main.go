@@ -10,7 +10,6 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
-	"regexp"
 )
 
 const Version = "{{.version}}"

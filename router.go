@@ -1,7 +1,6 @@
 package kocha
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -16,24 +15,14 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/naoina/kocha-urlrouter"
+	_ "github.com/naoina/kocha-urlrouter/doublearray"
 )
-
-type (
-	MethodArgs map[string]string
-)
-
-type RouteTable []*Route
-
-// Route represents a route.
-type Route struct {
-	Name        string
-	Path        string
-	Controller  interface{}
-	MethodTypes map[string]MethodArgs
-	RegexpPath  *regexp.Regexp
-}
 
 var (
+	router            urlrouter.URLRouter
+	reverseRouter     ReverseRouter
 	controllerMethods = map[string]bool{
 		"Get":    true,
 		"Post":   true,
@@ -43,13 +32,112 @@ var (
 		"Patch":  true,
 	}
 	typeRegexpStrings = map[string]string{
-		"":        `[\w-]+`, // default
+		"string":  `[\w-]+`,
 		"int":     `\d+`,
 		"url.URL": `[\w-/.]+`,
 	}
-	placeHolderRegexp = regexp.MustCompile(`:[\w-]+|\*[\w-/]+`)
-	pathRegexp        = regexp.MustCompile(`/(?:(?::([\w-]+))|(?:\*([\w-/]+))|[\w-]*)`)
+	typeRegexp map[string]*regexp.Regexp
 )
+
+type RouteTable []*Route
+
+func (rt RouteTable) buildRouter() urlrouter.URLRouter {
+	records := make([]*urlrouter.Record, len(rt))
+	for i, route := range rt {
+		records[i] = urlrouter.NewRecord(route.Path, route)
+	}
+	router := urlrouter.NewURLRouter("doublearray")
+	if err := router.Build(records); err != nil {
+		panic(err)
+	}
+	return router
+}
+
+func (rt RouteTable) buildReverseRouter() ReverseRouter {
+	reverse := make(map[string]*routeInfo)
+	for _, route := range rt {
+		_, params := router.Lookup(route.Path)
+		names := make([]string, len(params))
+		values := make([]string, len(params))
+		for i, param := range params {
+			names[i], values[i] = param.Name, param.Value
+		}
+		reverse[route.Name] = &routeInfo{
+			route:      route,
+			params:     values,
+			paramNames: names,
+		}
+	}
+	return reverse
+}
+
+func (rt RouteTable) GoString() string {
+	return fmt.Sprintf("kocha.InitRouteTable(%s)", GoString([]*Route(rt)))
+}
+
+// Route represents a route.
+type Route struct {
+	Name        string
+	Path        string
+	Controller  interface{}
+	MethodTypes map[string]MethodArgs
+}
+
+type MethodArgs map[string]string
+
+type ReverseRouter map[string]*routeInfo
+
+type routeInfo struct {
+	route      *Route
+	paramNames []string
+	params     []string
+}
+
+// Reverse returns path of route by name and any params.
+func Reverse(name string, v ...interface{}) string {
+	info := reverseRouter[name]
+	if info == nil {
+		types := make([]string, len(v))
+		for i, value := range v {
+			types[i] = reflect.TypeOf(value).Name()
+		}
+		panic(fmt.Errorf("no match route found: %v (%v)", name, strings.Join(types, ", ")))
+	}
+	return info.reverse(v...)
+}
+
+func (ri *routeInfo) reverse(v ...interface{}) string {
+	route := ri.route
+	switch vlen, nlen := len(v), len(ri.params); {
+	case vlen < nlen:
+		panic(fmt.Errorf("too few arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
+	case vlen > nlen:
+		panic(fmt.Errorf("too many arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
+	case vlen+nlen == 0:
+		return route.Path
+	}
+	var arg MethodArgs
+	for _, arg = range route.MethodTypes {
+		break
+	}
+	for i := 0; i < len(v); i++ {
+		t := arg[ri.paramNames[i]]
+		re := typeRegexp[t]
+		if re == nil {
+			panic(fmt.Errorf("regexp for type `%v` is not defined", t))
+		}
+		if !re.MatchString(fmt.Sprint(v[i])) {
+			panic(fmt.Errorf("parameter type mismatch: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
+		}
+	}
+	var oldnew []string
+	for i := 0; i < len(v); i++ {
+		oldnew = append(oldnew, ri.params[i], fmt.Sprint(v[i]))
+	}
+	replacer := strings.NewReplacer(oldnew...)
+	path := replacer.Replace(route.Path)
+	return normPath(path)
+}
 
 // InitRouteTable returns initialized RouteTable.
 //
@@ -64,8 +152,11 @@ func InitRouteTable(routeTable RouteTable) RouteTable {
 		}
 		route.buildMethodTypes()
 	}
-	for _, route := range routeTable {
-		route.buildRegexpPath()
+	router = routeTable.buildRouter()
+	reverseRouter = routeTable.buildReverseRouter()
+	typeRegexp = make(map[string]*regexp.Regexp)
+	for t, s := range typeRegexpStrings {
+		typeRegexp[t] = regexp.MustCompile(fmt.Sprintf(`\A%s\z`, s))
 	}
 	for _, route := range routeTable {
 		for _, validator := range []func() error{
@@ -80,68 +171,39 @@ func InitRouteTable(routeTable RouteTable) RouteTable {
 	return routeTable
 }
 
-// Reverse returns path of route by name and any params.
-func Reverse(name string, v ...interface{}) string {
-	for _, route := range appConfig.RouteTable {
-		if route.Name == name {
-			return route.reverse(v...)
-		}
-	}
-	types := make([]string, len(v))
-	for i, value := range v {
-		types[i] = reflect.TypeOf(value).Name()
-	}
-	panic(fmt.Errorf("no match route found: %v (%v)", name, strings.Join(types, ", ")))
-}
-
 func dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
 	methodName := strings.Title(strings.ToLower(req.Method))
 	path := normPath(req.URL.Path)
-	for _, route := range appConfig.RouteTable {
-		if controller, method, args = route.dispatch(methodName, path); controller != nil {
-			break
-		}
-	}
-	return controller, method, args
-}
-
-func (route *Route) dispatch(methodName, path string) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
-	matchesBase := route.RegexpPath.FindStringSubmatch(path)
-	if len(matchesBase) == 0 {
+	data, params := router.Lookup(path)
+	if data == nil {
 		return nil, nil, nil
 	}
-	matchesBase = matchesBase[1:]
-	matches := make([]string, 0, len(matchesBase))
-	subexpNames := route.RegexpPath.SubexpNames()[1:]
-	types := make([]string, 0, len(subexpNames))
-	if args, ok := route.MethodTypes[methodName]; ok {
-		for name, t := range args {
-			for i, subexpName := range subexpNames {
-				if subexpName == name {
-					matches = append(matches, matchesBase[i])
-					types = append(types, t)
-					break
-				}
-			}
-		}
+	route := data.(*Route)
+	return route.dispatch(methodName, params)
+}
+
+func (route *Route) dispatch(methodName string, params []urlrouter.Param) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
+	methodArgs := route.MethodTypes[methodName]
+	if methodArgs == nil {
+		return nil, nil, nil
 	}
-	for i, v := range matches {
+	for _, param := range params {
 		var arg interface{}
-		switch types[i] {
+		switch methodArgs[param.Name] {
 		case "int":
-			i, err := strconv.Atoi(v)
+			i, err := strconv.Atoi(param.Value)
 			if err != nil {
 				panic(err)
 			}
 			arg = i
 		case "url.URL":
-			u, err := url.Parse(v)
+			u, err := url.Parse(param.Value)
 			if err != nil {
 				panic(err)
 			}
 			arg = u
 		default:
-			arg = v
+			arg = param.Value
 		}
 		args = append(args, reflect.ValueOf(arg))
 	}
@@ -149,26 +211,6 @@ func (route *Route) dispatch(methodName, path string) (controller *reflect.Value
 	c := reflect.New(t)
 	m := c.MethodByName(methodName)
 	return &c, &m, args
-}
-
-func (route *Route) reverse(v ...interface{}) string {
-	switch n := route.RegexpPath.NumSubexp(); {
-	case len(v) < n:
-		panic(fmt.Errorf("too few arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
-	case len(v) > n:
-		panic(fmt.Errorf("too many arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
-	case len(v)+n == 0:
-		return route.Path
-	}
-	path := placeHolderRegexp.ReplaceAllStringFunc(route.Path, func(s string) string {
-		result := fmt.Sprint(v[0])
-		v = v[1:]
-		return result
-	})
-	if !route.RegexpPath.MatchString(path) {
-		panic(fmt.Errorf("parameter type mismatch: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
-	}
-	return normPath(path)
 }
 
 func (route *Route) normalize() {
@@ -266,67 +308,17 @@ func astTypeName(expr ast.Expr) string {
 	return typeName
 }
 
-func (route *Route) buildRegexpPath() {
-	var regexpBuf bytes.Buffer
-	for _, paths := range pathRegexp.FindAllStringSubmatch(route.Path, -1) {
-		name := paths[1] + paths[2]
-		if name == "" {
-			regexpBuf.WriteString(regexp.QuoteMeta(paths[0]))
-			continue
-		}
-		var rePatStr string
-		for _, args := range route.MethodTypes {
-			if t, ok := args[name]; ok {
-				if rePatStr = typeRegexpStrings[t]; rePatStr == "" {
-					rePatStr = typeRegexpStrings[""]
-				}
-				break
-			}
-		}
-		if rePatStr == "" {
-			methodNames := make([]string, 0, len(route.MethodTypes))
-			for methodName, _ := range route.MethodTypes {
-				methodNames = append(methodNames, methodName)
-			}
-			controllerName := reflect.TypeOf(route.Controller).Name()
-			panic(fmt.Errorf("argument `%s` is not defined in these methods `%s.%s`",
-				name, controllerName, strings.Join(methodNames, ", ")))
-		}
-		regexpBuf.WriteString(fmt.Sprintf(`/(?P<%s>%s)`, regexp.QuoteMeta(name), rePatStr))
-	}
-	route.RegexpPath = regexp.MustCompile(fmt.Sprintf("^%s$", regexpBuf.String()))
-}
-
 func (route *Route) validateRouteParameters() error {
-	var (
-		errors   []string
-		dupNames []string
-	)
-	params := make(map[string]bool)
-	for _, paths := range pathRegexp.FindAllStringSubmatch(route.Path, -1) {
-		if name := paths[1] + paths[2]; name != "" {
-			if _, found := params[name]; found {
-				dupNames = append(dupNames, name)
-				continue
-			}
-			params[name] = true
-		}
-	}
-	if length := len(dupNames); length > 0 {
-		var format string
-		switch {
-		case length == 1:
-			format = "route parameter `%v` is duplicated in the route '%v'"
-		case length > 1:
-			format = "route parameters `%v` are duplicated in the route '%v'"
-		}
-		names := strings.Join(dupNames, "`, `")
-		errors = append(errors, fmt.Sprintf(format, names, route.Name))
+	var errors []string
+	_, params := router.Lookup(route.Path)
+	paramNames := make(map[string]bool)
+	for _, param := range params {
+		paramNames[param.Name] = true
 	}
 	for methodName, args := range route.MethodTypes {
 		var defNames []string
 		for name := range args {
-			if !params[name] {
+			if !paramNames[name] {
 				defNames = append(defNames, name)
 			}
 		}
