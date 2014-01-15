@@ -147,6 +147,16 @@ type TypeValidateParser interface {
 	Parse(v string) (value interface{}, err error)
 }
 
+// SetTypeValidateParser sets the TypeValidateParser by given type name.
+func SetTypeValidateParser(name string, validateParser TypeValidateParser) {
+	typeValidateParsers[name] = validateParser
+}
+
+// SetTypeValidateParserByValue sets the TypeValidateParser by type of v.
+func SetTypeValidateParserByValue(v interface{}, validateParser TypeValidateParser) {
+	SetTypeValidateParser(reflect.TypeOf(v).String(), validateParser)
+}
+
 // StringTypeValidateParser represents a TypeValidateParser for string.
 type StringTypeValidateParser struct {
 	stringRegexp *regexp.Regexp
