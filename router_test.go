@@ -143,6 +143,106 @@ func Test_NewRouter(t *testing.T) {
 	}
 }
 
+func Test_Router_dispatch_with_route_missing(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+	req, err := http.NewRequest("GET", "/missing", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controller, method, args := appConfig.Router.dispatch(req)
+	if controller != nil {
+		t.Errorf("Expect %v, but %v", nil, controller)
+	}
+	if method != nil {
+		t.Errorf("Expect %v, but %v", nil, method)
+	}
+	if args != nil {
+		t.Errorf("Expect %v, but %v", nil, args)
+	}
+}
+
+func Test_Router_dispatch(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controller, method, args := appConfig.Router.dispatch(req)
+	if _, ok := controller.Interface().(*FixtureRootTestCtrl); !ok {
+		t.Errorf("Expect %v, but %v", reflect.ValueOf(&FixtureRootTestCtrl{}), controller)
+	}
+	actual := method.Type().String()
+	methodExpected := "func() kocha.Result"
+	if !reflect.DeepEqual(actual, methodExpected) {
+		t.Errorf("Expect %v, but %v", methodExpected, actual)
+	}
+	if len(args) != 0 {
+		t.Errorf("Expect length is %v, but %v", 0, len(args))
+	}
+
+	req, err = http.NewRequest("GET", "/user/777", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controller, method, args = appConfig.Router.dispatch(req)
+	if _, ok := controller.Interface().(*FixtureUserTestCtrl); !ok {
+		t.Errorf("Expect %v, but %v", reflect.ValueOf(&FixtureUserTestCtrl{}), controller)
+	}
+	actual = method.Type().String()
+	methodExpected = "func(int) kocha.Result"
+	if !reflect.DeepEqual(actual, methodExpected) {
+		t.Errorf("Expect %v, but %v", methodExpected, actual)
+	}
+	argsExpected := []interface{}{777}
+	for i, arg := range args {
+		if !reflect.DeepEqual(arg.Interface(), argsExpected[i]) {
+			t.Errorf("Expect %v, but %v", argsExpected[i], arg)
+		}
+	}
+
+	// test for invalid path parameter.
+	for _, v := range []string{
+		"0x16", "1.0", "-1", "10a1", "100a",
+	} {
+		req, err = http.NewRequest("GET", "/user/"+v, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		controller, method, args = appConfig.Router.dispatch(req)
+		if controller != nil {
+			t.Errorf("%#v expect nil, but returns instance of %T", v, controller.Interface())
+		}
+	}
+
+	req, err = http.NewRequest("GET", "/2013/10/19/user/naoina", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controller, method, args = appConfig.Router.dispatch(req)
+	if _, ok := controller.Interface().(*FixtureDateTestCtrl); !ok {
+		t.Errorf("Expect %v, but %v", reflect.ValueOf(&FixtureDateTestCtrl{}), controller)
+	}
+	actual = method.Type().String()
+	methodExpected = "func(int, int, int, string) kocha.Result"
+	if !reflect.DeepEqual(actual, methodExpected) {
+		t.Errorf("Expect %v, but %v", methodExpected, actual)
+	}
+	argsExpected = []interface{}{2013, 10, 19, "naoina"}
+	for i, arg := range args {
+		if !reflect.DeepEqual(arg.Interface(), argsExpected[i]) {
+			t.Errorf("Expect %v, but %v", argsExpected[i], arg)
+		}
+	}
+}
+
 func TestReverse(t *testing.T) {
 	oldAppConfig := appConfig
 	appConfig = newTestAppConfig()
@@ -235,106 +335,6 @@ func TestReverse_with_type_mismatch(t *testing.T) {
 		}
 	}()
 	Reverse("user", "naoina")
-}
-
-func Test_dispatch_with_route_missing(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newTestAppConfig()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
-	req, err := http.NewRequest("GET", "/missing", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	controller, method, args := dispatch(req)
-	if controller != nil {
-		t.Errorf("Expect %v, but %v", nil, controller)
-	}
-	if method != nil {
-		t.Errorf("Expect %v, but %v", nil, method)
-	}
-	if args != nil {
-		t.Errorf("Expect %v, but %v", nil, args)
-	}
-}
-
-func Test_dispatch(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newTestAppConfig()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	controller, method, args := dispatch(req)
-	if _, ok := controller.Interface().(*FixtureRootTestCtrl); !ok {
-		t.Errorf("Expect %v, but %v", reflect.ValueOf(&FixtureRootTestCtrl{}), controller)
-	}
-	actual := method.Type().String()
-	methodExpected := "func() kocha.Result"
-	if !reflect.DeepEqual(actual, methodExpected) {
-		t.Errorf("Expect %v, but %v", methodExpected, actual)
-	}
-	if len(args) != 0 {
-		t.Errorf("Expect length is %v, but %v", 0, len(args))
-	}
-
-	req, err = http.NewRequest("GET", "/user/777", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	controller, method, args = dispatch(req)
-	if _, ok := controller.Interface().(*FixtureUserTestCtrl); !ok {
-		t.Errorf("Expect %v, but %v", reflect.ValueOf(&FixtureUserTestCtrl{}), controller)
-	}
-	actual = method.Type().String()
-	methodExpected = "func(int) kocha.Result"
-	if !reflect.DeepEqual(actual, methodExpected) {
-		t.Errorf("Expect %v, but %v", methodExpected, actual)
-	}
-	argsExpected := []interface{}{777}
-	for i, arg := range args {
-		if !reflect.DeepEqual(arg.Interface(), argsExpected[i]) {
-			t.Errorf("Expect %v, but %v", argsExpected[i], arg)
-		}
-	}
-
-	// test for invalid path parameter.
-	for _, v := range []string{
-		"0x16", "1.0", "-1", "10a1", "100a",
-	} {
-		req, err = http.NewRequest("GET", "/user/"+v, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		controller, method, args = dispatch(req)
-		if controller != nil {
-			t.Errorf("%#v expect nil, but returns instance of %T", v, controller.Interface())
-		}
-	}
-
-	req, err = http.NewRequest("GET", "/2013/10/19/user/naoina", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	controller, method, args = dispatch(req)
-	if _, ok := controller.Interface().(*FixtureDateTestCtrl); !ok {
-		t.Errorf("Expect %v, but %v", reflect.ValueOf(&FixtureDateTestCtrl{}), controller)
-	}
-	actual = method.Type().String()
-	methodExpected = "func(int, int, int, string) kocha.Result"
-	if !reflect.DeepEqual(actual, methodExpected) {
-		t.Errorf("Expect %v, but %v", methodExpected, actual)
-	}
-	argsExpected = []interface{}{2013, 10, 19, "naoina"}
-	for i, arg := range args {
-		if !reflect.DeepEqual(arg.Interface(), argsExpected[i]) {
-			t.Errorf("Expect %v, but %v", argsExpected[i], arg)
-		}
-	}
 }
 
 type TestTypeValidateParser struct {

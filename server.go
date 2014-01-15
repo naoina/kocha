@@ -17,7 +17,7 @@ import (
 const fdKey = "KOCHA_FD"
 
 func handler(writer http.ResponseWriter, req *http.Request) {
-	controller, method, args := dispatch(req)
+	controller, method, args := appConfig.Router.dispatch(req)
 	if controller == nil {
 		c := NewErrorController(http.StatusNotFound)
 		cValue := reflect.ValueOf(c)

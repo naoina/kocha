@@ -83,10 +83,10 @@ func InitRouter(rt RouteTable) *Router {
 	return router
 }
 
-func dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
+func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
 	methodName := strings.Title(strings.ToLower(req.Method))
 	path := normPath(req.URL.Path)
-	data, params := appConfig.Router.forward.Lookup(path)
+	data, params := router.forward.Lookup(path)
 	if data == nil {
 		return nil, nil, nil
 	}
