@@ -2,6 +2,7 @@ package kocha
 
 import (
 	"net/http"
+	"net/url"
 	"reflect"
 	"testing"
 )
@@ -294,6 +295,21 @@ func TestReverse_with_type_mismatch(t *testing.T) {
 	Reverse("user", "naoina")
 }
 
+func TestReverse_with_type_macher_is_not_defined(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+
+	defer func() {
+		if err := recover(); err == nil {
+			t.Errorf("panic doesn't happened")
+		}
+	}()
+	Reverse("type_undefined", 1)
+}
+
 func Test_dispatch_with_route_missing(t *testing.T) {
 	oldAppConfig := appConfig
 	appConfig = newTestAppConfig()
@@ -359,6 +375,20 @@ func Test_dispatch(t *testing.T) {
 		}
 	}
 
+	// test for invalid path parameter.
+	for _, v := range []string{
+		"0x16", "1.0", "-1", "10a1", "100a",
+	} {
+		req, err = http.NewRequest("GET", "/user/"+v, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		controller, method, args = dispatch(req)
+		if controller != nil {
+			t.Errorf("%#v expect nil, but returns instance of %T", v, controller.Interface())
+		}
+	}
+
 	req, err = http.NewRequest("GET", "/2013/10/19/user/naoina", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -376,6 +406,152 @@ func Test_dispatch(t *testing.T) {
 	for i, arg := range args {
 		if !reflect.DeepEqual(arg.Interface(), argsExpected[i]) {
 			t.Errorf("Expect %v, but %v", argsExpected[i], arg)
+		}
+	}
+}
+
+func Test_StringTypeValidateParser_Validate(t *testing.T) {
+	type String string
+	validateParser := typeValidateParsers["string"]
+	for v, expected := range map[interface{}]bool{
+		"hoge":          true,
+		"a":             true,
+		"-":             true,
+		"a-b":           true,
+		"/":             false,
+		"path/to/route": false,
+		"":              false,
+		1:               false,
+		String("a"):     false,
+	} {
+		actual := validateParser.Validate(v)
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("%#v expect %#v, but %#v", v, expected, actual)
+		}
+	}
+}
+
+func Test_StringTypeValidateParser_Parse(t *testing.T) {
+	validateParser := typeValidateParsers["string"]
+	for _, v := range []string{
+		"", "hoge", "foo", "a", "---", "/", "/path/to/route",
+	} {
+		actual, err := validateParser.Parse(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := v
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("%#v expect %#v, but %#v", v, expected, actual)
+		}
+	}
+}
+
+func Test_IntTypeValidateParser_Validate(t *testing.T) {
+	validateParser := typeValidateParsers["int"]
+	for v, expected := range map[interface{}]bool{
+		0:        true,
+		1:        true,
+		9:        true,
+		10:       true,
+		1.1:      false,
+		1.0:      false,
+		"1":      false,
+		int32(1): false,
+	} {
+		actual := validateParser.Validate(v)
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("%#v expect %v, but %v", v, expected, actual)
+		}
+	}
+}
+
+func Test_IntTypeValidateParser_Parse(t *testing.T) {
+	validateParser := typeValidateParsers["int"]
+	for v, expected := range map[string]int{
+		"0":   0,
+		"1":   1,
+		"10":  10,
+		"777": 777,
+	} {
+		actual, err := validateParser.Parse(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("%#v expect %#v, but %#v", v, expected, actual)
+		}
+	}
+
+	for _, v := range []string{
+		"", "a", "0x01", "100a", "a100", "1a0",
+	} {
+		_, err := validateParser.Parse(v)
+		if err == nil {
+			t.Errorf("%#v is no error return", v)
+		}
+	}
+}
+
+func Test_URLTypeValidateParser_Validate(t *testing.T) {
+	validateParser := typeValidateParsers["url.URL"]
+	for v, expected := range map[interface{}]bool{
+		"/":                  true,
+		"/path":              true,
+		"/path/-/":           true,
+		"/path/-/route.html": true,
+		"/\x00":              false,
+		"/^":                 false,
+		"/$$$":               false,
+		"":                   false,
+	} {
+		actual := validateParser.Validate(v)
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("%#v expect %#v, but %#v", v, expected, actual)
+		}
+	}
+
+	for _, v := range []string{
+		"/", "/path", "/path/-/", "/path/-/route.html",
+	} {
+		u, err := url.Parse(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual := validateParser.Validate(u)
+		expected := true
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("%#v expect %#v, but %#v", v, expected, actual)
+		}
+	}
+
+	type String string
+	for _, v := range []interface{}{
+		1, 1.0, int32(1), []string(nil), String("/"),
+	} {
+		actual := validateParser.Validate(v)
+		expected := false
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("%#v expect %#v, but %#v", v, expected, actual)
+		}
+	}
+}
+
+func Test_URLTypeValidateParser_Parse(t *testing.T) {
+	validateParser := typeValidateParsers["url.URL"]
+	for _, v := range []string{
+		"/", "/path", "/path/to/route", "/path/to/route.html",
+	} {
+		actual, err := validateParser.Parse(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected, err := url.Parse(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("%#v expect %#v, but %#v", v, expected, actual)
 		}
 	}
 }

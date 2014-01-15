@@ -91,12 +91,22 @@ func newTestAppConfig() *AppConfig {
 				},
 			},
 			{
+				Name:       "type_undefined",
+				Path:       "/type_undefined/:id",
+				Controller: FixtureTypeUndefinedCtrl{},
+				MethodTypes: map[string]MethodArgs{
+					"Get": MethodArgs{
+						"id": "int32",
+					},
+				},
+			},
+			{
 				Name:       "static",
 				Path:       "/static/*path",
 				Controller: StaticServe{},
 				MethodTypes: map[string]MethodArgs{
 					"Get": MethodArgs{
-						"path": "url.URL",
+						"path": "*url.URL",
 					},
 				},
 			},
@@ -192,4 +202,10 @@ type FixtureInvalidNumberOfReturnValueTestCtrl struct{ *Controller }
 
 func (c *FixtureInvalidNumberOfReturnValueTestCtrl) Get() (Result, Result) {
 	return c.RenderText(""), c.RenderText("")
+}
+
+type FixtureTypeUndefinedCtrl struct{ *Controller }
+
+func (c *FixtureTypeUndefinedCtrl) Get(id int32) Result {
+	return c.RenderText("")
 }

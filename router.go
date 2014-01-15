@@ -31,12 +31,11 @@ var (
 		"Head":   true,
 		"Patch":  true,
 	}
-	typeRegexpStrings = map[string]string{
-		"string":  `[\w-]+`,
-		"int":     `\d+`,
-		"url.URL": `[\w-/.]+`,
+	typeValidateParsers = map[string]TypeValidateParser{
+		"string":  &StringTypeValidateParser{regexp.MustCompile(`\A[\w-]+\z`)},
+		"int":     &IntTypeValidateParser{regexp.MustCompile(`\A\d+\z`)},
+		"url.URL": &URLTypeValidateParser{regexp.MustCompile(`\A[\w-/.]+\z`)},
 	}
-	typeRegexp map[string]*regexp.Regexp
 )
 
 type RouteTable []*Route
@@ -122,11 +121,11 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	}
 	for i := 0; i < len(v); i++ {
 		t := arg[ri.paramNames[i]]
-		re := typeRegexp[t]
-		if re == nil {
-			panic(fmt.Errorf("regexp for type `%v` is not defined", t))
+		validateParser := typeValidateParsers[t]
+		if validateParser == nil {
+			panic(fmt.Errorf("TypeValidateParser is not defined for type `%v`", t))
 		}
-		if !re.MatchString(fmt.Sprint(v[i])) {
+		if !validateParser.Validate(v[i]) {
 			panic(fmt.Errorf("parameter type mismatch: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
 		}
 	}
@@ -137,6 +136,75 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	replacer := strings.NewReplacer(oldnew...)
 	path := replacer.Replace(route.Path)
 	return normPath(path)
+}
+
+// TypeValidateParser is an interface of validator and parser for any type value.
+type TypeValidateParser interface {
+	// Validate returns whether the valid value as any type.
+	Validate(v interface{}) bool
+
+	// Parse returns value that parses v as any type.
+	Parse(v string) (value interface{}, err error)
+}
+
+// StringTypeValidateParser represents a TypeValidateParser for string.
+type StringTypeValidateParser struct {
+	stringRegexp *regexp.Regexp
+}
+
+// Validate returns whether the valid value as string of path parameter.
+func (validateParser *StringTypeValidateParser) Validate(v interface{}) bool {
+	if s, ok := v.(string); ok {
+		return validateParser.stringRegexp.MatchString(s)
+	}
+	return false
+}
+
+// Parse returns value that parses v as string type.
+func (validateParser *StringTypeValidateParser) Parse(v string) (value interface{}, err error) {
+	return v, nil
+}
+
+// IntTypeValidateParser represents a TypeValidateParser for int.
+type IntTypeValidateParser struct {
+	intRegexp *regexp.Regexp
+}
+
+// Validate returns whether the valid value as int of path parameter.
+func (validateParser *IntTypeValidateParser) Validate(v interface{}) bool {
+	if i, ok := v.(int); ok {
+		return validateParser.intRegexp.MatchString(fmt.Sprint(i))
+	}
+	return false
+}
+
+// Parse returns value that parses v as int type.
+func (validateParser *IntTypeValidateParser) Parse(v string) (value interface{}, err error) {
+	return strconv.Atoi(v)
+}
+
+// URLTypeValidateParser represents a TypeValidateParser for url.URL.
+type URLTypeValidateParser struct {
+	urlRegexp *regexp.Regexp
+}
+
+// Validate returns whether the valid value as url.URL of path parameter.
+func (validateParser *URLTypeValidateParser) Validate(v interface{}) bool {
+	var s string
+	switch t := v.(type) {
+	case string:
+		s = t
+	case *url.URL:
+		s = t.Path
+	default:
+		return false
+	}
+	return validateParser.urlRegexp.MatchString(s)
+}
+
+// Parse returns value that parses v as url.URL type.
+func (validateParser *URLTypeValidateParser) Parse(v string) (value interface{}, err error) {
+	return url.Parse(v)
 }
 
 // InitRouteTable returns initialized RouteTable.
@@ -154,10 +222,6 @@ func InitRouteTable(routeTable RouteTable) RouteTable {
 	}
 	router = routeTable.buildRouter()
 	reverseRouter = routeTable.buildReverseRouter()
-	typeRegexp = make(map[string]*regexp.Regexp)
-	for t, s := range typeRegexpStrings {
-		typeRegexp[t] = regexp.MustCompile(fmt.Sprintf(`\A%s\z`, s))
-	}
 	for _, route := range routeTable {
 		for _, validator := range []func() error{
 			route.validateControllerMethodSignature,
@@ -188,22 +252,17 @@ func (route *Route) dispatch(methodName string, params []urlrouter.Param) (contr
 		return nil, nil, nil
 	}
 	for _, param := range params {
-		var arg interface{}
-		switch methodArgs[param.Name] {
-		case "int":
-			i, err := strconv.Atoi(param.Value)
-			if err != nil {
-				panic(err)
-			}
-			arg = i
-		case "url.URL":
-			u, err := url.Parse(param.Value)
-			if err != nil {
-				panic(err)
-			}
-			arg = u
-		default:
-			arg = param.Value
+		t := methodArgs[param.Name]
+		validateParser := typeValidateParsers[t]
+		if validateParser == nil {
+			panic(fmt.Errorf("TypeValidateParser is not defined for type `%v`", t))
+		}
+		arg, err := validateParser.Parse(param.Value)
+		if err != nil {
+			return nil, nil, nil
+		}
+		if !validateParser.Validate(arg) {
+			return nil, nil, nil
 		}
 		args = append(args, reflect.ValueOf(arg))
 	}
