@@ -17,7 +17,7 @@ type AppConfig struct {
 	AppName           string
 	DefaultLayout     string
 	TemplateSet       TemplateSet
-	RouteTable        RouteTable
+	Router            *Router
 	Logger            *Logger
 	Middlewares       []Middleware
 	Session           *SessionConfig

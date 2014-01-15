@@ -28,7 +28,7 @@ func TestInit(t *testing.T) {
 		AppName:       "testappname",
 		DefaultLayout: "testapp",
 		TemplateSet:   nil,
-		RouteTable: RouteTable{
+		Router: NewRouter(RouteTable{
 			{
 				Name:        "route1",
 				Path:        "route_path1",
@@ -41,7 +41,7 @@ func TestInit(t *testing.T) {
 				Controller:  nil,
 				MethodTypes: nil,
 			},
-		},
+		}),
 		Logger: &Logger{},
 	}
 	Init(config)

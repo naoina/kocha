@@ -21,8 +21,6 @@ import (
 )
 
 var (
-	router            urlrouter.URLRouter
-	reverseRouter     ReverseRouter
 	controllerMethods = map[string]bool{
 		"Get":    true,
 		"Post":   true,
@@ -40,22 +38,38 @@ var (
 
 type RouteTable []*Route
 
-// InitRouteTable returns initialized RouteTable.
-//
-// Returned RouteTable is always clean so that validate a route.
-func InitRouteTable(routeTable RouteTable) RouteTable {
-	for _, route := range routeTable {
+// Router represents a router of kocha.
+type Router struct {
+	forward    ForwardRouter
+	reverse    ReverseRouter
+	routeTable RouteTable
+}
+
+// NewRouter returns a new Router.
+func NewRouter(rt RouteTable) *Router {
+	router := &Router{routeTable: rt}
+	router.buildForward()
+	router.buildReverse()
+	return router
+}
+
+// InitRouter returns initialized Router.
+func InitRouter(rt RouteTable) *Router {
+	for _, route := range rt {
 		route.normalize()
 	}
-	for _, route := range routeTable {
+	for _, route := range rt {
 		if err := route.validateControllerType(); err != nil {
 			panic(err)
 		}
 		route.buildMethodTypes()
 	}
-	router = routeTable.buildRouter()
-	reverseRouter = routeTable.buildReverseRouter()
-	for _, route := range routeTable {
+	router := NewRouter(rt)
+	for _, route := range rt {
+		info := router.reverse[route.Name]
+		route.ParamNames = info.paramNames
+	}
+	for _, route := range rt {
 		for _, validator := range []func() error{
 			route.validateTypeValidateParser,
 			route.validateControllerMethodSignature,
@@ -66,13 +80,13 @@ func InitRouteTable(routeTable RouteTable) RouteTable {
 			}
 		}
 	}
-	return routeTable
+	return router
 }
 
 func dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
 	methodName := strings.Title(strings.ToLower(req.Method))
 	path := normPath(req.URL.Path)
-	data, params := router.Lookup(path)
+	data, params := appConfig.Router.forward.Lookup(path)
 	if data == nil {
 		return nil, nil, nil
 	}
@@ -80,39 +94,42 @@ func dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Val
 	return route.dispatch(methodName, params)
 }
 
-func (rt RouteTable) buildRouter() urlrouter.URLRouter {
-	records := make([]*urlrouter.Record, len(rt))
-	for i, route := range rt {
+// buildForward builds forward router.
+func (router *Router) buildForward() {
+	records := make([]*urlrouter.Record, len(router.routeTable))
+	for i, route := range router.routeTable {
 		records[i] = urlrouter.NewRecord(route.Path, route)
 	}
-	router := urlrouter.NewURLRouter("doublearray")
-	if err := router.Build(records); err != nil {
+	router.forward = urlrouter.NewURLRouter("doublearray")
+	if err := router.forward.Build(records); err != nil {
 		panic(err)
 	}
-	return router
 }
 
-func (rt RouteTable) buildReverseRouter() ReverseRouter {
-	reverse := make(map[string]*routeInfo)
-	for _, route := range rt {
-		_, params := router.Lookup(route.Path)
+// buildReverse builds reverse router.
+func (router *Router) buildReverse() {
+	router.reverse = make(ReverseRouter)
+	for _, route := range router.routeTable {
+		_, params := router.forward.Lookup(route.Path)
 		names := make([]string, len(params))
 		values := make([]string, len(params))
 		for i, param := range params {
 			names[i], values[i] = param.Name, param.Value
 		}
-		reverse[route.Name] = &routeInfo{
+		router.reverse[route.Name] = &routeInfo{
 			route:      route,
 			params:     values,
 			paramNames: names,
 		}
 	}
-	return reverse
 }
 
-func (rt RouteTable) GoString() string {
-	return fmt.Sprintf("kocha.InitRouteTable(%s)", GoString([]*Route(rt)))
+func (router *Router) GoString() string {
+	return fmt.Sprintf("kocha.NewRouter(%s)", GoString(router.routeTable))
 }
+
+type ForwardRouter urlrouter.URLRouter
+type ReverseRouter map[string]*routeInfo
 
 // Route represents a route.
 type Route struct {
@@ -120,6 +137,7 @@ type Route struct {
 	Path        string
 	Controller  interface{}
 	MethodTypes map[string]MethodArgs
+	ParamNames  []string
 }
 
 func (route *Route) dispatch(methodName string, params []urlrouter.Param) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
@@ -212,10 +230,9 @@ func (route *Route) buildMethodTypes() {
 
 func (route *Route) validateRouteParameters() error {
 	var errors []string
-	_, params := router.Lookup(route.Path)
 	paramNames := make(map[string]bool)
-	for _, param := range params {
-		paramNames[param.Name] = true
+	for _, name := range route.ParamNames {
+		paramNames[name] = true
 	}
 	for methodName, args := range route.MethodTypes {
 		var defNames []string
@@ -297,8 +314,6 @@ func (route *Route) validateControllerType() error {
 
 type MethodArgs map[string]string
 
-type ReverseRouter map[string]*routeInfo
-
 type routeInfo struct {
 	route      *Route
 	paramNames []string
@@ -307,7 +322,7 @@ type routeInfo struct {
 
 // Reverse returns path of route by name and any params.
 func Reverse(name string, v ...interface{}) string {
-	info := reverseRouter[name]
+	info := appConfig.Router.reverse[name]
 	if info == nil {
 		types := make([]string, len(v))
 		for i, value := range v {

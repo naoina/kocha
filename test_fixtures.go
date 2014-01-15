@@ -26,7 +26,7 @@ func newTestAppConfig() *AppConfig {
 				},
 			},
 		},
-		RouteTable: InitRouteTable(RouteTable{
+		Router: InitRouter(RouteTable{
 			{
 				Name:       "root",
 				Path:       "/",

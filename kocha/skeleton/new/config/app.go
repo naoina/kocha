@@ -1,10 +1,11 @@
 package config
 
 import (
-	"github.com/naoina/kocha"
 	"path/filepath"
 	"runtime"
 	"time"
+
+	"github.com/naoina/kocha"
 )
 
 var (
@@ -14,7 +15,7 @@ var (
 	AppConfig = &kocha.AppConfig{
 		AppPath:       rootPath,
 		AppName:       AppName,
-		RouteTable:    kocha.InitRouteTable(kocha.RouteTable(Routes())),
+		Router:        kocha.InitRouter(kocha.RouteTable(Routes())),
 		DefaultLayout: "app",
 		TemplateSet: kocha.TemplateSetFromPaths(map[string][]string{
 			AppName: []string{

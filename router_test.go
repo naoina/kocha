@@ -7,89 +7,7 @@ import (
 	"testing"
 )
 
-func TestInitRouteTable(t *testing.T) {
-	actual := InitRouteTable(RouteTable{
-		{
-			Name:       "root",
-			Path:       "/",
-			Controller: FixtureRootTestCtrl{},
-		},
-		{
-			Name:       "root_indirect",
-			Path:       "/indirect",
-			Controller: &FixtureRootTestCtrl{},
-		},
-		{
-			Name:       "user",
-			Path:       "/user/:id",
-			Controller: FixtureUserTestCtrl{},
-		},
-		{
-			Name:       "date",
-			Path:       "/:year/:month/:day/user/:name",
-			Controller: FixtureDateTestCtrl{},
-		},
-		{
-			Name:       "static",
-			Path:       "/static/*path",
-			Controller: StaticServe{},
-		},
-	})
-	expected := RouteTable{
-		{
-			Name:       "root",
-			Path:       "/",
-			Controller: FixtureRootTestCtrl{},
-			MethodTypes: map[string]MethodArgs{
-				"Get": MethodArgs{},
-			},
-		},
-		{
-			Name:       "root_indirect",
-			Path:       "/indirect",
-			Controller: FixtureRootTestCtrl{},
-			MethodTypes: map[string]MethodArgs{
-				"Get": MethodArgs{},
-			},
-		},
-		{
-			Name:       "user",
-			Path:       "/user/:id",
-			Controller: FixtureUserTestCtrl{},
-			MethodTypes: map[string]MethodArgs{
-				"Get": MethodArgs{
-					"id": "int",
-				},
-			},
-		},
-		{
-			Name:       "date",
-			Path:       "/:year/:month/:day/user/:name",
-			Controller: FixtureDateTestCtrl{},
-			MethodTypes: map[string]MethodArgs{
-				"Get": MethodArgs{
-					"year":  "int",
-					"month": "int",
-					"day":   "int",
-					"name":  "string",
-				},
-			},
-		},
-		{
-			Name:       "static",
-			Path:       "/static/*path",
-			Controller: StaticServe{},
-			MethodTypes: map[string]MethodArgs{
-				"Get": MethodArgs{
-					"path": "*url.URL",
-				},
-			},
-		},
-	}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %q, but %q", expected, actual)
-	}
-
+func TestInitRouter(t *testing.T) {
 	for _, v := range []interface{}{
 		nil,
 		"",
@@ -105,7 +23,7 @@ func TestInitRouteTable(t *testing.T) {
 					t.Errorf("panic doesn't happened by %v", v)
 				}
 			}()
-			InitRouteTable(RouteTable{
+			InitRouter(RouteTable{
 				{
 					Name:       "testroute",
 					Path:       "/",
@@ -122,7 +40,7 @@ func TestInitRouteTable(t *testing.T) {
 				t.Errorf("panic doesn't happened")
 			}
 		}()
-		InitRouteTable(RouteTable{
+		InitRouter(RouteTable{
 			{
 				Name:       "testroute",
 				Path:       "/",
@@ -138,7 +56,7 @@ func TestInitRouteTable(t *testing.T) {
 				t.Errorf("panic doesn't happened")
 			}
 		}()
-		InitRouteTable(RouteTable{
+		InitRouter(RouteTable{
 			{
 				Name:       "testroute",
 				Path:       "/:name",
@@ -154,7 +72,7 @@ func TestInitRouteTable(t *testing.T) {
 				t.Errorf("panic doesn't happened")
 			}
 		}()
-		InitRouteTable(RouteTable{
+		InitRouter(RouteTable{
 			{
 				Name:       "testroute",
 				Path:       "/:id/:id",
@@ -170,7 +88,7 @@ func TestInitRouteTable(t *testing.T) {
 				t.Errorf("panic doesn't happened")
 			}
 		}()
-		InitRouteTable(RouteTable{
+		InitRouter(RouteTable{
 			{
 				Name:       "testroute",
 				Path:       "/",
@@ -190,7 +108,7 @@ func TestInitRouteTable(t *testing.T) {
 					t.Errorf("panic doesn't happened")
 				}
 			}()
-			InitRouteTable(RouteTable{
+			InitRouter(RouteTable{
 				{
 					Name:       "testroute",
 					Path:       "/",
@@ -207,7 +125,7 @@ func TestInitRouteTable(t *testing.T) {
 				t.Errorf("panic doesn't happened")
 			}
 		}()
-		InitRouteTable(RouteTable{
+		InitRouter(RouteTable{
 			{
 				Name:       "testroute",
 				Path:       "/:id",
@@ -215,6 +133,14 @@ func TestInitRouteTable(t *testing.T) {
 			},
 		})
 	}()
+}
+
+func Test_NewRouter(t *testing.T) {
+	actual := reflect.TypeOf(NewRouter(nil))
+	expected := reflect.TypeOf(&Router{})
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expect %q, but %q", expected, actual)
+	}
 }
 
 func TestReverse(t *testing.T) {
