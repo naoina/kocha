@@ -122,9 +122,6 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	for i := 0; i < len(v); i++ {
 		t := arg[ri.paramNames[i]]
 		validateParser := typeValidateParsers[t]
-		if validateParser == nil {
-			panic(fmt.Errorf("TypeValidateParser is not defined for type `%v`", t))
-		}
 		if !validateParser.Validate(v[i]) {
 			panic(fmt.Errorf("parameter type mismatch: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
 		}
@@ -234,6 +231,7 @@ func InitRouteTable(routeTable RouteTable) RouteTable {
 	reverseRouter = routeTable.buildReverseRouter()
 	for _, route := range routeTable {
 		for _, validator := range []func() error{
+			route.validateTypeValidateParser,
 			route.validateControllerMethodSignature,
 			route.validateRouteParameters,
 		} {
@@ -264,9 +262,6 @@ func (route *Route) dispatch(methodName string, params []urlrouter.Param) (contr
 	for _, param := range params {
 		t := methodArgs[param.Name]
 		validateParser := typeValidateParsers[t]
-		if validateParser == nil {
-			panic(fmt.Errorf("TypeValidateParser is not defined for type `%v`", t))
-		}
 		arg, err := validateParser.Parse(param.Value)
 		if err != nil {
 			return nil, nil, nil
@@ -400,6 +395,21 @@ func (route *Route) validateRouteParameters() error {
 			controllerName := reflect.TypeOf(route.Controller).Name()
 			names := strings.Join(defNames, "`, `")
 			errors = append(errors, fmt.Sprintf(format, names, controllerName, methodName))
+		}
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, "\n"+strings.Repeat(" ", len("panic: "))))
+	}
+	return nil
+}
+
+func (route *Route) validateTypeValidateParser() error {
+	var errors []string
+	for _, args := range route.MethodTypes {
+		for _, t := range args {
+			if typeValidateParsers[t] == nil {
+				errors = append(errors, fmt.Sprintf("TypeValidateParser of %#v is not set", t))
+			}
 		}
 	}
 	if len(errors) > 0 {

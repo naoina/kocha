@@ -91,16 +91,6 @@ func newTestAppConfig() *AppConfig {
 				},
 			},
 			{
-				Name:       "type_undefined",
-				Path:       "/type_undefined/:id",
-				Controller: FixtureTypeUndefinedCtrl{},
-				MethodTypes: map[string]MethodArgs{
-					"Get": MethodArgs{
-						"id": "int32",
-					},
-				},
-			},
-			{
 				Name:       "static",
 				Path:       "/static/*path",
 				Controller: StaticServe{},

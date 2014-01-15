@@ -199,6 +199,22 @@ func TestInitRouteTable(t *testing.T) {
 			})
 		}()
 	}
+
+	// test for validate the TypeValidateParsers.
+	func() {
+		defer func() {
+			if err := recover(); err == nil {
+				t.Errorf("panic doesn't happened")
+			}
+		}()
+		InitRouteTable(RouteTable{
+			{
+				Name:       "testroute",
+				Path:       "/:id",
+				Controller: FixtureTypeUndefinedCtrl{},
+			},
+		})
+	}()
 }
 
 func TestReverse(t *testing.T) {
@@ -293,21 +309,6 @@ func TestReverse_with_type_mismatch(t *testing.T) {
 		}
 	}()
 	Reverse("user", "naoina")
-}
-
-func TestReverse_with_type_macher_is_not_defined(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newTestAppConfig()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
-
-	defer func() {
-		if err := recover(); err == nil {
-			t.Errorf("panic doesn't happened")
-		}
-	}()
-	Reverse("type_undefined", 1)
 }
 
 func Test_dispatch_with_route_missing(t *testing.T) {
