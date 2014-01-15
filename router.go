@@ -32,9 +32,9 @@ var (
 		"Patch":  true,
 	}
 	typeValidateParsers = map[string]TypeValidateParser{
-		"string":  &StringTypeValidateParser{regexp.MustCompile(`\A[\w-]+\z`)},
-		"int":     &IntTypeValidateParser{regexp.MustCompile(`\A\d+\z`)},
-		"url.URL": &URLTypeValidateParser{regexp.MustCompile(`\A[\w-/.]+\z`)},
+		"string":   &StringTypeValidateParser{regexp.MustCompile(`\A[\w-]+\z`)},
+		"int":      &IntTypeValidateParser{regexp.MustCompile(`\A\d+\z`)},
+		"*url.URL": &URLTypeValidateParser{regexp.MustCompile(`\A[\w-/.]+\z`)},
 	}
 )
 
@@ -363,18 +363,16 @@ func findPkgDir(pkgPath string) string {
 }
 
 func astTypeName(expr ast.Expr) string {
-	var typeName string
 	switch t := expr.(type) {
 	case *ast.Ident:
-		typeName = t.Name
+		return t.Name
 	case *ast.SelectorExpr:
-		typeName = fmt.Sprintf("%v.%v", t.X.(*ast.Ident).Name, t.Sel.Name)
+		return fmt.Sprintf("%v.%v", t.X.(*ast.Ident).Name, t.Sel.Name)
 	case *ast.StarExpr:
-		typeName = astTypeName(t.X)
+		return fmt.Sprintf("*%s", astTypeName(t.X))
 	default:
 		panic(fmt.Errorf("sorry, unexpected argument type `%T` found. please report this issue.", t))
 	}
-	return typeName
 }
 
 func (route *Route) validateRouteParameters() error {

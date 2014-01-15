@@ -81,7 +81,7 @@ func TestInitRouteTable(t *testing.T) {
 			Controller: StaticServe{},
 			MethodTypes: map[string]MethodArgs{
 				"Get": MethodArgs{
-					"path": "url.URL",
+					"path": "*url.URL",
 				},
 			},
 		},
@@ -606,9 +606,9 @@ func Test_IntTypeValidateParser_Parse(t *testing.T) {
 }
 
 func Test_URLTypeValidateParser_Validate(t *testing.T) {
-	validateParser := typeValidateParsers["url.URL"]
+	validateParser := typeValidateParsers["*url.URL"]
 	if validateParser == nil {
-		t.Fatalf("TypeValidateParser of type %#v is not set", "url.URL")
+		t.Fatalf("TypeValidateParser of type %#v is not set", "*url.URL")
 	}
 	for v, expected := range map[interface{}]bool{
 		"/":                  true,
@@ -653,9 +653,9 @@ func Test_URLTypeValidateParser_Validate(t *testing.T) {
 }
 
 func Test_URLTypeValidateParser_Parse(t *testing.T) {
-	validateParser := typeValidateParsers["url.URL"]
+	validateParser := typeValidateParsers["*url.URL"]
 	if validateParser == nil {
-		t.Fatalf("TypeValidateParser of type %#v is not set", "url.URL")
+		t.Fatalf("TypeValidateParser of type %#v is not set", "*url.URL")
 	}
 	for _, v := range []string{
 		"/", "/path", "/path/to/route", "/path/to/route.html",
