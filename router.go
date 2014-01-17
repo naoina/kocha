@@ -96,7 +96,7 @@ func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, me
 
 // buildForward builds forward router.
 func (router *Router) buildForward() {
-	records := make([]*urlrouter.Record, len(router.routeTable))
+	records := make([]urlrouter.Record, len(router.routeTable))
 	for i, route := range router.routeTable {
 		records[i] = urlrouter.NewRecord(route.Path, route)
 	}
@@ -110,16 +110,15 @@ func (router *Router) buildForward() {
 func (router *Router) buildReverse() {
 	router.reverse = make(ReverseRouter)
 	for _, route := range router.routeTable {
-		_, params := router.forward.Lookup(route.Path)
-		names := make([]string, len(params))
-		values := make([]string, len(params))
-		for i, param := range params {
-			names[i], values[i] = param.Name, param.Value
+		paramNames := urlrouter.ParamNames(route.Path)
+		names := make([]string, len(paramNames))
+		for i := 0; i < len(paramNames); i++ {
+			names[i] = paramNames[i][1:] // truncate the meta character.
 		}
 		router.reverse[route.Name] = &routeInfo{
-			route:      route,
-			params:     values,
-			paramNames: names,
+			route:         route,
+			rawParamNames: paramNames,
+			paramNames:    names,
 		}
 	}
 }
@@ -315,9 +314,9 @@ func (route *Route) validateControllerType() error {
 type MethodArgs map[string]string
 
 type routeInfo struct {
-	route      *Route
-	paramNames []string
-	params     []string
+	route         *Route
+	rawParamNames []string
+	paramNames    []string
 }
 
 // Reverse returns path of route by name and any params.
@@ -335,7 +334,7 @@ func Reverse(name string, v ...interface{}) string {
 
 func (ri *routeInfo) reverse(v ...interface{}) string {
 	route := ri.route
-	switch vlen, nlen := len(v), len(ri.params); {
+	switch vlen, nlen := len(v), len(ri.paramNames); {
 	case vlen < nlen:
 		panic(fmt.Errorf("too few arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
 	case vlen > nlen:
@@ -356,7 +355,7 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	}
 	var oldnew []string
 	for i := 0; i < len(v); i++ {
-		oldnew = append(oldnew, ri.params[i], fmt.Sprint(v[i]))
+		oldnew = append(oldnew, ri.rawParamNames[i], fmt.Sprint(v[i]))
 	}
 	replacer := strings.NewReplacer(oldnew...)
 	path := replacer.Replace(route.Path)
