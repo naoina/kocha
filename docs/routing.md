@@ -9,6 +9,9 @@ subnav:
 -
   name: Route parameter
   path: Route-parameter
+-
+  name: Type validator and parser
+  path: Type-validator-and-parser
 ---
 
 # Routing <a id="Routing"></a>
@@ -123,11 +126,13 @@ func (c *Root) Get(id int, name string) kocha.Result {
 Above example matches all of `/1/alice`, `/10/alice`, `/2/bob` and etc.
 However, it does not match with `/str/alice` because `:id` route parameter is defined as type *int* in arguments of Controller's method.
 
-Supported parameter types:
+Pre-defined parameter types:
 
 * string
 * int
-* \*url.URL (See [Path parameter](#Path-parameter))
+* \*url.URL
+
+You can also override and/or define the any types, See [Type validator and parser](#Type-validator-and-parser).
 
 ### Path parameter <a id="Path-parameter"></a>
 
@@ -152,3 +157,87 @@ func (c *Root) Get(path *url.URL) kocha.Result {
 ```
 
 If the request to the above example is `GET /path/to/static.png`, `path.Path` of *Controller.Get* will be the `path/to/static.png`.
+
+## Type validator and parser <a id="Type-validator-and-parser"></a>
+
+Type validator is a validator of the path parameter for any format. It is used in dispatcher and reverse router.
+Type parser is a parse to value of Golang's type from string of path parameter. It is used in dispatcher.
+
+### Define the TypeValidateParser <a id="Define-the-TypeValidateParser"></a>
+
+Some validator and parser of the type parameters (`string`, `int` and `*url.URL`) are pre-defined by Kocha.
+If you want a validator and parser for any types, you can define them.
+
+1\. You must implement the [TypeValidateParser]({{ site.godoc }}#TypeValidateParser) interface.
+
+```go
+type TypeValidateParser interface {
+    // Validate returns whether the valid value as any type.
+    Validate(v interface{}) bool
+
+    // Parse returns value that parses v as any type.
+    Parse(v string) (value interface{}, err error)
+}
+```
+
+2\. Set the your own `TypeValidateParser` to any type.
+
+```go
+SetTypeValidateParser("bool", &YourOwnTypeValidateParser{})
+```
+
+#### Example <a id="Example"></a>
+
+In this example, define the own `TypeValidateParser` for `bool` type.
+
+Define the `BoolTypeValidateParser` as following in `config/routes.go`:
+
+```go
+type BoolTypeValidateParser struct{}
+
+func (validateParser *BoolTypeValidateParser) Validate(v interface{}) bool {
+    switch t := v.(type) {
+    case bool:
+        return true
+    case int:
+        return t == 1 || t == 0
+    }
+    return false
+}
+
+func (validateParser *BoolTypeValidateParser) Parse(s string) (data interface{}, err error) {
+    switch s {
+    case "true", "1":
+        return true, nil
+    case "false", "0":
+        return false, nil
+    }
+    return false, fmt.Errorf("invalid")
+}
+
+func init() {
+    SetTypeValidateParser("bool", &BoolTypeValidateParser{})
+    AppConfig.Router = kocha.InitRouter(kocha.RouteTable(Routes()))
+}
+```
+
+Then route modifies to following:
+
+```go
+{
+    Name:       "root",
+    Path:       "/:b",
+    Controller: controllers.Root{},
+}
+```
+
+And also modifies argument of the `Root` controller:
+
+```go
+func (c *Root) Get(b bool) kocha.Result {
+    // do something.
+}
+```
+
+It's completed that definition of the TypeValidateParser for bool type.
+You can now access to either `/true`, `/false`, `/1` and `/0`.
