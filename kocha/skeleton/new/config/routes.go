@@ -24,3 +24,7 @@ func Routes() RouteTable {
 		},
 	}...)
 }
+
+func init() {
+	AppConfig.Router = kocha.InitRouter(kocha.RouteTable(Routes()))
+}

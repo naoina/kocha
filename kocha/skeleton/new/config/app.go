@@ -15,7 +15,6 @@ var (
 	AppConfig = &kocha.AppConfig{
 		AppPath:       rootPath,
 		AppName:       AppName,
-		Router:        kocha.InitRouter(kocha.RouteTable(Routes())),
 		DefaultLayout: "app",
 		TemplateSet: kocha.TemplateSetFromPaths(map[string][]string{
 			AppName: []string{
