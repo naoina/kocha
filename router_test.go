@@ -64,6 +64,20 @@ func TestInitRouter(t *testing.T) {
 			},
 		})
 	}()
+	func() {
+		defer func() {
+			if err := recover(); err == nil {
+				t.Errorf("panic doesn't happened")
+			}
+		}()
+		InitRouter(RouteTable{
+			{
+				Name:       "testroute",
+				Path:       "/:id",
+				Controller: FixtureRootTestCtrl{},
+			},
+		})
+	}()
 
 	// test for validate the duplicated route parameters.
 	func() {

@@ -74,6 +74,7 @@ func InitRouter(rt RouteTable) *Router {
 			route.validateTypeValidateParser,
 			route.validateControllerMethodSignature,
 			route.validateRouteParameters,
+			route.validateControllerArgumentParameters,
 		} {
 			if err := validator(); err != nil {
 				panic(err)
@@ -255,6 +256,39 @@ func (route *Route) validateRouteParameters() error {
 	}
 	if len(errors) > 0 {
 		return fmt.Errorf(strings.Join(errors, "\n"+strings.Repeat(" ", len("panic: "))))
+	}
+	return nil
+}
+
+func (route *Route) validateControllerArgumentParameters() error {
+	argNames := make(map[string]bool)
+	for _, args := range route.MethodTypes {
+		for name := range args {
+			argNames[name] = true
+		}
+	}
+	var defNames []string
+	for _, name := range route.ParamNames {
+		if !argNames[name] {
+			defNames = append(defNames, name)
+		}
+	}
+	if len(defNames) > 0 {
+		var format string
+		switch {
+		case len(defNames) == 1:
+			format = "route parameter `%v` is defined in route `%v`, but argument is not defined in %v of `%v`"
+		case len(defNames) > 1:
+			format = "route parameters `%v` are defined in route `%v`, but arguments are not defined in %v of `%v`"
+		}
+		names := strings.Join(defNames, "`, `")
+		var methNames []string
+		for name := range route.MethodTypes {
+			methNames = append(methNames, name)
+		}
+		methName := strings.Join(methNames, "/")
+		controllerName := reflect.TypeOf(route.Controller).Name()
+		return fmt.Errorf(format, names, route.Name, methName, controllerName)
 	}
 	return nil
 }
