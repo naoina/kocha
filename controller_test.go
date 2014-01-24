@@ -151,23 +151,90 @@ func TestControllerRender_with_Context(t *testing.T) {
 	defer func() {
 		appConfig = oldAppConfig
 	}()
-	c := newTestController("testctrlr_ctx", "app")
-	ctx := Context{
-		"c1": "v1",
-		"c2": "v2",
-	}
-	buf, err := ioutil.ReadAll(c.Render(ctx).(*ResultContent).Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	actual := string(buf)
-	expected := "tmpl_ctx: map[c1:v1 c2:v2]"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-	if !reflect.DeepEqual(c.Response.ContentType, "text/html") {
-		t.Errorf("Expect %v, but %v", "text/html", c.Response.ContentType)
-	}
+
+	func() {
+		c := newTestController("testctrlr_ctx", "app")
+		ctx := Context{
+			"c1": "v1",
+			"c2": "v2",
+		}
+		buf, err := ioutil.ReadAll(c.Render(ctx).(*ResultContent).Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual := string(buf)
+		expected := "tmpl_ctx: map[c1:v1 c2:v2]"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+		if !reflect.DeepEqual(c.Response.ContentType, "text/html") {
+			t.Errorf("Expect %v, but %v", "text/html", c.Response.ContentType)
+		}
+	}()
+
+	func() {
+		c := newTestController("testctrlr_ctx", "app")
+		c.Context = Context{
+			"c3": "v3",
+			"c4": "v4",
+		}
+		buf, err := ioutil.ReadAll(c.Render().(*ResultContent).Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual := string(buf)
+		expected := "tmpl_ctx: map[c3:v3 c4:v4]"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %q, but %q", expected, actual)
+		}
+	}()
+
+	func() {
+		c := newTestController("testctrlr_ctx", "app")
+		c.Context = Context{
+			"c5": "v5",
+			"c6": "v6",
+		}
+		ctx := Context{
+			"c6": "test",
+			"c7": "v7",
+		}
+		buf, err := ioutil.ReadAll(c.Render(ctx).(*ResultContent).Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual := string(buf)
+		expected := "tmpl_ctx: map[c5:v5 c6:test c7:v7]"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %q, but %q", expected, actual)
+		}
+	}()
+
+	func() {
+		c := newTestController("testctrlr_ctx", "app")
+		ctx := "test_ctx"
+		buf, err := ioutil.ReadAll(c.Render(ctx).(*ResultContent).Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual := string(buf)
+		expected := "tmpl_ctx: test_ctx"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %q, but %q", expected, actual)
+		}
+	}()
+
+	func() {
+		c := newTestController("testctrlr_ctx", "app")
+		c.Context = Context{"c1": "v1"}
+		ctx := "test_ctx_override"
+		defer func() {
+			if err := recover(); err == nil {
+				t.Errorf("panic doesn't occurred")
+			}
+		}()
+		c.Render(ctx)
+	}()
 }
 
 func TestControllerRender_with_ContentType(t *testing.T) {

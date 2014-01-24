@@ -77,6 +77,7 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 	}
 	cc.Name = ac.Type().Name()
 	cc.Layout = appConfig.DefaultLayout
+	cc.Context = make(Context)
 	cc.Request = request
 	cc.Response = response
 	cc.Params.Values = request.Form

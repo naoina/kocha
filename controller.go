@@ -11,7 +11,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
+	"strings"
 )
 
 type mimeTypeFormats map[string]string
@@ -47,6 +49,9 @@ type Controller struct {
 	// Layout name to use.
 	Layout string
 
+	// Context value for template.
+	Context Context
+
 	// Request.
 	Request *Request
 
@@ -66,18 +71,23 @@ type Context map[string]interface{}
 // Render returns result of template.
 //
 // The context variadic argument must be without specified or only one.
+// A context to used will be determined the according to the following rules.
+//
+// 1. If context of the Context type is given, it will be merged with Controller.Context and it will be used.
+//
+// 2. If context of an other type is given and Controller.Context hasn't been set, it will be used as it is.
+//    Or it panics if Controller.Context has been set.
+//
+// 3. If context isn't given, Controller.Context will be used.
+//
 // Render retrieve a template file from controller name and c.Response.ContentType.
 // e.g. If controller name is "root" and ContentType is "application/xml", Render will
 // try to retrieve the template file "root.xml".
 // Also ContentType set to "text/html" if not specified.
-func (c *Controller) Render(context ...Context) Result {
-	var ctx Context
-	switch len(context) {
-	case 0: // do nothing
-	case 1:
-		ctx = context[0]
-	default: // > 1
-		panic(errors.New("too many arguments"))
+func (c *Controller) Render(context ...interface{}) Result {
+	ctx, err := c.buildContext(context)
+	if err != nil {
+		panic(err)
 	}
 	c.setContentTypeIfNotExists("text/html")
 	format := MimeTypeFormats.Get(c.Response.ContentType)
@@ -99,10 +109,15 @@ func (c *Controller) Render(context ...Context) Result {
 
 // RenderJSON returns result of JSON.
 //
+// RenderJSON is similar to Render but context will be encoded to JSON.
 // ContentType set to "application/json" if not specified.
-func (c *Controller) RenderJSON(context interface{}) Result {
+func (c *Controller) RenderJSON(context ...interface{}) Result {
+	ctx, err := c.buildContext(context)
+	if err != nil {
+		panic(err)
+	}
 	c.setContentTypeIfNotExists("application/json")
-	buf, err := json.Marshal(context)
+	buf, err := json.Marshal(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -113,10 +128,15 @@ func (c *Controller) RenderJSON(context interface{}) Result {
 
 // RenderXML returns result of XML.
 //
+// RenderXML is similar to Render but context will be encoded to XML.
 // ContentType set to "application/xml" if not specified.
-func (c *Controller) RenderXML(context interface{}) Result {
+func (c *Controller) RenderXML(context ...interface{}) Result {
+	ctx, err := c.buildContext(context)
+	if err != nil {
+		panic(err)
+	}
 	c.setContentTypeIfNotExists("application/xml")
-	buf, err := xml.Marshal(context)
+	buf, err := xml.Marshal(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -131,26 +151,22 @@ func (c *Controller) RenderXML(context interface{}) Result {
 func (c *Controller) RenderText(content string) Result {
 	c.setContentTypeIfNotExists("text/plain")
 	return &ResultContent{
-		Body: bytes.NewReader([]byte(content)),
+		Body: strings.NewReader(content),
 	}
 }
 
 // RenderError returns result of error.
 //
-// The context variadic argument must be without specified or only one.
+// RenderError is similar to Render, but there is a point where some different.
 // Render retrieve a template file from statusCode and c.Response.ContentType.
 // e.g. If statusCode is 500 and ContentType is "application/xml", Render will
 // try to retrieve the template file "errors/500.xml".
 // If failed to retrieve the template file, it returns result of text with statusCode.
 // Also ContentType set to "text/html" if not specified.
-func (c *Controller) RenderError(statusCode int, context ...Context) Result {
-	var ctx Context
-	switch len(context) {
-	case 0: // do nothing
-	case 1:
-		ctx = context[0]
-	default: // > 1
-		panic(errors.New("too many arguments"))
+func (c *Controller) RenderError(statusCode int, context ...interface{}) Result {
+	ctx, err := c.buildContext(context)
+	if err != nil {
+		panic(err)
 	}
 	c.setContentTypeIfNotExists("text/html")
 	format := MimeTypeFormats.Get(c.Response.ContentType)
@@ -224,6 +240,30 @@ func (c *Controller) Redirect(url string, permanently bool) Result {
 		URL:         url,
 		Permanently: permanently,
 	}
+}
+
+func (c *Controller) buildContext(context []interface{}) (interface{}, error) {
+	switch len(context) {
+	case 1: // do nothing.
+	case 0:
+		return c.Context, nil
+	default: // > 1
+		return nil, errors.New("too many arguments")
+	}
+	if c.Context == nil {
+		return context[0], nil
+	}
+	if ctx, ok := context[0].(Context); ok {
+		for k, v := range ctx {
+			c.Context[k] = v
+		}
+		return c.Context, nil
+	}
+	if len(c.Context) != 0 {
+		return nil, fmt.Errorf("contexts of multiple types has been set: Controller.Context has been set,"+
+			" but context of other type was given: %v", reflect.TypeOf(context))
+	}
+	return context[0], nil
 }
 
 // StaticServe is generic controller for serve a static file.
