@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/naoina/kocha"
 	"go/build"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/naoina/kocha"
 )
 
 // newCommand implements `command` interface for `new` command.
@@ -66,7 +67,7 @@ func (c *newCommand) Run() {
 		if info.IsDir() {
 			return nil
 		}
-		dstPath := filepath.Join(dstBasePath, strings.TrimPrefix(path, skeletonDir))
+		dstPath := filepath.Join(dstBasePath, strings.TrimSuffix(strings.TrimPrefix(path, skeletonDir), ".template"))
 		dstDir := filepath.Dir(dstPath)
 		dirCreated, err := mkdirAllIfNotExists(dstDir)
 		if err != nil {

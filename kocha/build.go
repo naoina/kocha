@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/naoina/kocha"
 	"go/build"
 	"io/ioutil"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/naoina/kocha"
 )
 
 // buildCommand implements `command` interface for `build` command.
@@ -76,7 +77,7 @@ func (c *buildCommand) Run() {
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
 	skeletonDir := filepath.Join(baseDir, "skeleton", "build")
-	mainTemplate, err := ioutil.ReadFile(filepath.Join(skeletonDir, "main.go"))
+	mainTemplate, err := ioutil.ReadFile(filepath.Join(skeletonDir, "main.go.template"))
 	if err != nil {
 		panic(err)
 	}
@@ -87,7 +88,7 @@ func (c *buildCommand) Run() {
 		kocha.PanicOnError(c, "abort: failed to create file: %v", err)
 	}
 	defer file.Close()
-	builderTemplatePath := filepath.ToSlash(filepath.Join(skeletonDir, "builder.go"))
+	builderTemplatePath := filepath.ToSlash(filepath.Join(skeletonDir, "builder.go.template"))
 	t := template.Must(template.ParseFiles(builderTemplatePath))
 	var resources map[string]string
 	if c.all {

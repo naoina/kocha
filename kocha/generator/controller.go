@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/naoina/kocha"
 	"go/ast"
 	"go/format"
 	"go/parser"
@@ -15,6 +14,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+
+	"github.com/naoina/kocha"
 )
 
 var (
@@ -50,7 +51,7 @@ func (g *controllerGenerator) Generate() {
 		"Name": camelCaseName,
 	}
 	kocha.CopyTemplate(g,
-		filepath.Join(skeletonDir, "controller.go"),
+		filepath.Join(skeletonDir, "controller.go.template"),
 		filepath.Join("app", "controllers", snakeCaseName+".go"), data)
 	kocha.CopyTemplate(g,
 		filepath.Join(skeletonDir, "view.html"),
