@@ -7,6 +7,4 @@ install:
   - go get -v github.com/naoina/kocha/kocha
 
 script:
-  - go test github.com/naoina/kocha
-  - go test github.com/naoina/kocha/kocha
-  - go test github.com/naoina/kocha/kocha/generator
+  - go test ./...
