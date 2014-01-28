@@ -116,6 +116,13 @@ func newTestSessionCookieStore() *SessionCookieStore {
 	}
 }
 
+func testInvokeWrapper(f func()) {
+	defer func() {
+		failedUnits = make(map[string]bool)
+	}()
+	f()
+}
+
 type FixturePanicInRenderTestCtrl struct{ *Controller }
 
 func (c *FixturePanicInRenderTestCtrl) Get() Result {
