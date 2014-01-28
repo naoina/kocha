@@ -44,8 +44,8 @@ var (
 		MaxClientBodySize: 1024 * 1024 * 10, // 10MB
 	}
 
-	_, configFileName, _, _ = runtime.Caller(0)
-	rootPath                = filepath.Dir(filepath.Join(configFileName, ".."))
+	_, configFileName, _, _ = runtime.Caller(1)
+	rootPath                = filepath.Dir(filepath.Join(configFileName, "..", ".."))
 )
 
 func init() {
