@@ -10,6 +10,7 @@ func TestGenerators(t *testing.T) {
 	actual := Generators
 	expected := map[string]Generator{
 		"controller": &controllerGenerator{},
+		"unit":       &unitGenerator{},
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
@@ -32,8 +33,8 @@ func (g *forTestGenerator) Generate() {
 }
 
 func TestRegister(t *testing.T) {
-	if len(Generators) != 1 {
-		t.Fatalf("Expect 1, but %v", len(Generators))
+	if len(Generators) != 2 {
+		t.Fatalf("Expect 2, but %v", len(Generators))
 	}
 	expected := &forTestGenerator{}
 	Register("test_generator", expected)
