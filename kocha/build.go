@@ -64,9 +64,11 @@ func (c *buildCommand) Run() {
 	if err != nil {
 		panic(err)
 	}
+	dstBasePath := filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src")
+	appDir := filepath.ToSlash(dir)[len(dstBasePath)+1:]
 	appName := filepath.Base(dir)
-	configPkg := c.Package(path.Join(appName, "config", env))
-	controllersPkg := c.Package(path.Join(appName, "app", "controllers"))
+	configPkg := c.Package(path.Join(appDir, "config", env))
+	controllersPkg := c.Package(path.Join(appDir, "app", "controllers"))
 	tmpDir, err := filepath.Abs("tmp")
 	if err != nil {
 		panic(err)
