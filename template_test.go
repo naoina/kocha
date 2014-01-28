@@ -96,6 +96,115 @@ func TestTemplateFuncs_raw(t *testing.T) {
 	}
 }
 
+func TestTemplateFuncs_invoke_template(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+	appConfig.TemplateSet = TemplateSet{
+		appConfig.AppName: {
+			"": {
+				"html": {
+					"def_tmpl":   template.Must(template.New("def_tmpl").Parse(`<div>def_tmpl:{{.}}</div>`)),
+					"test_tmpl1": template.Must(template.New("test_tmpl1").Parse(`<div>test_tmpl1:{{.}}</div>`)),
+					"test_tmpl2": template.Must(template.New("test_tmpl2").Parse(`<div>test_tmpl2:{{.}}</div>`)),
+				},
+			},
+		},
+	}
+
+	// test that if ActiveIf returns true.
+	testInvokeWrapper(func() {
+		unit := &testUnit{"test1", true, 0}
+		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl"}}`))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, unit); err != nil {
+			t.Fatal(err)
+		}
+		actual := buf.String()
+		expected := "<div>test_tmpl1:</div>"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %q, but %q", expected, actual)
+		}
+	})
+
+	// test that if ActiveIf returns false.
+	testInvokeWrapper(func() {
+		unit := &testUnit{"test2", false, 0}
+		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl"}}`))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, unit); err != nil {
+			t.Fatal(err)
+		}
+		actual := buf.String()
+		expected := "<div>def_tmpl:</div>"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %q, but %q", expected, actual)
+		}
+	})
+
+	// test that unknown template.
+	testInvokeWrapper(func() {
+		unit := &testUnit{"test3", true, 0}
+		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "unknown_tmpl" "def_tmpl"}}`))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, unit); err != nil {
+			t.Fatal(err)
+		}
+		actual := buf.String()
+		expected := "<div>def_tmpl:</div>"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %q, but %q", expected, actual)
+		}
+	})
+
+	// test that unknown templates.
+	testInvokeWrapper(func() {
+		unit := &testUnit{"test4", true, 0}
+		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "unknown_tmpl" "unknown_def_tmpl"}}`))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, unit); err == nil {
+			t.Errorf("no error returned by unknown template")
+		}
+	})
+
+	// test that unknown default template.
+	testInvokeWrapper(func() {
+		unit := &testUnit{"test5", true, 0}
+		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "test_tmpl1" "unknown"}}`))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, unit); err != nil {
+			t.Errorf("no error returned by unknown default template")
+		}
+	})
+
+	// test that single context.
+	testInvokeWrapper(func() {
+		unit := &testUnit{"test6", true, 0}
+		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl" "ctx"}}`))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, unit); err != nil {
+			t.Fatal(err)
+		}
+		actual := buf.String()
+		expected := "<div>test_tmpl1:ctx</div>"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %q, but %q", expected, actual)
+		}
+	})
+
+	// test that too many contexts.
+	testInvokeWrapper(func() {
+		unit := &testUnit{"test7", true, 0}
+		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl" "ctx" "over"}}`))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, unit); err == nil {
+			t.Errorf("no error returned by too many number of context")
+		}
+	})
+}
+
 func TestTemplateFuncs_date(t *testing.T) {
 	base := `{{date . "%v"}}`
 	now := time.Now()
