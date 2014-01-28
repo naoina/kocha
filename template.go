@@ -1,6 +1,7 @@
 package kocha
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -36,6 +37,22 @@ var (
 		},
 		"raw": func(text string) template.HTML {
 			return template.HTML(text)
+		},
+		"invoke_template": func(unit Unit, tmplName, defTmplName string, context ...interface{}) (html template.HTML) {
+			var ctx interface{}
+			switch len(context) {
+			case 0: // do nothing.
+			case 1:
+				ctx = context[0]
+			default:
+				panic(fmt.Errorf("number of context must be 0 or 1"))
+			}
+			Invoke(unit, func() {
+				html = mustReadTemplate(readPartialTemplate(tmplName, ctx))
+			}, func() {
+				html = mustReadTemplate(readPartialTemplate(defTmplName, ctx))
+			})
+			return html
 		},
 		"date": func(date time.Time, layout string) string {
 			return date.Format(layout)
@@ -176,4 +193,23 @@ func buildLayoutAppTemplateSet(appTemplateSet AppTemplateSet, layouts map[string
 		appTemplateSet[layoutName] = layoutTemplateSet
 	}
 	return nil
+}
+
+func readPartialTemplate(name string, ctx interface{}) (template.HTML, error) {
+	t := appConfig.TemplateSet.Get(appConfig.AppName, "", name, "html")
+	if t == nil {
+		return "", fmt.Errorf("%v: template not found", name)
+	}
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, ctx); err != nil {
+		return "", err
+	}
+	return template.HTML(buf.String()), nil
+}
+
+func mustReadTemplate(html template.HTML, err error) template.HTML {
+	if err != nil {
+		panic(err)
+	}
+	return html
 }

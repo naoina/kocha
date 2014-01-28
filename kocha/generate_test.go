@@ -33,6 +33,7 @@ func Test_generateCommand(t *testing.T) {
 Generators:
 
     controller
+    unit  
 `
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)

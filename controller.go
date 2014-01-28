@@ -266,6 +266,11 @@ func (c *Controller) buildContext(context []interface{}) (interface{}, error) {
 	return context[0], nil
 }
 
+// Invoke is an alias to Invoke(unit, newFunc, defaultFunc).
+func (c *Controller) Invoke(unit Unit, newFunc func(), defaultFunc func()) {
+	Invoke(unit, newFunc, defaultFunc)
+}
+
 // StaticServe is generic controller for serve a static file.
 type StaticServe struct {
 	*Controller

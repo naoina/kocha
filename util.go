@@ -5,19 +5,21 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"github.com/daviddengcn/go-colortext"
 	htmltemplate "html/template"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
 	"text/template"
 	"time"
 	"unicode"
+
+	"github.com/daviddengcn/go-colortext"
 )
 
 var (
@@ -116,6 +118,13 @@ func CopyTemplate(u usager, srcPath, dstPath string, data map[string]interface{}
 	var bufFrom bytes.Buffer
 	if err := tmpl.Execute(&bufFrom, data); err != nil {
 		PanicOnError(u, "abort: failed to process template: %v", err)
+	}
+	dstDir := filepath.Dir(dstPath)
+	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
+		PrintCreateDirectory(dstDir)
+		if err := os.MkdirAll(dstDir, 0755); err != nil {
+			PanicOnError(u, "abort: failed to create directory: %v", err)
+		}
 	}
 	printFunc := PrintCreate
 	switch detectConflict(u, bufFrom.Bytes(), dstPath) {
