@@ -19,6 +19,8 @@ import (
 	"time"
 	"unicode"
 
+	"go/format"
+
 	"github.com/daviddengcn/go-colortext"
 )
 
@@ -125,6 +127,10 @@ func CopyTemplate(u usager, srcPath, dstPath string, data map[string]interface{}
 	if err := tmpl.Execute(&bufFrom, data); err != nil {
 		PanicOnError(u, "abort: failed to process template: %v", err)
 	}
+	buf, err := format.Source(bufFrom.Bytes())
+	if err != nil {
+		PanicOnError(u, "abort: failed to gofmt: %v", err)
+	}
 	dstDir := filepath.Dir(dstPath)
 	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
 		PrintCreateDirectory(dstDir)
@@ -133,7 +139,7 @@ func CopyTemplate(u usager, srcPath, dstPath string, data map[string]interface{}
 		}
 	}
 	printFunc := PrintCreate
-	switch detectConflict(u, bufFrom.Bytes(), dstPath) {
+	switch detectConflict(u, buf, dstPath) {
 	case fileStatusConflict:
 		PrintConflict(dstPath)
 		if !confirmOverwrite(dstPath) {
@@ -150,7 +156,7 @@ func CopyTemplate(u usager, srcPath, dstPath string, data map[string]interface{}
 		PanicOnError(u, "abort: failed to create file: %v", err)
 	}
 	defer dstFile.Close()
-	if _, err := io.Copy(dstFile, &bufFrom); err != nil {
+	if _, err := io.Copy(dstFile, bytes.NewBuffer(buf)); err != nil {
 		PanicOnError(u, "abort: failed to output file: %v", err)
 	}
 	printFunc(dstPath)
