@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 
 	"github.com/naoina/kocha"
 )
@@ -42,19 +41,16 @@ func (g *controllerGenerator) Generate() {
 	if name == "" {
 		kocha.PanicOnError(g, "abort: no NAME given")
 	}
-	_, filename, _, _ := runtime.Caller(0)
-	baseDir := filepath.Dir(filename)
-	skeletonDir := filepath.Join(baseDir, "skeleton", "controller")
 	camelCaseName := kocha.ToCamelCase(name)
 	snakeCaseName := kocha.ToSnakeCase(name)
 	data := map[string]interface{}{
 		"Name": camelCaseName,
 	}
 	kocha.CopyTemplate(g,
-		filepath.Join(skeletonDir, "controller.go.template"),
+		filepath.Join(SkeletonDir("controller"), "controller.go.template"),
 		filepath.Join("app", "controllers", snakeCaseName+".go"), data)
 	kocha.CopyTemplate(g,
-		filepath.Join(skeletonDir, "view.html"),
+		filepath.Join(SkeletonDir("controller"), "view.html"),
 		filepath.Join("app", "views", snakeCaseName+".html"), data)
 	g.addRouteToFile(name)
 }

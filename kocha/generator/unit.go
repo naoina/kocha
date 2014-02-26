@@ -3,7 +3,6 @@ package generator
 import (
 	"flag"
 	"path/filepath"
-	"runtime"
 
 	"github.com/naoina/kocha"
 )
@@ -28,16 +27,13 @@ func (g *unitGenerator) Generate() {
 	if name == "" {
 		kocha.PanicOnError(g, "abort: no NAME given")
 	}
-	_, filename, _, _ := runtime.Caller(0)
-	baseDir := filepath.Dir(filename)
-	skeletonDir := filepath.Join(baseDir, "skeleton", "unit")
 	camelCaseName := kocha.ToCamelCase(name)
 	snakeCaseName := kocha.ToSnakeCase(name)
 	data := map[string]interface{}{
 		"Name": camelCaseName,
 	}
 	kocha.CopyTemplate(g,
-		filepath.Join(skeletonDir, "unit.go.template"),
+		filepath.Join(SkeletonDir("unit"), "unit.go.template"),
 		filepath.Join("app", "units", snakeCaseName+".go"), data)
 }
 

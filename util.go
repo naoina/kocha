@@ -127,9 +127,11 @@ func CopyTemplate(u usager, srcPath, dstPath string, data map[string]interface{}
 	if err := tmpl.Execute(&bufFrom, data); err != nil {
 		PanicOnError(u, "abort: failed to process template: %v", err)
 	}
-	buf, err := format.Source(bufFrom.Bytes())
-	if err != nil {
-		PanicOnError(u, "abort: failed to gofmt: %v", err)
+	buf := bufFrom.Bytes()
+	if strings.HasSuffix(srcPath, ".go.template") {
+		if buf, err = format.Source(buf); err != nil {
+			PanicOnError(u, "abort: failed to gofmt: %v", err)
+		}
 	}
 	dstDir := filepath.Dir(dstPath)
 	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
