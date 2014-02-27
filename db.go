@@ -1,6 +1,6 @@
 package kocha
 
-type DatabaseMap map[string]map[string]DatabaseConfig
+type DatabaseMap map[string]DatabaseConfig
 
 // DatabaseConfig represents a configuration of the database.
 type DatabaseConfig struct {

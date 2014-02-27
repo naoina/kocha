@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -12,7 +11,7 @@ import (
 
 var (
 	AppName   = "{{.appName}}"
-	Addr      = "127.0.0.1:9100"
+	Addr      = kocha.GetenvDefault("KOCHA_ADDR", "127.0.0.1:9100")
 	AppConfig = &kocha.AppConfig{
 		AppPath:       rootPath,
 		AppName:       AppName,
@@ -61,7 +60,7 @@ func init() {
 		AppConfig.Middlewares = append(kocha.DefaultMiddlewares, []kocha.Middleware{
 			&kocha.SessionMiddleware{},
 		}...)
-	case "dev":
+	default:
 		AppConfig.Logger = &kocha.Logger{
 			DEBUG: kocha.Loggers{kocha.ConsoleLogger(-1)},
 			INFO:  kocha.Loggers{kocha.ConsoleLogger(-1)},
@@ -72,8 +71,6 @@ func init() {
 			&kocha.RequestLoggingMiddleware{},
 			&kocha.SessionMiddleware{},
 		}...)
-	default:
-		panic(fmt.Errorf(`kocha: unknown parameter of KOCHA_ENV environment variable: "%v"`, env))
 	}
 	config := kocha.Config(AppName)
 	config.Set("AppName", AppName)

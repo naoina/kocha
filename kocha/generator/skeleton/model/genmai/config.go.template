@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/naoina/genmai"
@@ -14,17 +13,9 @@ import (
 )
 
 var DatabaseMap = kocha.DatabaseMap{
-	"dev": {
-		"default": {
-			Driver: "sqlite3",
-			DSN:	filepath.Join("db", "db.sqlite3"),
-		},
-	},
-	"prod": {
-		"default": {
-			Driver: "mysql",
-			DSN:	os.Getenv("KOCHA_DB_DSN"),
-		},
+	"default": {
+		Driver: kocha.GetenvDefault("KOCHA_DB_DRIVER", "sqlite3"),
+		DSN:    kocha.GetenvDefault("KOCHA_DB_DSN", filepath.Join("db", "db.sqlite3")),
 	},
 }
 
@@ -35,12 +26,7 @@ func Get(name string) *genmai.DB {
 }
 
 func init() {
-	env := os.Getenv("KOCHA_ENV")
-	conf := DatabaseMap[env]
-	if conf == nil {
-		panic(fmt.Errorf(`kocha: database setting is undefined for "%v"`, env))
-	}
-	for name, dbconf := range conf {
+	for name, dbconf := range DatabaseMap {
 		var d genmai.Dialect
 		switch dbconf.Driver {
 		case "mysql":

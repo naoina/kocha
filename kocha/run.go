@@ -12,8 +12,6 @@ import (
 	"github.com/naoina/kocha"
 )
 
-const DEFAULT_KOCHA_ENV = "dev"
-
 type runCommand struct {
 	flag *flag.FlagSet
 }
@@ -31,7 +29,7 @@ func (c *runCommand) Short() string {
 }
 
 func (c *runCommand) Usage() string {
-	return fmt.Sprintf("%s [KOCHA_ENV]", c.Name())
+	return c.Name()
 }
 
 func (c *runCommand) DefineFlags(fs *flag.FlagSet) {
@@ -39,12 +37,6 @@ func (c *runCommand) DefineFlags(fs *flag.FlagSet) {
 }
 
 func (c *runCommand) Run() {
-	env := c.flag.Arg(0)
-	if env == "" {
-		fmt.Printf("kocha: KOCHA_ENV environment variable isn't set, use \"%v\"\n", DEFAULT_KOCHA_ENV)
-		env = DEFAULT_KOCHA_ENV
-	}
-	os.Setenv("KOCHA_ENV", env)
 	basedir, err := os.Getwd()
 	if err != nil {
 		panic(err)
