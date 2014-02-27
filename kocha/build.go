@@ -45,7 +45,7 @@ func (c *buildCommand) Short() string {
 
 // Usage returns usage of `build` command.
 func (c *buildCommand) Usage() string {
-	return fmt.Sprintf("%s [options] ENV", c.Name())
+	return fmt.Sprintf(`%s [-a] [-tag TAG]`, c.Name())
 }
 
 func (c *buildCommand) DefineFlags(fs *flag.FlagSet) {
@@ -56,10 +56,6 @@ func (c *buildCommand) DefineFlags(fs *flag.FlagSet) {
 
 // Run execute the process for `build` command.
 func (c *buildCommand) Run() {
-	env := c.flag.Arg(0)
-	if env == "" {
-		kocha.PanicOnError(c, "abort: no ENV given")
-	}
 	dir, err := os.Getwd()
 	if err != nil {
 		panic(err)
@@ -67,7 +63,7 @@ func (c *buildCommand) Run() {
 	dstBasePath := filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src")
 	appDir := filepath.ToSlash(dir)[len(dstBasePath)+1:]
 	appName := filepath.Base(dir)
-	configPkg := c.Package(path.Join(appDir, "config", env))
+	configPkg := c.Package(path.Join(appDir, "config"))
 	controllersPkg := c.Package(path.Join(appDir, "app", "controllers"))
 	tmpDir, err := filepath.Abs("tmp")
 	if err != nil {
@@ -102,7 +98,7 @@ func (c *buildCommand) Run() {
 		"mainTemplate":          string(mainTemplate),
 		"mainFilePath":          mainFilePath,
 		"resources":             resources,
-		"version":               fmt.Sprintf("%s@%s", env, c.detectVersionTag()),
+		"version":               c.detectVersionTag(),
 	}
 	if err := t.Execute(file, data); err != nil {
 		kocha.PanicOnError(c, "abort: failed to write file: %v", err)
