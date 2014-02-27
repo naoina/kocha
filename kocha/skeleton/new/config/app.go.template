@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -44,11 +46,39 @@ var (
 		MaxClientBodySize: 1024 * 1024 * 10, // 10MB
 	}
 
-	_, configFileName, _, _ = runtime.Caller(1)
-	rootPath                = filepath.Dir(filepath.Join(configFileName, "..", ".."))
+	_, configFileName, _, _ = runtime.Caller(0)
+	rootPath                = filepath.Dir(filepath.Join(configFileName, ".."))
 )
 
 func init() {
+	env := os.Getenv("KOCHA_ENV")
+	if env == "" {
+		fmt.Fprintln(os.Stderr, `kocha: KOCHA_ENV environment variable isn't set, use "dev"`)
+		env = "dev"
+	}
+	switch env {
+	case "prod":
+		AppConfig.Logger = &kocha.Logger{
+			DEBUG: kocha.Loggers{kocha.NullLogger()},
+			INFO:  kocha.Loggers{kocha.NullLogger()},
+			WARN:  kocha.Loggers{kocha.FileLogger("log/prod.log", -1)},
+			ERROR: kocha.Loggers{kocha.FileLogger("log/prod.log", -1)},
+		}
+		AppConfig.Middlewares = append(kocha.DefaultMiddlewares, []kocha.Middleware{
+			&kocha.SessionMiddleware{},
+		}...)
+	case "dev":
+		AppConfig.Logger = &kocha.Logger{
+			DEBUG: kocha.Loggers{kocha.ConsoleLogger(-1)},
+			INFO:  kocha.Loggers{kocha.ConsoleLogger(-1)},
+			WARN:  kocha.Loggers{kocha.ConsoleLogger(-1)},
+			ERROR: kocha.Loggers{kocha.ConsoleLogger(-1)},
+		}
+		AppConfig.Middlewares = append(kocha.DefaultMiddlewares, []kocha.Middleware{
+			&kocha.RequestLoggingMiddleware{},
+			&kocha.SessionMiddleware{},
+		}...)
+	}
 	config := kocha.Config(AppName)
 	config.Set("AppName", AppName)
 	config.Set("Addr", Addr)

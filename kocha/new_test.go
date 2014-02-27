@@ -120,15 +120,12 @@ func Test_newCommand_Run(t *testing.T) {
 		return nil
 	})
 	expects := []string{
+		filepath.Join("main.go"),
 		filepath.Join("app", "controllers", "root.go"),
 		filepath.Join("app", "views", "layouts", "app.html"),
 		filepath.Join("app", "views", "root.html"),
 		filepath.Join("config", "app.go"),
 		filepath.Join("config", "routes.go"),
-		filepath.Join("config", "dev", "app.go"),
-		filepath.Join("config", "prod", "app.go"),
-		filepath.Join("dev.go"),
-		filepath.Join("prod.go"),
 		filepath.Join("public", "robots.txt"),
 	}
 	sort.Strings(actuals)

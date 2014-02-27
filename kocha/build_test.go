@@ -20,7 +20,7 @@ func Test_buildCommand(t *testing.T) {
 		{"Name", cmd.Name(), "build"},
 		{"Alias", cmd.Alias(), "b"},
 		{"Short", cmd.Short(), "build your application"},
-		{"Usage", cmd.Usage(), "build [options] ENV"},
+		{"Usage", cmd.Usage(), `build [-a] [-tag TAG]`},
 	} {
 		name, actual, expected := v[0], v[1], v[2]
 		if !reflect.DeepEqual(actual, expected) {
@@ -88,7 +88,7 @@ func Test_buildCommandRun(t *testing.T) {
 	cmd := &buildCommand{}
 	flags := flag.NewFlagSet("testflags", flag.ExitOnError)
 	cmd.DefineFlags(flags)
-	flags.Parse([]string{"dev"})
+	flags.Parse([]string{})
 	origGOPATH := build.Default.GOPATH
 	defer func() {
 		build.Default.GOPATH = origGOPATH
@@ -125,7 +125,7 @@ func Test_buildCommandRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	actual := string(output)
-	expected := fmt.Sprintf("%s version dev@", execName)
+	expected := fmt.Sprintf("%s version ", execName)
 	if !strings.HasPrefix(actual, expected) {
 		t.Errorf("Expect starts with %v, but %v", expected, actual)
 	}

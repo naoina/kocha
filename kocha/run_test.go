@@ -12,7 +12,7 @@ func Test_runCommand(t *testing.T) {
 		{"Name", cmd.Name(), "run"},
 		{"Alias", cmd.Alias(), ""},
 		{"Short", cmd.Short(), "run the your application"},
-		{"Usage", cmd.Usage(), "run ENV"},
+		{"Usage", cmd.Usage(), "run [KOCHA_ENV]"},
 	} {
 		name, actual, expected := v[0], v[1], v[2]
 		if !reflect.DeepEqual(actual, expected) {

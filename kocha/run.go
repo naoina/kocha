@@ -3,16 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/howeyc/fsnotify"
-	"github.com/naoina/kocha"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-)
 
-// Default environment
-const DEFAULT_ENV = "dev"
+	"github.com/howeyc/fsnotify"
+	"github.com/naoina/kocha"
+)
 
 type runCommand struct {
 	flag *flag.FlagSet
@@ -31,7 +29,7 @@ func (c *runCommand) Short() string {
 }
 
 func (c *runCommand) Usage() string {
-	return fmt.Sprintf("%s ENV", c.Name())
+	return fmt.Sprintf("%s [KOCHA_ENV]", c.Name())
 }
 
 func (c *runCommand) DefineFlags(fs *flag.FlagSet) {
@@ -39,10 +37,9 @@ func (c *runCommand) DefineFlags(fs *flag.FlagSet) {
 }
 
 func (c *runCommand) Run() {
-	env := c.flag.Arg(0)
-	if env == "" {
-		env = DEFAULT_ENV
-		fmt.Printf("ENV is not given, use `%v`.\n", DEFAULT_ENV)
+
+	if env := c.flag.Arg(0); env != "" {
+		os.Setenv("KOCHA_ENV", env)
 	}
 	dir, err := os.Getwd()
 	if err != nil {
@@ -52,14 +49,13 @@ func (c *runCommand) Run() {
 	if runtime.GOOS == "windows" {
 		execName += ".exe"
 	}
-	src := env + ".go"
 	for {
-		c.watchApp(dir, execName, src)
+		c.watchApp(dir, execName)
 	}
 }
 
-func (c *runCommand) watchApp(dir, execName, src string) {
-	cmd := c.execCmd("go", "build", "-o", execName, src)
+func (c *runCommand) watchApp(dir, execName string) {
+	cmd := c.execCmd("go", "build", "-o", execName)
 	if err := cmd.Wait(); err == nil {
 		cmd = c.execCmd(filepath.Join(dir, execName))
 	}
