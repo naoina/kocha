@@ -5,10 +5,9 @@ import (
 )
 
 const (
-	DefaultHttpAddr          string = "0.0.0.0"
-	DefaultHttpPort          int    = 80
-	DefaultMaxClientBodySize        = 1024 * 1024 * 10 // 10MB
-	StaticDir                       = "public"
+	DefaultHttpAddr          = "127.0.0.1:9100"
+	DefaultMaxClientBodySize = 1024 * 1024 * 10 // 10MB
+	StaticDir                = "public"
 )
 
 // AppConfig represents a application-scope configuration.

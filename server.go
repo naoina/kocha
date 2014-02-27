@@ -93,18 +93,14 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 
 // Run starts Kocha app.
 //
-// addr is string of address for bind, port is port for bind.
-func Run(addr string, port int) {
+// addr is string of address for bind.
+func Run(addr string) {
 	if !initialized {
 		log.Fatalln("Uninitialized. Please call the kocha.Init() before kocha.Run()")
 	}
 	if addr == "" {
 		addr = DefaultHttpAddr
 	}
-	if port == 0 {
-		port = DefaultHttpPort
-	}
-	addr = net.JoinHostPort(addr, strconv.Itoa(port))
 	l, reloaded := serverListener(addr)
 	listener := &waitableListener{
 		Listener: l,

@@ -12,8 +12,7 @@ import (
 
 var (
 	AppName   = "{{.appName}}"
-	Addr      = "127.0.0.1"
-	Port      = 9100
+	Addr      = "127.0.0.1:9100"
 	AppConfig = &kocha.AppConfig{
 		AppPath:       rootPath,
 		AppName:       AppName,
@@ -79,5 +78,4 @@ func init() {
 	config := kocha.Config(AppName)
 	config.Set("AppName", AppName)
 	config.Set("Addr", Addr)
-	config.Set("Port", Port)
 }

@@ -7,8 +7,7 @@ import (
 
 func TestConst(t *testing.T) {
 	for actual, expected := range map[interface{}]interface{}{
-		DefaultHttpAddr:          "0.0.0.0",
-		DefaultHttpPort:          80,
+		DefaultHttpAddr:          "127.0.0.1:9100",
 		DefaultMaxClientBodySize: 1024 * 1024 * 10,
 		StaticDir:                "public",
 	} {
