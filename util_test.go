@@ -3,7 +3,6 @@ package kocha
 import (
 	"go/format"
 	"html/template"
-	"os"
 	"reflect"
 	"regexp"
 	"testing"
@@ -62,26 +61,6 @@ func Test_SplitExt(t *testing.T) {
 			t.Errorf("Expect %v, but %v", expected[1], actual[1])
 		}
 	}
-}
-
-func TestGetenvDefault(t *testing.T) {
-	func() {
-		actual := GetenvDefault("TEST_KOCHA_ENV", "default value")
-		expected := "default value"
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("GetenvDefault(%q, %q) => %q, want %q", "TEST_KOCHA_ENV", "default value", actual, expected)
-		}
-	}()
-
-	func() {
-		os.Setenv("TEST_KOCHA_ENV", "set kocha env")
-		defer os.Clearenv()
-		actual := GetenvDefault("TEST_KOCHA_ENV", "default value")
-		expected := "set kocha env"
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("GetenvDefault(%q, %q) => %q, want %q", "TEST_KOCHA_ENV", "default value", actual, expected)
-		}
-	}()
 }
 
 func Test_normPath(t *testing.T) {

@@ -1,6 +1,7 @@
 package kocha
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -78,4 +79,36 @@ func TestInit(t *testing.T) {
 	if config.MaxClientBodySize != 20131108 {
 		t.Errorf("Expect %v, but %v", 20131108, config.MaxClientBodySize)
 	}
+}
+
+func TestSettingEnv(t *testing.T) {
+	func() {
+		actual := SettingEnv("TEST_KOCHA_ENV", "default value")
+		expected := "default value"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("SettingEnv(%q, %q) => %q, want %q", "TEST_KOCHA_ENV", "default value", actual, expected)
+		}
+
+		actual = os.Getenv("TEST_KOCHA_ENV")
+		expected = "default value"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("os.Getenv(%q) => %q, want %q", "TEST_KOCHA_ENV", actual, expected)
+		}
+	}()
+
+	func() {
+		os.Setenv("TEST_KOCHA_ENV", "set kocha env")
+		defer os.Clearenv()
+		actual := SettingEnv("TEST_KOCHA_ENV", "default value")
+		expected := "set kocha env"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("SettingEnv(%q, %q) => %q, want %q", "TEST_KOCHA_ENV", "default value", actual, expected)
+		}
+
+		actual = os.Getenv("TEST_KOCHA_ENV")
+		expected = "set kocha env"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("os.Getenv(%q) => %q, want %q", "TEST_KOCHA_ENV", actual, expected)
+		}
+	}()
 }

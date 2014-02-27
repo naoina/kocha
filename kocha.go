@@ -1,6 +1,7 @@
 package kocha
 
 import (
+	"os"
 	"runtime"
 )
 
@@ -45,6 +46,18 @@ func Init(config *AppConfig) {
 	}
 	Log = initLogger(appConfig.Logger)
 	initialized = true
+}
+
+// SettingEnv is similar to os.Getenv.
+// However, SettingEnv returns def value if the variable is not present, and
+// sets def to environment variable.
+func SettingEnv(key, def string) string {
+	env := os.Getenv(key)
+	if env != "" {
+		return env
+	}
+	os.Setenv(key, def)
+	return def
 }
 
 func init() {

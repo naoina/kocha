@@ -84,16 +84,6 @@ func SplitExt(path string) (name, ext string) {
 	return path, ""
 }
 
-// GetenvDefault is similar to os.Getenv.
-// However, GetenvDefault returns def value if the variable is not present.
-func GetenvDefault(key, def string) string {
-	env := os.Getenv(key)
-	if env == "" {
-		return def
-	}
-	return env
-}
-
 func normPath(p string) string {
 	result := path.Clean(p)
 	// path.Clean() truncate the trailing slash but add it.

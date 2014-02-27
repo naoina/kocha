@@ -1,7 +1,6 @@
 package config
 
 import (
-	"os"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -11,7 +10,7 @@ import (
 
 var (
 	AppName   = "{{.appName}}"
-	Addr      = kocha.GetenvDefault("KOCHA_ADDR", "127.0.0.1:9100")
+	Addr      = kocha.SettingEnv("KOCHA_ADDR", "127.0.0.1:9100")
 	AppConfig = &kocha.AppConfig{
 		AppPath:       rootPath,
 		AppName:       AppName,
@@ -49,7 +48,7 @@ var (
 )
 
 func init() {
-	switch env := os.Getenv("KOCHA_ENV"); env {
+	switch env := kocha.SettingEnv("KOCHA_ENV", "dev"); env {
 	case "prod":
 		AppConfig.Logger = &kocha.Logger{
 			DEBUG: kocha.Loggers{kocha.NullLogger()},
