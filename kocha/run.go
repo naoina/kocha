@@ -45,23 +45,23 @@ func (c *runCommand) Run() {
 		env = DEFAULT_KOCHA_ENV
 	}
 	os.Setenv("KOCHA_ENV", env)
-	dir, err := os.Getwd()
+	basedir, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
-	execName := filepath.Base(dir)
+	execName := filepath.Base(basedir)
 	if runtime.GOOS == "windows" {
 		execName += ".exe"
 	}
 	for {
-		c.watchApp(dir, execName)
+		c.watchApp(basedir, execName)
 	}
 }
 
-func (c *runCommand) watchApp(dir, execName string) {
+func (c *runCommand) watchApp(basedir, execName string) {
 	cmd := c.execCmd("go", "build", "-o", execName)
 	if err := cmd.Wait(); err == nil {
-		cmd = c.execCmd(filepath.Join(dir, execName))
+		cmd = c.execCmd(filepath.Join(basedir, execName))
 	}
 	defer cmd.Process.Kill()
 	watcher, err := fsnotify.NewWatcher()
@@ -69,7 +69,7 @@ func (c *runCommand) watchApp(dir, execName string) {
 		panic(err)
 	}
 	defer watcher.Close()
-	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	watchFunc := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -83,8 +83,13 @@ func (c *runCommand) watchApp(dir, execName string) {
 			return err
 		}
 		return nil
-	}); err != nil {
-		panic(err)
+	}
+	for _, path := range []string{
+		"app", "config", "main.go",
+	} {
+		if err := filepath.Walk(filepath.Join(basedir, path), watchFunc); err != nil {
+			panic(err)
+		}
 	}
 	select {
 	case <-watcher.Event:

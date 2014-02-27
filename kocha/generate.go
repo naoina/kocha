@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/naoina/kocha"
-	"github.com/naoina/kocha/kocha/generator"
 	"os"
 	"text/template"
+
+	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/kocha/generator"
 )
 
 // newCommand implements `command` interface for `generate` command.
@@ -58,7 +59,19 @@ func (c *generateCommand) Run() {
 	}
 	flagSet := flag.NewFlagSet(generatorName, flag.ExitOnError)
 	flagSet.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: %s %s %s\n", os.Args[0], c.Name(), generator.Usage())
+		var flags []*flag.Flag
+		flagSet.VisitAll(func(f *flag.Flag) {
+			flags = append(flags, f)
+		})
+		var buf bytes.Buffer
+		template.Must(template.New("usage").Parse(
+			`usage: %s %s %s
+{{if .}}
+Options:
+{{range .}}
+    -{{.Name|printf "%-12s"}} {{.Usage}}{{end}}{{end}}
+`)).Execute(&buf, flags)
+		fmt.Fprintf(os.Stderr, buf.String(), os.Args[0], c.Name(), generator.Usage())
 	}
 	defer func() {
 		if err := recover(); err != nil {
