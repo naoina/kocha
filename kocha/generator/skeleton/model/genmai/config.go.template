@@ -1,0 +1,61 @@
+package db
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/naoina/genmai"
+	"github.com/naoina/kocha"
+
+	_ "github.com/go-sql-driver/mysql"
+	// _ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
+)
+
+var DatabaseMap = kocha.DatabaseMap{
+	"dev": {
+		"default": {
+			Driver: "sqlite3",
+			DSN:	filepath.Join("db", "db.sqlite3"),
+		},
+	},
+	"prod": {
+		"default": {
+			Driver: "mysql",
+			DSN:	os.Getenv("KOCHA_DB_DSN"),
+		},
+	},
+}
+
+var dbMap = make(map[string]*genmai.DB)
+
+func Get(name string) *genmai.DB {
+	return dbMap[name]
+}
+
+func init() {
+	env := os.Getenv("KOCHA_ENV")
+	conf := DatabaseMap[env]
+	if conf == nil {
+		panic(fmt.Errorf(`kocha: database setting is undefined for "%v"`, env))
+	}
+	for name, dbconf := range conf {
+		var d genmai.Dialect
+		switch dbconf.Driver {
+		case "mysql":
+			d = &genmai.MySQLDialect{}
+		case "postgres":
+			d = &genmai.PostgresDialect{}
+		case "sqlite3":
+			d = &genmai.SQLite3Dialect{}
+		default:
+			panic(fmt.Errorf("kocha: genmai: unsupported driver type: %v", dbconf.Driver))
+		}
+		db, err := genmai.New(d, dbconf.DSN)
+		if err != nil {
+			panic(err)
+		}
+		dbMap[name] = db
+	}
+}

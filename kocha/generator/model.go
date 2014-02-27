@@ -3,6 +3,7 @@ package generator
 import (
 	"flag"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -113,6 +114,12 @@ func (g *modelGenerator) Generate() {
 	kocha.CopyTemplate(g,
 		filepath.Join(SkeletonDir("model"), g.orm, g.orm+".go.template"),
 		filepath.Join("app", "models", snakeCaseName+".go"), data)
+	initPath := filepath.Join("db", "config.go")
+	if _, err := os.Stat(initPath); os.IsNotExist(err) {
+		kocha.CopyTemplate(g,
+			filepath.Join(SkeletonDir("model"), g.orm, "config.go.template"),
+			initPath, nil)
+	}
 }
 
 func init() {
