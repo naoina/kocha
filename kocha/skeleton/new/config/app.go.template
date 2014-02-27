@@ -51,12 +51,7 @@ var (
 )
 
 func init() {
-	env := os.Getenv("KOCHA_ENV")
-	if env == "" {
-		fmt.Fprintln(os.Stderr, `kocha: KOCHA_ENV environment variable isn't set, use "dev"`)
-		env = "dev"
-	}
-	switch env {
+	switch env := os.Getenv("KOCHA_ENV"); env {
 	case "prod":
 		AppConfig.Logger = &kocha.Logger{
 			DEBUG: kocha.Loggers{kocha.NullLogger()},
@@ -78,6 +73,8 @@ func init() {
 			&kocha.RequestLoggingMiddleware{},
 			&kocha.SessionMiddleware{},
 		}...)
+	default:
+		panic(fmt.Errorf(`kocha: unknown parameter of KOCHA_ENV environment variable: "%v"`, env))
 	}
 	config := kocha.Config(AppName)
 	config.Set("AppName", AppName)
