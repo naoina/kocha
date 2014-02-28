@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -389,4 +390,58 @@ func detectContentType(r io.Reader) (contentType string) {
 		}
 	}
 	return http.DetectContentType(buf)
+}
+
+var settingEnvRegexp = regexp.MustCompile(`\bkocha\.SettingEnv\(\s*(.+?)\s*,\s*(.+?)\s*\)`)
+
+// FindSettingEnv returns map of environment variables.
+// Key of map is key of environment variable, Value of map is value of
+// environment variable.
+func FindSettingEnv() (map[string]string, error) {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	env := make(map[string]string)
+	if err := filepath.Walk(pwd, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		switch info.Name()[0] {
+		case '.', '_':
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		body, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		matches := settingEnvRegexp.FindAllStringSubmatch(string(body), -1)
+		if matches == nil {
+			return nil
+		}
+		for _, m := range matches {
+			key, err := strconv.Unquote(m[1])
+			if err != nil {
+				continue
+			}
+			value, err := strconv.Unquote(m[2])
+			if err != nil {
+				value = "WILL BE SET IN RUNTIME"
+			}
+			env[key] = value
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return env, nil
 }

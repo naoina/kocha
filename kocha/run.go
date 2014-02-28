@@ -45,6 +45,7 @@ func (c *runCommand) Run() {
 	if runtime.GOOS == "windows" {
 		execName += ".exe"
 	}
+	printSettingEnv()
 	for {
 		c.watchApp(basedir, execName)
 	}
