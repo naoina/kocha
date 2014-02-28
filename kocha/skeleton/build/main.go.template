@@ -25,7 +25,7 @@ func main() {
 	{{range $name, $data := .resources}}
 	kocha.AddResource("{{$name}}", kocha.Gunzip({{$data|printf "%q"}}))
 	{{end}}
-	kocha.Run("{{.addr}}")
+	kocha.Run(kocha.SettingEnv("KOCHA_ADDR", "{{.addr}}"))
 }
 
 func init() {
