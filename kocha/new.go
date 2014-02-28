@@ -75,8 +75,6 @@ func (c *newCommand) Run() {
 		}
 		if dirCreated {
 			kocha.PrintCreateDirectory(dstDir)
-		} else {
-			kocha.PrintExist(dstDir)
 		}
 		kocha.CopyTemplate(c, path, dstPath, data)
 		return nil
