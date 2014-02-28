@@ -11,6 +11,7 @@ import (
 var (
 	AppName   = "{{.appName}}"
 	Addr      = kocha.SettingEnv("KOCHA_ADDR", "127.0.0.1:9100")
+	Env       = kocha.SettingEnv("KOCHA_ENV", "dev") // NOTE: deprecated. will be removed in future.
 	AppConfig = &kocha.AppConfig{
 		AppPath:       rootPath,
 		AppName:       AppName,
@@ -48,7 +49,7 @@ var (
 )
 
 func init() {
-	switch env := kocha.SettingEnv("KOCHA_ENV", "dev"); env {
+	switch Env {
 	case "prod":
 		AppConfig.Logger = &kocha.Logger{
 			DEBUG: kocha.Loggers{kocha.NullLogger()},
