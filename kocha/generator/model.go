@@ -10,43 +10,65 @@ import (
 	"github.com/naoina/kocha"
 )
 
-const defaultORM = "genmai"
+const DefaultORM = "genmai"
 
-var typeMap = map[string]map[string]fieldType{
-	"genmai": {
-		"int":        fieldType{"int", nil},
-		"integer":    fieldType{"int", nil},
-		"int8":       fieldType{"int8", nil},
-		"byte":       fieldType{"int8", nil},
-		"int16":      fieldType{"int16", nil},
-		"smallint":   fieldType{"int16", nil},
-		"int32":      fieldType{"int32", nil},
-		"int64":      fieldType{"int64", nil},
-		"bigint":     fieldType{"int64", nil},
-		"string":     fieldType{"string", nil},
-		"text":       fieldType{"string", []string{`size:"65533"`}},
-		"mediumtext": fieldType{"string", []string{`size:"16777216"`}},
-		"longtext":   fieldType{"string", []string{`size:"4294967295"`}},
-		"bytea":      fieldType{"[]byte", nil},
-		"blob":       fieldType{"[]byte", nil},
-		"mediumblob": fieldType{"[]byte", []string{`size:"65533"`}},
-		"longblob":   fieldType{"[]byte", []string{`size:"4294967295"`}},
-		"bool":       fieldType{"bool", nil},
-		"boolean":    fieldType{"bool", nil},
-		"float":      fieldType{"float64", nil},
-		"float64":    fieldType{"float64", nil},
-		"double":     fieldType{"float64", nil},
-		"real":       fieldType{"float64", nil},
-		"date":       fieldType{"time.Time", nil},
-		"time":       fieldType{"time.Time", nil},
-		"datetime":   fieldType{"time.Time", nil},
-		"timestamp":  fieldType{"time.Time", nil},
-		"decimal":    fieldType{"genmai.Rat", nil},
-		"numeric":    fieldType{"genmai.Rat", nil},
-	},
+var modelTypeMap = make(map[string]ModelTyper)
+
+// ModelTyper is an interface for a model type.
+type ModelTyper interface {
+	// FieldTypeMap returns type map for ORM.
+	FieldTypeMap() map[string]ModelFieldType
+
+	// TemplatePath returns paths that templates of ORM for model generation.
+	TemplatePath() (templatePath string, configTemplatePath string)
 }
 
-type fieldType struct {
+// GenmaiModelType implements ModelTyper interface.
+type GenmaiModelType struct{}
+
+// FieldTypeMap returns type map for Genmai ORM.
+func (mt *GenmaiModelType) FieldTypeMap() map[string]ModelFieldType {
+	return map[string]ModelFieldType{
+		"int":        ModelFieldType{"int", nil},
+		"integer":    ModelFieldType{"int", nil},
+		"int8":       ModelFieldType{"int8", nil},
+		"byte":       ModelFieldType{"int8", nil},
+		"int16":      ModelFieldType{"int16", nil},
+		"smallint":   ModelFieldType{"int16", nil},
+		"int32":      ModelFieldType{"int32", nil},
+		"int64":      ModelFieldType{"int64", nil},
+		"bigint":     ModelFieldType{"int64", nil},
+		"string":     ModelFieldType{"string", nil},
+		"text":       ModelFieldType{"string", []string{`size:"65533"`}},
+		"mediumtext": ModelFieldType{"string", []string{`size:"16777216"`}},
+		"longtext":   ModelFieldType{"string", []string{`size:"4294967295"`}},
+		"bytea":      ModelFieldType{"[]byte", nil},
+		"blob":       ModelFieldType{"[]byte", nil},
+		"mediumblob": ModelFieldType{"[]byte", []string{`size:"65533"`}},
+		"longblob":   ModelFieldType{"[]byte", []string{`size:"4294967295"`}},
+		"bool":       ModelFieldType{"bool", nil},
+		"boolean":    ModelFieldType{"bool", nil},
+		"float":      ModelFieldType{"float64", nil},
+		"float64":    ModelFieldType{"float64", nil},
+		"double":     ModelFieldType{"float64", nil},
+		"real":       ModelFieldType{"float64", nil},
+		"date":       ModelFieldType{"time.Time", nil},
+		"time":       ModelFieldType{"time.Time", nil},
+		"datetime":   ModelFieldType{"time.Time", nil},
+		"timestamp":  ModelFieldType{"time.Time", nil},
+		"decimal":    ModelFieldType{"genmai.Rat", nil},
+		"numeric":    ModelFieldType{"genmai.Rat", nil},
+	}
+}
+
+// TemplatePath returns paths that templates of Genmai ORM for model generation.
+func (mt *GenmaiModelType) TemplatePath() (templatePath string, configTemplatePath string) {
+	templatePath = filepath.Join(SkeletonDir("model"), "genmai", "genmai.go.template")
+	configTemplatePath = filepath.Join(SkeletonDir("model"), "genmai", "config.go.template")
+	return templatePath, configTemplatePath
+}
+
+type ModelFieldType struct {
 	Name       string
 	OptionTags []string
 }
@@ -70,7 +92,7 @@ func (g *modelGenerator) Usage() string {
 }
 
 func (g *modelGenerator) DefineFlags(fs *flag.FlagSet) {
-	fs.StringVar(&g.orm, "o", defaultORM, fmt.Sprintf("specify ORM (default: %v)", defaultORM))
+	fs.StringVar(&g.orm, "o", DefaultORM, fmt.Sprintf("specify ORM (default: %v)", DefaultORM))
 	g.flag = fs
 }
 
@@ -80,10 +102,11 @@ func (g *modelGenerator) Generate() {
 	if name == "" {
 		kocha.PanicOnError(g, "abort: no NAME given")
 	}
-	m := typeMap[g.orm]
-	if m == nil {
+	mt := modelTypeMap[g.orm]
+	if mt == nil {
 		kocha.PanicOnError(g, "abort: unsupported ORM type: `%v`", g.orm)
 	}
+	m := mt.FieldTypeMap()
 	var fields []modelField
 	for _, arg := range g.flag.Args()[1:] {
 		input := strings.Split(arg, ":")
@@ -111,17 +134,21 @@ func (g *modelGenerator) Generate() {
 		"Name":   camelCaseName,
 		"Fields": fields,
 	}
-	kocha.CopyTemplate(g,
-		filepath.Join(SkeletonDir("model"), g.orm, g.orm+".go.template"),
-		filepath.Join("app", "models", snakeCaseName+".go"), data)
+	templatePath, configTemplatePath := mt.TemplatePath()
+	kocha.CopyTemplate(g, templatePath, filepath.Join("app", "models", snakeCaseName+".go"), data)
 	initPath := filepath.Join("db", "config.go")
 	if _, err := os.Stat(initPath); os.IsNotExist(err) {
-		kocha.CopyTemplate(g,
-			filepath.Join(SkeletonDir("model"), g.orm, "config.go.template"),
-			initPath, nil)
+		kocha.CopyTemplate(g, configTemplatePath, initPath, nil)
 	}
 }
 
+// RegisterModelType registers an ORM-specific model type.
+// If already registered, it overwrites.
+func RegisterModelType(name string, mt ModelTyper) {
+	modelTypeMap[name] = mt
+}
+
 func init() {
+	RegisterModelType("genmai", &GenmaiModelType{})
 	Register("model", &modelGenerator{})
 }
