@@ -10,6 +10,7 @@ func TestGenerators(t *testing.T) {
 	actual := Generators
 	expected := map[string]Generator{
 		"controller": &controllerGenerator{},
+		"migration":  &migrationGenerator{},
 		"model":      &modelGenerator{},
 		"unit":       &unitGenerator{},
 	}
@@ -34,8 +35,8 @@ func (g *forTestGenerator) Generate() {
 }
 
 func TestRegister(t *testing.T) {
-	if len(Generators) != 3 {
-		t.Fatalf("len(Generators) => %v, want %v", len(Generators), 3)
+	if len(Generators) != 4 {
+		t.Fatalf("len(Generators) => %v, want %v", len(Generators), 4)
 	}
 	expected := &forTestGenerator{}
 	Register("test_generator", expected)

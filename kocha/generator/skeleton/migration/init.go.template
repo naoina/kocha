@@ -1,0 +1,3 @@
+package migrations
+
+type Migration struct{}

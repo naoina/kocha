@@ -33,6 +33,7 @@ func Test_generateCommand(t *testing.T) {
 Generators:
 
     controller
+    migration
     model 
     unit  
 `

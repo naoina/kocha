@@ -3,7 +3,10 @@ package generator
 import (
 	"path/filepath"
 	"runtime"
+	"time"
 )
+
+var Now = time.Now // for test.
 
 // SkeletonDir returns the directory of skeletons.
 func SkeletonDir(name string) string {
