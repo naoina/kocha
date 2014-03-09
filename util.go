@@ -20,6 +20,7 @@ import (
 	"time"
 	"unicode"
 
+	"go/build"
 	"go/format"
 
 	"github.com/daviddengcn/go-colortext"
@@ -444,4 +445,18 @@ func FindSettingEnv() (map[string]string, error) {
 		return nil, err
 	}
 	return env, nil
+}
+
+// FindAppDir returns application directory. (aka import path)
+// An application directory retrieves from current working directory.
+// For example, if current working directory is
+// "/path/to/gopath/src/github.com/naoina/myapp", FindAppDir returns
+// "github.com/naoina/myapp".
+func FindAppDir() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	dstBasePath := filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src")
+	return filepath.ToSlash(dir)[len(dstBasePath)+1:], nil
 }

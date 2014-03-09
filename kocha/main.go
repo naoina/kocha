@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/naoina/kocha"
 	"os"
 	"text/template"
+
+	"github.com/naoina/kocha"
 )
 
 // command is the interface that sub-command.
@@ -25,6 +26,7 @@ var commands = []command{
 	&generateCommand{},
 	&buildCommand{},
 	&runCommand{},
+	&migrateCommand{},
 }
 
 // General usage.

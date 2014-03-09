@@ -60,8 +60,10 @@ func (c *buildCommand) Run() {
 	if err != nil {
 		panic(err)
 	}
-	dstBasePath := filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src")
-	appDir := filepath.ToSlash(dir)[len(dstBasePath)+1:]
+	appDir, err := kocha.FindAppDir()
+	if err != nil {
+		panic(err)
+	}
 	appName := filepath.Base(dir)
 	configPkg := c.Package(path.Join(appDir, "config"))
 	controllersPkg := c.Package(path.Join(appDir, "app", "controllers"))

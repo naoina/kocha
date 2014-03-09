@@ -9,59 +9,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/naoina/genmai"
 )
-
-func TestGenmaiTransaction_ImportPath(t *testing.T) {
-	actual := (&GenmaiTransaction{}).ImportPath()
-	expected := "github.com/naoina/genmai"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("(&GenmaiTransaction{}).ImportPath() => %q, want %q", actual, expected)
-	}
-}
-
-func TestGenmaiTransaction_TransactionType(t *testing.T) {
-	actual := (&GenmaiTransaction{}).TransactionType()
-	expected := &genmai.DB{}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("(&GenmaiTransaction{}).TransactionType() => %q, want %q", actual, expected)
-	}
-}
-
-func TestGenmaiTransaction_Begin(t *testing.T) {
-	// test for sqlite3.
-	func() {
-		tx, err := (&GenmaiTransaction{}).Begin("sqlite3", ":memory:")
-		if err != nil {
-			t.Fatal(err)
-		}
-		actual := reflect.TypeOf(tx)
-		expected := reflect.TypeOf(&genmai.DB{})
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("(&GenmaiTransaction{}).Begin(%q, %q) => %q, nil, want %q, nil", "sqlite3", ":memory:", actual, expected)
-		}
-	}()
-
-	// test for unsupported driver name.
-	func() {
-		_, err := (&GenmaiTransaction{}).Begin("unknown", ":memory:")
-		if err == nil {
-			t.Errorf("(&GenmaiTransaction{}).Begin(%q, %q) => nil, error, want nil, error(%q)", "invalid", ":memory:", err)
-		}
-	}()
-
-	// TODO: test for mysql and postgres.
-}
-
-func TestGenmaiTransaction_Commit(t *testing.T) {
-	t.Skipf("it cannot be tested because cannot applies mock to genmai.DB.Commit.")
-}
-
-func TestGenmaiTransaction_Rollback(t *testing.T) {
-	t.Skipf("it cannot be tested because cannot applies mock to genmai.DB.Rollback.")
-}
 
 func Test_migrationGenerator(t *testing.T) {
 	g := &migrationGenerator{}
@@ -172,40 +120,4 @@ func (m *Migration) Down_20140305090617_TestCreateTable(tx *genmai.DB) {
 			t.Errorf("%q => %#v, want %#v", outpath, actual, expected)
 		}
 	}()
-}
-
-type testTransaction struct{}
-
-func (t *testTransaction) ImportPath() string {
-	return "path/to/test/transaction"
-}
-
-func (t *testTransaction) TransactionType() interface{} {
-	return t
-}
-
-func (t *testTransaction) Begin(driverName, dsn string) (tx interface{}, err error) {
-	return nil, nil
-}
-
-func (t *testTransaction) Commit() error {
-	return nil
-}
-
-func (t *testTransaction) Rollback() error {
-	return nil
-}
-
-func TestRegisterTransactionType(t *testing.T) {
-	bakTxTypeMap := TxTypeMap
-	defer func() {
-		TxTypeMap = bakTxTypeMap
-	}()
-	tx := &testTransaction{}
-	RegisterTransactionType("testtx", tx)
-	actual := TxTypeMap["testtx"]
-	expected := tx
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("RegisterTransactionType(%q, %q) => %q, want %q", "testtx", tx, actual, expected)
-	}
 }

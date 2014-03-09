@@ -1,8 +1,12 @@
 package kocha
 
 import (
+	"go/build"
 	"go/format"
 	"html/template"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"testing"
@@ -209,5 +213,35 @@ func TestGunzip(t *testing.T) {
 	expected = "\x1f\x8b\b\x00\x00\tn\x88\x02\xff\xca\xceO\xceH\x04\x04\x00\x00\xff\xff\f\x93\x85\x96\x05\x00\x00\x00"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+func TestFindAppDir(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "TestFindAppDir")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+	origGOPATH := build.Default.GOPATH
+	defer func() {
+		build.Default.GOPATH = origGOPATH
+		os.Setenv("GOPATH", origGOPATH)
+	}()
+	build.Default.GOPATH = tempDir + string(filepath.ListSeparator) + build.Default.GOPATH
+	os.Setenv("GOPATH", build.Default.GOPATH)
+	myappPath := filepath.Join(tempDir, "src", "path", "to", "myapp")
+	if err := os.MkdirAll(myappPath, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(myappPath); err != nil {
+		t.Fatal(err)
+	}
+	actual, err := FindAppDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := "path/to/myapp"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("FindAppDir() => %q, want %q", actual, expected)
 	}
 }

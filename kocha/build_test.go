@@ -64,24 +64,9 @@ func Test_buildCommandRun(t *testing.T) {
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
 	testdataDir := filepath.Join(baseDir, "testdata")
-	filepath.Walk(testdataDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		dstPath := filepath.Join(dstPath, strings.TrimPrefix(path, testdataDir))
-		if info.IsDir() {
-			err := os.MkdirAll(filepath.Join(dstPath), 0755)
-			return err
-		}
-		src, err := ioutil.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		if err := ioutil.WriteFile(dstPath, src, 0644); err != nil {
-			return err
-		}
-		return nil
-	})
+	if err := copyAll(testdataDir, dstPath); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.Chdir(dstPath); err != nil {
 		panic(err)
 	}

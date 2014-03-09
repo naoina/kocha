@@ -1,0 +1,21 @@
+package main
+
+import (
+	"fmt"
+	"os"
+
+	db "{{.dbImportPath}}"
+	migrations "{{.migrationsImportPath}}"
+)
+
+func main() {
+	config, found := db.DatabaseMap["{{.dbconf}}"]
+	if !found {
+		fmt.Fprintf(os.Stderr, "database config `{{.dbconf}}' is undefined\n")
+		os.Exit(1)
+	}
+	if err := migrations.Down(config, {{.limit}}); err != nil {
+		fmt.Fprintf(os.Stderr, "abort: kocha: migrate: %v\n", err)
+		os.Exit(1)
+	}
+}
