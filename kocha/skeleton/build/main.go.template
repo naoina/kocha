@@ -6,21 +6,32 @@ import (
 	"flag"
 	"fmt"
 	"{{.controllersImportPath}}"
-	"github.com/naoina/kocha"
+	{{if and .dbImportPath .migrationsImportPath}}
+	db "{{.dbImportPath}}"
+	migrations "{{.migrationsImportPath}}"
+	{{end}}
 	"html/template"
 	"os"
 	"path/filepath"
+
+	"github.com/naoina/kocha"
 )
 
 const Version = "{{.version}}"
 
 func main() {
+	progName := filepath.Base(os.Args[0])
 	showVersion := flag.Bool("v", false, "show version")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "usage: %s [-v] [migrate [-db confname] [-n n] {up|down}]\n", progName)
+		os.Exit(1)
+	}
 	flag.Parse()
 	if *showVersion {
-		fmt.Printf("%s version %s\n", filepath.Base(os.Args[0]), Version)
-		return
+		fmt.Printf("%s version %s\n", progName, Version)
+		os.Exit(0)
 	}
+	migrate()
 	kocha.Init({{.appConfig|goString}})
 	{{range $name, $data := .resources}}
 	kocha.AddResource("{{$name}}", kocha.Gunzip({{$data|printf "%q"}}))
@@ -32,4 +43,44 @@ func init() {
 	config := kocha.Config("{{.appConfig.AppName}}")
 	{{range $name, $value := .config}}
 	config.Set("{{$name}}", {{$value|goString}}){{end}}
+}
+
+func migrate() {
+	if flag.NArg() > 0 {
+		switch flag.Arg(0) {
+		case "migrate":
+			{{if and .dbImportPath .migrationsImportPath}}
+			fs := flag.NewFlagSet("migrate", flag.ExitOnError)
+			dbconf := fs.String("db", "default", "name of a database config")
+			n := fs.Int("n", -1, "number of migrations to be run")
+			if err := fs.Parse(flag.Args()[1:]); err != nil {
+				panic(err)
+			}
+			config, found := db.DatabaseMap[*dbconf]
+			if !found {
+				fmt.Fprintf(os.Stderr, "abort: database config `%v' is undefined\n", *dbconf)
+				flag.Usage()
+			}
+			var err error
+			mig := kocha.Migrate(config, &migrations.Migration{})
+			switch fs.Arg(0) {
+			case "up":
+				err = mig.Up(*n)
+			case "down":
+				err = mig.Down(*n)
+			default:
+				flag.Usage()
+			}
+			if err != nil {
+				panic(err)
+			}
+			os.Exit(0)
+			{{else}}
+			fmt.Fprintf(os.Stderr, "abort: `migrate' is unsupported in this app binary\n")
+			os.Exit(1)
+			{{end}}
+		default:
+			flag.Usage()
+		}
+	}
 }

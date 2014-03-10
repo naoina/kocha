@@ -65,8 +65,24 @@ func (c *buildCommand) Run() {
 		panic(err)
 	}
 	appName := filepath.Base(dir)
-	configPkg := c.Package(path.Join(appDir, "config"))
-	controllersPkg := c.Package(path.Join(appDir, "app", "controllers"))
+	configPkg, err := c.Package(path.Join(appDir, "config"))
+	if err != nil {
+		kocha.PanicOnError(c, "abort: cannot import `%s`: %v", path.Join(appDir, "config"), err)
+	}
+	controllersPkg, err := c.Package(path.Join(appDir, "app", "controllers"))
+	if err != nil {
+		kocha.PanicOnError(c, "abort: cannot import `%s`: %v", path.Join(appDir, "app", "controllers"), err)
+	}
+	var dbImportPath string
+	dbPkg, err := c.Package(path.Join(appDir, "db"))
+	if err == nil {
+		dbImportPath = dbPkg.ImportPath
+	}
+	var migrationsImportPath string
+	migrationsPkg, err := c.Package(path.Join(appDir, "db", "migrations"))
+	if err == nil {
+		migrationsImportPath = migrationsPkg.ImportPath
+	}
 	tmpDir, err := filepath.Abs("tmp")
 	if err != nil {
 		panic(err)
@@ -97,6 +113,8 @@ func (c *buildCommand) Run() {
 	data := map[string]interface{}{
 		"configImportPath":      configPkg.ImportPath,
 		"controllersImportPath": controllersPkg.ImportPath,
+		"dbImportPath":          dbImportPath,
+		"migrationsImportPath":  migrationsImportPath,
 		"mainTemplate":          string(mainTemplate),
 		"mainFilePath":          mainFilePath,
 		"resources":             resources,
@@ -119,12 +137,12 @@ func (c *buildCommand) Run() {
 	kocha.PrintGreen("Build successful!\n")
 }
 
-func (c *buildCommand) Package(importPath string) *build.Package {
+func (c *buildCommand) Package(importPath string) (*build.Package, error) {
 	pkg, err := build.Import(importPath, "", build.FindOnly)
 	if err != nil {
-		kocha.PanicOnError(c, "abort: cannot import `%s`: %v", importPath, err)
+		return nil, err
 	}
-	return pkg
+	return pkg, nil
 }
 
 func (c *buildCommand) execCmd(cmd string, args ...string) {
