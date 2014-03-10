@@ -26,7 +26,7 @@ A convenient web application framework for [Go](http://golang.org/)
     or
 
         cd myapp
-        go build -o myapp dev.go
+        go build -o myapp
         ./myapp
 
 ## Documentation
