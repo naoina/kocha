@@ -1,8 +1,9 @@
 package main
 
 import (
+	"testappname/config"
+
 	"github.com/naoina/kocha"
-	"hoge/config"
 )
 
 func main() {

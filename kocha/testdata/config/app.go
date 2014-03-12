@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	AppName   = "hoge"
+	AppName   = "testappname"
 	Addr      = kocha.SettingEnv("KOCHA_ADDR", "127.0.0.1:9100")
 	Env       = kocha.SettingEnv("KOCHA_ENV", "dev") // NOTE: deprecated. will be removed in future.
 	AppConfig = &kocha.AppConfig{
@@ -24,7 +24,7 @@ var (
 
 		// Session settings
 		Session: &kocha.SessionConfig{
-			Name: "hoge_session",
+			Name: "testappname_session",
 			Store: &kocha.SessionCookieStore{
 				// AUTO-GENERATED Random keys. DO NOT EDIT.
 				SecretKey:  "\xd4(\xd5H`\n\x17\xdbD^Kvk\x1c\xf5\xf7\x99\xf7!\xf7\x88Ll\x94\x9eg\xb5\xf3n#\x81u",

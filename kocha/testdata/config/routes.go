@@ -1,8 +1,9 @@
 package config
 
 import (
+	"testappname/app/controllers"
+
 	"github.com/naoina/kocha"
-	"hoge/app/controllers"
 )
 
 type RouteTable kocha.RouteTable
