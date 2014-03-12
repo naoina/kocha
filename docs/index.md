@@ -26,16 +26,11 @@ In order to learn basic usage of Kocha, read [Getting started]({{ page.root }}/g
 |       `-- root.html
 |-- config
 |   |-- app.go
-|   |-- dev
-|   |   `-- app.go
-|   |-- prod
-|   |   `-- app.go
 |   `-- routes.go
-|-- dev.go
-|-- prod.go
+|-- main.go
 `-- public
     `-- robots.txt
 ```
 
-`dev.go` and `prod.go` are entry point for each `dev` and `prod` environment. Those will be referred to `[env]` in this Docs.
-`config/app.go` is a common configuration, and `config/[env]/app.go` are specific configuration for each environment.
+`main.go` is entry point and `config/app.go` is a main configuration file.
+They are plain Go source files, so you can be customized if you want.

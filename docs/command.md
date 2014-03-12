@@ -8,4 +8,8 @@ title: Command line
 
 Kocha provides command line tool like Ruby on Rails.
 
+To install:
+
+    go get -u github.com/naoina/kocha/kocha
+
 Run `kocha -h` for more information.

@@ -22,7 +22,7 @@ subnav:
 
 # Controller <a id="Controller"></a>
 
-A Controller is a layer of handling request.
+Controller is layer of handling request.
 
 ## Organization <a id="Organization"></a>
 
@@ -35,7 +35,7 @@ A Controller is a layer of handling request.
 
 ## Basics <a id="Basics"></a>
 
-You can use `kocha` command line tool for create a new controller as following:
+You can use `kocha` command line tool to create a new controller as follows:
 
     kocha g controller NAME
 
@@ -53,7 +53,7 @@ Kocha provides some renderer for various purpose.
 
 ### Render *([godoc]({{ site.godoc }}#Controller.Render))*
 
-Render a template that collect from a template directory in boot time (Usually, *app/views*).
+Render template that collect from a template directory in boot time (Usually, *app/views*).
 
 ```go
 func (c *Root) Get() kocha.Result {
@@ -87,7 +87,7 @@ func (c *Root) Get() kocha.Result {
 
 ### RenderJSON *([godoc]({{ site.godoc }}#Controller.RenderJSON))*
 
-Render a context as JSON. See [json.Marshal](http://golang.org/pkg/encoding/json/#Marshal) for encodes details.
+Render context as JSON. See [json.Marshal](http://golang.org/pkg/encoding/json/#Marshal) for encode details.
 
 ```go
 func (c *Root) Get() kocha.Result {
@@ -98,11 +98,11 @@ func (c *Root) Get() kocha.Result {
 }
 ```
 
-If you want to your own JSON format, please use [Render](#Render) with ContentType specified to *application/json*.
+If you want to render your own JSON format, please use [Render](#Render) with ContentType specified to *application/json*.
 
 ### RenderXML *([godoc]({{ site.godoc }}#Controller.RenderXML))*
 
-Render a context as XML. See [xml.Marshal](http://golang.org/pkg/encoding/xml/#Marshal) for encodes details.
+Render context as XML. See [xml.Marshal](http://golang.org/pkg/encoding/xml/#Marshal) for encode details.
 
 ```go
 import "encoding/xml"
@@ -119,11 +119,11 @@ func (c *Root) Get() kocha.Result {
 }
 ```
 
-If you want to your own XML format, please use [Render](#Render) with ContentType specified to *application/xml*.
+If you want to render your own XML format, please use [Render](#Render) with ContentType specified to *application/xml*.
 
 ### RenderText *([godoc]({{ site.godoc }}#Controller.RenderText))*
 
-Render a plain text.
+Render plain text.
 
 ```go
 func (c *Root) Get() kocha.Result {
@@ -135,7 +135,7 @@ If you want to templating text, please use [Render](#Render) with ContentType sp
 
 ### RenderError *([godoc]({{ site.godoc }}#Controller.RenderError))*
 
-Render a template (or returns a status text) with status code.
+Render template (or returns status text) with status code.
 
 ```go
 func (c *Root) Get() kocha.Result {
@@ -212,7 +212,7 @@ func (c *Root) Get(id int) kocha.Result {
 }
 ```
 
-Note that both name (**id** in this case) MUST be identical between argument name of Controller and routing parameter.
+Note that both names (**id** in this case) MUST be identical between argument name of Controller and routing parameter.
 
 Of course, it can take the different multiple types:
 
@@ -226,7 +226,7 @@ func (c *Root) Get(id int, name string) kocha.Result {
 }
 ```
 
-For more details to definition of route parameters, see [Route parameter]({{ page.root }}/docs/routing.html#Route-parameter).
+For more details of definition of route parameters, see [Route parameter]({{ page.root }}/docs/routing.html#Route-parameter).
 
 ## Built-in controller <a id="Built-in-controller"></a>
 

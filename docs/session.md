@@ -13,18 +13,17 @@ subnav:
   name: Configuration
   path: Configuration
 -
-  name: Implementing a session store
-  path: Implementing-a-session-store
+  name: Implement the session store
+  path: Implement-the-session-store
 ---
 
 # Session <a id="Session"></a>
 
-Session is a simple key-value storage.
-It will save and load for every request.
+Session is simple key-value storage for each user/client.
 
 ## Basics <a id="Basics"></a>
 
-For example, do a following in order to set the data in the session:
+For example, do the following in order to set the data in the session:
 
 ```go
 func (c *Root) Get() kocha.Result {
@@ -42,7 +41,7 @@ func (c *Root) Get() kocha.Result {
 }
 ```
 
-To delete a data from session, use the `delete` built-in function:
+To delete the data from session, use the `delete` built-in function:
 
 ```go
 func (c *Root) Get() kocha.Result {
@@ -54,7 +53,7 @@ func (c *Root) Get() kocha.Result {
 }
 ```
 
-Also Session has the `Clear` method that clear the all data from session.
+Also Session has `Clear` method that clear all data from the session.
 
 ```go
 func (c *Root) Get() kocha.Result {
@@ -67,15 +66,15 @@ func (c *Root) Get() kocha.Result {
 }
 ```
 
-Actually, session is a string map `map[string]string`.
-Therefore, if you want to save the non-string data, please serialize the data to string on their own.
+Actually, session is string map `map[string]string`.
+Therefore, if you want to save non-string data, please serialize the data to string on their own.
 
 ## Session store <a id="Session-store"></a>
 
 Now currently, Kocha provides Cookie store only.
 Cookie store saves session data to a client-side cookie with encrypted.
 It's independent of the other system/server, but expiry date isn't fully controllable.
-If you want to do it, please implements a session store that use server-side storage such as a memcached or database. See [Implementing a session store](#Implementing-a-session-store).
+If you want to do it, please implements session store that use server-side storage such as memcached or database. See [Implement the session store](#Implement-the-session-store).
 
 ## Configuration <a id="Configuration"></a>
 
@@ -104,13 +103,13 @@ Session: kocha.SessionConfig{
 ```
 {% endraw %}
 
-If you want to do not use the session, please remove the `kocha.SessionMiddleware` from `AppConfig.Middlewares` in `config/[env]/app.go`.
+If you don't want to use the session, please remove `kocha.SessionMiddleware` from `AppConfig.Middlewares` in `config/app.go`.
 
-## Implementing a session store <a id="Implementing-a-session-store"></a>
+## Implement the session store <a id="Implement-the-session-store"></a>
 
-If you want other session store that not provided by Kocha, you can implements your own session store.
+If you want other session store that not provided by Kocha, you can implement your own session store.
 
 1. Implements the [SessionStore]({{ site.godoc }}#SessionStore) interface.
-1. It specify to the `AppConfig.Store` in `config/app.go`.
+1. It specify to `AppConfig.Store` in `config/app.go`.
 
-Also, see source of [SessionCookieStore]({{ site.godoc }}#SessionCookieStore) as example.
+Also, see source of [SessionCookieStore]({{ site.godoc }}#SessionCookieStore) for examples.

@@ -77,12 +77,12 @@ In fact, white-spaces in output are perhaps different from example above.
 
 ## Layout <a id="Layout"></a>
 
-Kocha supports template layouting and also enabled by default.
-A default layout is `app`, it retrieves `app/views/layouts/app.[extension]`.
+Kocha supports template layout and also enabled by default.
+The default layout is `app`, it retrieves `app/views/layouts/app.[extension]`.
 You can change the default layout by `AppConfig.DefaultLayout` in `config/app.go`.
 
 Also multiple layout files are supported.
-To use an other layout instead of default layout, set any layout name to `c.Layout` of Controller.
+To use another layout instead of the default layout, set any layout name to `c.Layout` of Controller.
 
 For example, layout name set to `sub`, and when templates and Controller are following.
 
@@ -129,7 +129,7 @@ Output:
 
 ## File types <a id="File-types"></a>
 
-You can use a template file for each file type.
+You can use template file for each file types.
 
 See also [Render]({{ page.root }}/docs/controller.html#Render).
 
@@ -185,7 +185,7 @@ some<br>text
 
 ### raw
 
-An input string is output as-is. That will not be escaped.
+Input string outputs it is. It won't be escaped.
 
 Example:
 

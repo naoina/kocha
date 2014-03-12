@@ -19,6 +19,8 @@ subnav:
 
 # Logging <a id="Logging"></a>
 
+**NOTE: Logging of Kocha is experimental features. Maybe they will be changed in future.**
+
 ## Basics <a id="Basics"></a>
 
 Kocha provides global logger.
@@ -38,11 +40,11 @@ Above example, output is in the *Info* log level.
 * `kocha.Log.Warn`
 * `kocha.Log.Error`
 
-To set the logger to log level, set the `AppConfig.Logger` in `config/[env]/app.go`.
+To set the loggers for these log levels, set the `AppConfig.Logger` in `config/app.go`.
 
 ## Set loggers <a id="Set-loggers"></a>
 
-Example, in `config/dev/app.go` of default:
+For example:
 
 ```go
 AppConfig.Logger = &kocha.Logger{
@@ -53,13 +55,13 @@ AppConfig.Logger = &kocha.Logger{
 }
 ```
 
-The Loggers set to `ConsoleLogger` in above example. Also loggers use the prefix flags of [log](http://golang.org/pkg/log/#pkg-constants) package.
-If you use the default flags, specify the `-1`.
-The default flags is `Ldate | Ltime`.
+Loggers set to `ConsoleLogger` in above example. Also loggers use the prefix flags of [log](http://golang.org/pkg/log/#pkg-constants) package.
+If you want to use the default flags, specify the `-1`.
+The default flag is `Ldate | Ltime`.
 
 ### Set the multiple loggers
 
-You can register multiple loggers to a log level, such as the following:
+You can register multiple loggers, such as the following:
 
 ```go
 kocha.Loggers{
@@ -68,7 +70,7 @@ kocha.Loggers{
 }
 ```
 
-This is an output to all registered loggers when use the logger of that log level.
+This is output to all registered loggers when use the logger of that log level.
 
 ## Built-in loggers <a id="Built-in-loggers"></a>
 
