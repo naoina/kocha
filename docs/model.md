@@ -7,6 +7,12 @@ subnav:
   name: Basics
   path: Basics
 -
+  name: Using ORM
+  path: Using-ORM
+-
+  name: Database configuration
+  path: Database-configuration
+-
   name: Migration
   path: Migration
 ---
@@ -60,6 +66,44 @@ type User struct {
 {% endraw %}
 
 By default, Kocha is using [genmai](https://github.com/naoina/genmai) ORM.
+
+## Using ORM <a id="Using-ORM"></a>
+
+First, you write the following import path to files where you use ORM.
+
+```go
+import "appname/db"
+```
+
+Second, get an instance of ORM and will use it.
+
+```go
+dbinst := db.Get("default")
+```
+
+`db.Get` can use in controllers, models as well as other Go files.
+
+Also you can read generated file `db/config.go` for more information.
+
+## Database configuration <a id="Database-configuration"></a>
+
+The configurations of databases are defined in `db/config.go` by default.
+You can specify database driver and data source name to use by some environment variables.
+
+`KOCHA_DB_DRIVER` to set the driver name of the database such as "mysql".
+`KOCHA_DB_DSN` to set the data source name for the database such as "user:password@/dbname"
+
+Note that these environment variables are used in run-time, not compile-time.
+
+To change to different database configuration, run the your application such as follows:
+
+    KOCHA_DB_DRIVER="mysql" KOCHA_DB_DSN="user:password@/dbname" kocha run
+
+Or if you run the your application built by `kocha build` or `go build`.
+
+    KOCHA_DB_DRIVER="mysql" KOCHA_DB_DSN="user:password@/dbname" appname
+
+This method is inspired by [config](http://12factor.net/config) of [The Twelve-Factor App](http://12factor.net/).
 
 ## Migration <a id="Migration"></a>
 
