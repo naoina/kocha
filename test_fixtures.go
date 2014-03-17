@@ -6,7 +6,7 @@ import (
 )
 
 func newTestAppConfig() *AppConfig {
-	return &AppConfig{
+	config := &AppConfig{
 		AppPath:       "apppath/appname",
 		AppName:       "appname",
 		DefaultLayout: "app",
@@ -26,7 +26,7 @@ func newTestAppConfig() *AppConfig {
 				},
 			},
 		},
-		Router: InitRouter(RouteTable{
+		RouteTable: RouteTable{
 			{
 				Name:       "root",
 				Path:       "/",
@@ -100,13 +100,19 @@ func newTestAppConfig() *AppConfig {
 					},
 				},
 			},
-		}),
+		},
 		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
 		Session: &SessionConfig{
 			Name:  "test_session",
 			Store: newTestSessionCookieStore(),
 		},
 	}
+	router, err := config.RouteTable.buildRouter()
+	if err != nil {
+		panic(err)
+	}
+	config.router = router
+	return config
 }
 
 func newTestSessionCookieStore() *SessionCookieStore {

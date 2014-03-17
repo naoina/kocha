@@ -25,6 +25,7 @@ func main() {
 	}
 	defer file.Close()
 	appConfig := config.AppConfig
+	kocha.Init(appConfig)
 	res := map[string]string{
 		{{range $name, $path := .resources}}
 		"{{$name}}": "{{$path}}",

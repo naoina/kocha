@@ -16,16 +16,13 @@ var routes = RouteTable{
 	},
 }
 
-func Routes() RouteTable {
-	return append(routes, RouteTable{
+func init() {
+	AppConfig.RouteTable = kocha.RouteTable(append(routes, RouteTable{
 		{
 			Name:       "static",
 			Path:       "/*path",
 			Controller: kocha.StaticServe{},
 		},
-	}...)
-}
+	}...))
 
-func init() {
-	AppConfig.Router = kocha.InitRouter(kocha.RouteTable(Routes()))
 }

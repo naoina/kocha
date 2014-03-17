@@ -14,11 +14,13 @@ type AppConfig struct {
 	AppName           string
 	DefaultLayout     string
 	TemplateSet       TemplateSet
-	Router            *Router
+	RouteTable        RouteTable
 	Logger            *Logger
 	Middlewares       []Middleware
 	Session           *SessionConfig
 	MaxClientBodySize int64
+
+	router *Router
 }
 
 var (
@@ -41,6 +43,11 @@ func Init(config *AppConfig) {
 	if err := appConfig.Session.Validate(); err != nil {
 		panic(err)
 	}
+	router, err := appConfig.RouteTable.buildRouter()
+	if err != nil {
+		panic(err)
+	}
+	appConfig.router = router
 	Log = initLogger(appConfig.Logger)
 	initialized = true
 }

@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestInitRouter(t *testing.T) {
+func Test_buildRouter(t *testing.T) {
 	for _, v := range []interface{}{
 		nil,
 		"",
@@ -17,98 +17,84 @@ func TestInitRouter(t *testing.T) {
 		struct{ Controller interface{} }{Controller: "hoge"},
 		struct{ Controller interface{} }{Controller: 1},
 	} {
-		func() {
-			defer func() {
-				if err := recover(); err == nil {
-					t.Errorf("panic doesn't happened by %v", v)
-				}
-			}()
-			InitRouter(RouteTable{
-				{
-					Name:       "testroute",
-					Path:       "/",
-					Controller: v,
-				},
-			})
-		}()
+		rt := RouteTable{
+			{
+				Name:       "testroute",
+				Path:       "/",
+				Controller: v,
+			},
+		}
+		if _, err := rt.buildRouter(); err == nil {
+			t.Errorf("%#v: RouteTable.buildRouter() => _, nil, want => error", v)
+		}
 	}
 
 	// test for validate the single argument mismatch between controller method and route parameter.
 	func() {
-		defer func() {
-			if err := recover(); err == nil {
-				t.Errorf("panic doesn't happened")
-			}
-		}()
-		InitRouter(RouteTable{
+		rt := RouteTable{
 			{
 				Name:       "testroute",
 				Path:       "/",
 				Controller: FixtureUserTestCtrl{},
 			},
-		})
+		}
+		if _, err := rt.buildRouter(); err == nil {
+			t.Errorf("RouteTable.buildRouter() => _, nil, want => error")
+		}
 	}()
 
 	// test for validate the argument names mismatch between controller method and route parameter.
 	func() {
-		defer func() {
-			if err := recover(); err == nil {
-				t.Errorf("panic doesn't happened")
-			}
-		}()
-		InitRouter(RouteTable{
+		rt := RouteTable{
 			{
 				Name:       "testroute",
 				Path:       "/:name",
 				Controller: FixtureUserTestCtrl{},
 			},
-		})
+		}
+		if _, err := rt.buildRouter(); err == nil {
+			t.Errorf("RouteTable.buildRouter() => _, nil, want => error")
+		}
 	}()
 	func() {
-		defer func() {
-			if err := recover(); err == nil {
-				t.Errorf("panic doesn't happened")
-			}
-		}()
-		InitRouter(RouteTable{
+		rt := RouteTable{
 			{
 				Name:       "testroute",
 				Path:       "/:id",
 				Controller: FixtureRootTestCtrl{},
 			},
-		})
+		}
+		if _, err := rt.buildRouter(); err == nil {
+			t.Errorf("RouteTable.buildRouter() => _, nil, want => error")
+		}
 	}()
 
 	// test for validate the duplicated route parameters.
 	func() {
-		defer func() {
-			if err := recover(); err == nil {
-				t.Errorf("panic doesn't happened")
-			}
-		}()
-		InitRouter(RouteTable{
+		rt := RouteTable{
 			{
 				Name:       "testroute",
 				Path:       "/:id/:id",
 				Controller: FixtureUserTestCtrl{},
 			},
-		})
+		}
+		if _, err := rt.buildRouter(); err == nil {
+			t.Errorf("RouteTable.buildRouter() => _, nil, want => error")
+		}
 	}()
 
 	// test for validate the multiple arguments mismatch between controller method and route parameters.
 	func() {
-		defer func() {
-			if err := recover(); err == nil {
-				t.Errorf("panic doesn't happened")
-			}
-		}()
-		InitRouter(RouteTable{
+		rt := RouteTable{
 			{
 				Name:       "testroute",
 				Path:       "/",
 				Controller: FixtureDateTestCtrl{},
 			},
-		})
+		}
+		if _, err := rt.buildRouter(); err == nil {
+			t.Errorf("RouteTable.buildRouter() => _, nil, want => error")
+		}
 	}()
 
 	// test for validate the invalid return value.
@@ -116,45 +102,31 @@ func TestInitRouter(t *testing.T) {
 		FixtureInvalidReturnValueTypeTestCtrl{},
 		FixtureInvalidNumberOfReturnValueTestCtrl{},
 	} {
-		func() {
-			defer func() {
-				if err := recover(); err == nil {
-					t.Errorf("panic doesn't happened")
-				}
-			}()
-			InitRouter(RouteTable{
-				{
-					Name:       "testroute",
-					Path:       "/",
-					Controller: v,
-				},
-			})
-		}()
+		rt := RouteTable{
+			{
+				Name:       "testroute",
+				Path:       "/",
+				Controller: v,
+			},
+		}
+		if _, err := rt.buildRouter(); err == nil {
+			t.Errorf("%#v: RouteTable.buildRouter() => _, nil, want => error", v)
+		}
 	}
 
 	// test for validate the TypeValidateParsers.
 	func() {
-		defer func() {
-			if err := recover(); err == nil {
-				t.Errorf("panic doesn't happened")
-			}
-		}()
-		InitRouter(RouteTable{
+		rt := RouteTable{
 			{
 				Name:       "testroute",
 				Path:       "/:id",
 				Controller: FixtureTypeUndefinedCtrl{},
 			},
-		})
+		}
+		if _, err := rt.buildRouter(); err == nil {
+			t.Errorf("RouteTable.buildRouter() => _, nil, want => error")
+		}
 	}()
-}
-
-func Test_NewRouter(t *testing.T) {
-	actual := reflect.TypeOf(NewRouter(nil))
-	expected := reflect.TypeOf(&Router{})
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %q, but %q", expected, actual)
-	}
 }
 
 func Test_Router_dispatch_with_route_missing(t *testing.T) {
@@ -167,7 +139,7 @@ func Test_Router_dispatch_with_route_missing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	controller, method, args := appConfig.Router.dispatch(req)
+	controller, method, args := appConfig.router.dispatch(req)
 	if controller != nil {
 		t.Errorf("Expect %v, but %v", nil, controller)
 	}
@@ -189,7 +161,7 @@ func Test_Router_dispatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	controller, method, args := appConfig.Router.dispatch(req)
+	controller, method, args := appConfig.router.dispatch(req)
 	if _, ok := controller.Interface().(*FixtureRootTestCtrl); !ok {
 		t.Errorf("Expect %v, but %v", reflect.ValueOf(&FixtureRootTestCtrl{}), controller)
 	}
@@ -206,7 +178,7 @@ func Test_Router_dispatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	controller, method, args = appConfig.Router.dispatch(req)
+	controller, method, args = appConfig.router.dispatch(req)
 	if _, ok := controller.Interface().(*FixtureUserTestCtrl); !ok {
 		t.Errorf("Expect %v, but %v", reflect.ValueOf(&FixtureUserTestCtrl{}), controller)
 	}
@@ -230,7 +202,7 @@ func Test_Router_dispatch(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		controller, method, args = appConfig.Router.dispatch(req)
+		controller, method, args = appConfig.router.dispatch(req)
 		if controller != nil {
 			t.Errorf("%#v expect nil, but returns instance of %T", v, controller.Interface())
 		}
@@ -240,7 +212,7 @@ func Test_Router_dispatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	controller, method, args = appConfig.Router.dispatch(req)
+	controller, method, args = appConfig.router.dispatch(req)
 	if _, ok := controller.Interface().(*FixtureDateTestCtrl); !ok {
 		t.Errorf("Expect %v, but %v", reflect.ValueOf(&FixtureDateTestCtrl{}), controller)
 	}

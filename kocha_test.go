@@ -28,20 +28,18 @@ func TestInit(t *testing.T) {
 		AppName:       "testappname",
 		DefaultLayout: "testapp",
 		TemplateSet:   nil,
-		Router: NewRouter(RouteTable{
+		RouteTable: RouteTable{
 			{
-				Name:        "route1",
-				Path:        "route_path1",
-				Controller:  nil,
-				MethodTypes: nil,
+				Name:       "route1",
+				Path:       "route_path1",
+				Controller: &FixtureRootTestCtrl{},
 			},
 			{
-				Name:        "route2",
-				Path:        "route_path2",
-				Controller:  nil,
-				MethodTypes: nil,
+				Name:       "route2",
+				Path:       "route_path2",
+				Controller: &FixtureRootTestCtrl{},
 			},
-		}),
+		},
 		Logger: &Logger{},
 	}
 	Init(config)

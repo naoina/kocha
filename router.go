@@ -38,36 +38,27 @@ var (
 
 type RouteTable []*Route
 
-// Router represents a router of kocha.
-type Router struct {
-	forward    ForwardRouter
-	reverse    ReverseRouter
-	routeTable RouteTable
-}
-
-// NewRouter returns a new Router.
-func NewRouter(rt RouteTable) *Router {
-	router := &Router{routeTable: rt}
-	router.buildForward()
-	router.buildReverse()
-	return router
-}
-
-// InitRouter returns initialized Router.
-func InitRouter(rt RouteTable) *Router {
+func (rt RouteTable) buildRouter() (*Router, error) {
 	for _, route := range rt {
 		route.normalize()
 	}
 	for _, route := range rt {
 		if err := route.validateControllerType(); err != nil {
-			panic(err)
+			return nil, err
 		}
-		route.buildMethodTypes()
+		if route.MethodTypes == nil {
+			if err := route.buildMethodTypes(); err != nil {
+				return nil, err
+			}
+		}
 	}
-	router := NewRouter(rt)
+	router, err := newRouter(rt)
+	if err != nil {
+		return nil, err
+	}
 	for _, route := range rt {
 		info := router.reverse[route.Name]
-		route.ParamNames = info.paramNames
+		route.paramNames = info.paramNames
 	}
 	for _, route := range rt {
 		for _, validator := range []func() error{
@@ -77,11 +68,30 @@ func InitRouter(rt RouteTable) *Router {
 			route.validateControllerArgumentParameters,
 		} {
 			if err := validator(); err != nil {
-				panic(err)
+				return nil, err
 			}
 		}
 	}
-	return router
+	return router, nil
+}
+
+// Router represents a router of kocha.
+type Router struct {
+	forward    ForwardRouter
+	reverse    ReverseRouter
+	routeTable RouteTable
+}
+
+// newRouter returns a new Router.
+func newRouter(rt RouteTable) (*Router, error) {
+	router := &Router{routeTable: rt}
+	if err := router.buildForward(); err != nil {
+		return nil, err
+	}
+	if err := router.buildReverse(); err != nil {
+		return nil, err
+	}
+	return router, nil
 }
 
 func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
@@ -96,19 +106,20 @@ func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, me
 }
 
 // buildForward builds forward router.
-func (router *Router) buildForward() {
+func (router *Router) buildForward() error {
 	records := make([]urlrouter.Record, len(router.routeTable))
 	for i, route := range router.routeTable {
 		records[i] = urlrouter.NewRecord(route.Path, route)
 	}
 	router.forward = urlrouter.NewURLRouter("doublearray")
 	if err := router.forward.Build(records); err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 // buildReverse builds reverse router.
-func (router *Router) buildReverse() {
+func (router *Router) buildReverse() error {
 	router.reverse = make(ReverseRouter)
 	for _, route := range router.routeTable {
 		paramNames := urlrouter.ParamNames(route.Path)
@@ -122,10 +133,7 @@ func (router *Router) buildReverse() {
 			paramNames:    names,
 		}
 	}
-}
-
-func (router *Router) GoString() string {
-	return fmt.Sprintf("kocha.NewRouter(%s)", GoString(router.routeTable))
+	return nil
 }
 
 type ForwardRouter urlrouter.URLRouter
@@ -137,7 +145,7 @@ type Route struct {
 	Path        string
 	Controller  interface{}
 	MethodTypes map[string]MethodArgs
-	ParamNames  []string
+	paramNames  []string
 }
 
 func (route *Route) dispatch(methodName string, params []urlrouter.Param) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
@@ -175,22 +183,25 @@ func (route *Route) normalize() {
 	}
 }
 
-func (route *Route) buildMethodTypes() {
+func (route *Route) buildMethodTypes() error {
 	controller := reflect.TypeOf(route.Controller)
 	cname := controller.Name()
 	pkgPath := controller.PkgPath()
-	pkgDir := findPkgDir(pkgPath)
+	pkgDir, err := findPkgDir(pkgPath)
+	if err != nil {
+		return err
+	}
 	if pkgDir == "" {
-		panic(fmt.Errorf("%v: package not found", pkgPath))
+		return fmt.Errorf("%v: package not found", pkgPath)
 	}
 	pkgInfo, err := build.ImportDir(pkgDir, 0)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	astFiles := make([]*ast.File, len(pkgInfo.GoFiles))
 	for i, goFilePath := range pkgInfo.GoFiles {
 		if astFiles[i], err = parser.ParseFile(token.NewFileSet(), filepath.Join(pkgInfo.Dir, goFilePath), nil, 0); err != nil {
-			panic(err)
+			return err
 		}
 	}
 	route.MethodTypes = make(map[string]MethodArgs)
@@ -226,12 +237,13 @@ func (route *Route) buildMethodTypes() {
 			})
 		}
 	}
+	return nil
 }
 
 func (route *Route) validateRouteParameters() error {
 	var errors []string
 	paramNames := make(map[string]bool)
-	for _, name := range route.ParamNames {
+	for _, name := range route.paramNames {
 		paramNames[name] = true
 	}
 	for methodName, args := range route.MethodTypes {
@@ -268,7 +280,7 @@ func (route *Route) validateControllerArgumentParameters() error {
 		}
 	}
 	var defNames []string
-	for _, name := range route.ParamNames {
+	for _, name := range route.paramNames {
 		if !argNames[name] {
 			defNames = append(defNames, name)
 		}
@@ -355,7 +367,7 @@ type routeInfo struct {
 
 // Reverse returns path of route by name and any params.
 func Reverse(name string, v ...interface{}) string {
-	info := appConfig.Router.reverse[name]
+	info := appConfig.router.reverse[name]
 	if info == nil {
 		types := make([]string, len(v))
 		for i, value := range v {
@@ -475,19 +487,19 @@ func (validateParser *URLTypeValidateParser) Parse(v string) (value interface{},
 	return url.Parse(v)
 }
 
-func findPkgDir(pkgPath string) string {
+func findPkgDir(pkgPath string) (string, error) {
 	var pkgDir string
 	for _, srcDir := range build.Default.SrcDirs() {
 		path, err := filepath.Abs(filepath.Join(srcDir, pkgPath))
 		if err != nil {
-			panic(err)
+			return "", err
 		}
 		if _, err := os.Stat(path); err == nil {
 			pkgDir = path
 			break
 		}
 	}
-	return pkgDir
+	return pkgDir, nil
 }
 
 func astTypeName(expr ast.Expr) string {
