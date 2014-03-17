@@ -1,8 +1,11 @@
 package kocha
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
+	"sort"
+	"strings"
 )
 
 func newTestAppConfig() *AppConfig {
@@ -128,6 +131,33 @@ func testInvokeWrapper(f func()) {
 		failedUnits = make(map[string]bool)
 	}()
 	f()
+}
+
+type orderedOutputMap map[string]interface{}
+
+func (m orderedOutputMap) String() string {
+	keys := make([]string, 0, len(m))
+	for key, _ := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	outputs := make([]string, 0, len(keys))
+	for _, key := range keys {
+		outputs = append(outputs, fmt.Sprintf("%s:%s", key, m[key]))
+	}
+	return fmt.Sprintf("map[%v]", strings.Join(outputs, " "))
+}
+
+func (m orderedOutputMap) GoString() string {
+	keys := make([]string, 0, len(m))
+	for key, _ := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for i, key := range keys {
+		keys[i] = fmt.Sprintf("%#v:%#v", key, m[key])
+	}
+	return fmt.Sprintf("map[string]interface{}{%v}", strings.Join(keys, ", "))
 }
 
 type FixturePanicInRenderTestCtrl struct{ *Controller }

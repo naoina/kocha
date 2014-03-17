@@ -132,11 +132,11 @@ func TestGoString(t *testing.T) {
 	}{
 		Name: "foo",
 		path: "path",
-		Route: map[string]interface{}{
+		Route: orderedOutputMap(map[string]interface{}{
 			"first":  "Tokyo",
 			"second": "Kyoto",
 			"third":  []int{10, 11, 20},
-		},
+		}),
 		G: &testGoString{},
 	})))
 	if err != nil {

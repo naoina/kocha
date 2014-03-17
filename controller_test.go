@@ -2,6 +2,7 @@ package kocha
 
 import (
 	"encoding/xml"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -165,7 +166,7 @@ func TestControllerRender_with_Context(t *testing.T) {
 			t.Fatal(err)
 		}
 		actual := string(buf)
-		expected := "tmpl_ctx: map[c1:v1 c2:v2]"
+		expected := fmt.Sprintf("tmpl_ctx: %v", ctx)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
@@ -185,7 +186,7 @@ func TestControllerRender_with_Context(t *testing.T) {
 			t.Fatal(err)
 		}
 		actual := string(buf)
-		expected := "tmpl_ctx: map[c3:v3 c4:v4]"
+		expected := fmt.Sprintf("tmpl_ctx: %v", c.Context)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}
@@ -206,7 +207,11 @@ func TestControllerRender_with_Context(t *testing.T) {
 			t.Fatal(err)
 		}
 		actual := string(buf)
-		expected := "tmpl_ctx: map[c5:v5 c6:test c7:v7]"
+		expected := fmt.Sprintf("tmpl_ctx: %v", Context{
+			"c5": "v5",
+			"c6": "test",
+			"c7": "v7",
+		})
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}

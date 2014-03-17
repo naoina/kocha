@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -67,6 +68,19 @@ type Controller struct {
 
 // Context is shorthand type for map[string]interface{}
 type Context map[string]interface{}
+
+// String returns string of a map that sorted by keys.
+func (c Context) String() string {
+	keys := make([]string, 0, len(c))
+	for key, _ := range c {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for i, key := range keys {
+		keys[i] = fmt.Sprintf("%v:%v", key, c[key])
+	}
+	return fmt.Sprintf("map[%v]", strings.Join(keys, " "))
+}
 
 // Render returns result of template.
 //
