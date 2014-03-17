@@ -60,50 +60,69 @@ var (
 	}
 )
 
-type TemplateSet map[string]AppTemplateSet
+type TemplateSet []*TemplatePathInfo
+
+// TemplatePathInfo represents an information of template paths.
+type TemplatePathInfo struct {
+	// Name of application.
+	Name string
+
+	// Directory paths of the template files.
+	Paths []string
+
+	// For internal use.
+	AppTemplateSet AppTemplateSet
+}
+
+// buildTemplateMap returns TemplateMap constructed from templateSet.
+func (ts TemplateSet) buildTemplateMap() (TemplateMap, error) {
+	layoutPaths := make(map[string]map[string]map[string]string)
+	templatePaths := make(map[string]map[string]map[string]string)
+	templateSet := make(TemplateMap)
+	for _, info := range ts {
+		if info.AppTemplateSet != nil {
+			templateSet[info.Name] = info.AppTemplateSet
+			continue
+		}
+		info.AppTemplateSet = make(AppTemplateSet)
+		templateSet[info.Name] = info.AppTemplateSet
+		layoutPaths[info.Name] = make(map[string]map[string]string)
+		templatePaths[info.Name] = make(map[string]map[string]string)
+		for _, rootPath := range info.Paths {
+			layoutDir := filepath.Join(rootPath, "layouts")
+			if err := collectLayoutPaths(layoutPaths[info.Name], layoutDir); err != nil {
+				return nil, err
+			}
+			if err := collectTemplatePaths(templatePaths[info.Name], rootPath, layoutDir); err != nil {
+				return nil, err
+			}
+		}
+	}
+	for appName, templates := range templatePaths {
+		if err := buildSingleAppTemplateSet(templateSet[appName], templates); err != nil {
+			return nil, err
+		}
+	}
+	for appName, layouts := range layoutPaths {
+		if err := buildLayoutAppTemplateSet(templateSet[appName], layouts, templatePaths[appName]); err != nil {
+			return nil, err
+		}
+	}
+	return templateSet, nil
+}
+
+type TemplateMap map[string]AppTemplateSet
 type AppTemplateSet map[string]LayoutTemplateSet
 type LayoutTemplateSet map[string]FileExtTemplateSet
 type FileExtTemplateSet map[string]*template.Template
 
 // Get gets a parsed template.
-func (t TemplateSet) Get(appName, layoutName, name, format string) *template.Template {
+func (t TemplateMap) Get(appName, layoutName, name, format string) *template.Template {
 	return t[appName][layoutName][format][ToSnakeCase(name)]
 }
 
-func (t TemplateSet) Ident(appName, layoutName, name, format string) string {
+func (t TemplateMap) Ident(appName, layoutName, name, format string) string {
 	return fmt.Sprintf("%s:%s %s.%s", appName, layoutName, ToSnakeCase(name), format)
-}
-
-// TemplateSetFromPaths returns TemplateSet constructed from templateSetPaths.
-func TemplateSetFromPaths(templateSetPaths map[string][]string) TemplateSet {
-	layoutPaths := make(map[string]map[string]map[string]string)
-	templatePaths := make(map[string]map[string]map[string]string)
-	templateSet := make(TemplateSet)
-	for appName, paths := range templateSetPaths {
-		layoutPaths[appName] = make(map[string]map[string]string)
-		templatePaths[appName] = make(map[string]map[string]string)
-		for _, rootPath := range paths {
-			layoutDir := filepath.Join(rootPath, "layouts")
-			if err := collectLayoutPaths(layoutPaths[appName], layoutDir); err != nil {
-				panic(err)
-			}
-			if err := collectTemplatePaths(templatePaths[appName], rootPath, layoutDir); err != nil {
-				panic(err)
-			}
-		}
-		templateSet[appName] = make(AppTemplateSet)
-	}
-	for appName, templates := range templatePaths {
-		if err := buildSingleAppTemplateSet(templateSet[appName], templates); err != nil {
-			panic(err)
-		}
-	}
-	for appName, layouts := range layoutPaths {
-		if err := buildLayoutAppTemplateSet(templateSet[appName], layouts, templatePaths[appName]); err != nil {
-			panic(err)
-		}
-	}
-	return templateSet
 }
 
 func collectLayoutPaths(layoutPaths map[string]map[string]string, layoutDir string) error {
@@ -196,7 +215,7 @@ func buildLayoutAppTemplateSet(appTemplateSet AppTemplateSet, layouts map[string
 }
 
 func readPartialTemplate(name string, ctx interface{}) (template.HTML, error) {
-	t := appConfig.TemplateSet.Get(appConfig.AppName, "", name, "html")
+	t := appConfig.templateMap.Get(appConfig.AppName, "", name, "html")
 	if t == nil {
 		return "", fmt.Errorf("%v: template not found", name)
 	}

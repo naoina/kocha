@@ -14,33 +14,35 @@ import (
 )
 
 func newControllerTestAppConfig() *AppConfig {
-	return &AppConfig{
-		AppPath: "testAppPath",
-		AppName: "testAppName",
-		TemplateSet: TemplateSet{
-			"testAppName": {
-				"app": {
-					"html": {
-						"testctrlr":     template.Must(template.New("tmpl1").Parse(`tmpl1`)),
-						"testctrlr_ctx": template.Must(template.New("tmpl1_ctx").Parse(`tmpl_ctx: {{.}}`)),
-						"errors/500":    template.Must(template.New("tmpl3").Parse(`500 error`)),
-						"errors/400":    template.Must(template.New("tmpl4").Parse(`400 error`)),
-					},
-					"json": {
-
-						"testctrlr":     template.Must(template.New("tmpl2").Parse(`{"tmpl2":"content"}`)),
-						"testctrlr_ctx": template.Must(template.New("tmpl2_ctx").Parse("tmpl2_ctx: {{.}}")),
-						"errors/500":    template.Must(template.New("tmpl5").Parse(`{"error":500}`)),
-					},
+	config := &AppConfig{
+		AppPath:     "testAppPath",
+		AppName:     "testAppName",
+		TemplateSet: TemplateSet{},
+	}
+	config.templateMap = TemplateMap{
+		"testAppName": {
+			"app": {
+				"html": {
+					"testctrlr":     template.Must(template.New("tmpl1").Parse(`tmpl1`)),
+					"testctrlr_ctx": template.Must(template.New("tmpl1_ctx").Parse(`tmpl_ctx: {{.}}`)),
+					"errors/500":    template.Must(template.New("tmpl3").Parse(`500 error`)),
+					"errors/400":    template.Must(template.New("tmpl4").Parse(`400 error`)),
 				},
-				"anotherLayout": {
-					"html": {
-						"testctrlr": template.Must(template.New("a_tmpl1").Parse(`<b>a_tmpl1</b>`)),
-					},
+				"json": {
+
+					"testctrlr":     template.Must(template.New("tmpl2").Parse(`{"tmpl2":"content"}`)),
+					"testctrlr_ctx": template.Must(template.New("tmpl2_ctx").Parse("tmpl2_ctx: {{.}}")),
+					"errors/500":    template.Must(template.New("tmpl5").Parse(`{"error":500}`)),
+				},
+			},
+			"anotherLayout": {
+				"html": {
+					"testctrlr": template.Must(template.New("a_tmpl1").Parse(`<b>a_tmpl1</b>`)),
 				},
 			},
 		},
 	}
+	return config
 }
 
 func newTestController(name, layout string) *Controller {

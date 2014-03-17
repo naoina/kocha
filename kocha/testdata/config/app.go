@@ -16,11 +16,14 @@ var (
 		AppPath:       rootPath,
 		AppName:       AppName,
 		DefaultLayout: "app",
-		TemplateSet: kocha.TemplateSetFromPaths(map[string][]string{
-			AppName: []string{
-				filepath.Join(rootPath, "app", "views"),
+		TemplateSet: kocha.TemplateSet{
+			{
+				Name: AppName,
+				Paths: []string{
+					filepath.Join(rootPath, "app", "views"),
+				},
 			},
-		}),
+		},
 
 		// Session settings
 		Session: &kocha.SessionConfig{

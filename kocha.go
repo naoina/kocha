@@ -20,7 +20,8 @@ type AppConfig struct {
 	Session           *SessionConfig
 	MaxClientBodySize int64
 
-	router *Router
+	router      *Router
+	templateMap TemplateMap
 }
 
 var (
@@ -43,6 +44,11 @@ func Init(config *AppConfig) {
 	if err := appConfig.Session.Validate(); err != nil {
 		panic(err)
 	}
+	templateMap, err := appConfig.TemplateSet.buildTemplateMap()
+	if err != nil {
+		panic(err)
+	}
+	appConfig.templateMap = templateMap
 	router, err := appConfig.RouteTable.buildRouter()
 	if err != nil {
 		panic(err)

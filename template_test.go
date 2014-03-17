@@ -102,7 +102,7 @@ func TestTemplateFuncs_invoke_template(t *testing.T) {
 	defer func() {
 		appConfig = oldAppConfig
 	}()
-	appConfig.TemplateSet = TemplateSet{
+	appConfig.templateMap = TemplateMap{
 		appConfig.AppName: {
 			"": {
 				"html": {
@@ -231,8 +231,8 @@ func TestTemplateFuncs_date(t *testing.T) {
 	}
 }
 
-func TestTemplateSet_Get(t *testing.T) {
-	templateSet := TemplateSet{
+func TestTemplateMap_Get(t *testing.T) {
+	templateMap := TemplateMap{
 		"testAppName": {
 			"app": {
 				"html": {
@@ -249,42 +249,42 @@ func TestTemplateSet_Get(t *testing.T) {
 			},
 		},
 	}
-	actual := templateSet.Get("testAppName", "app", "test_tmpl1", "html")
-	expected := templateSet["testAppName"]["app"]["html"]["test_tmpl1"]
+	actual := templateMap.Get("testAppName", "app", "test_tmpl1", "html")
+	expected := templateMap["testAppName"]["app"]["html"]["test_tmpl1"]
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	actual = templateSet.Get("testAppName", "app", "test_tmpl1", "js")
-	expected = templateSet["testAppName"]["app"]["js"]["test_tmpl1"]
+	actual = templateMap.Get("testAppName", "app", "test_tmpl1", "js")
+	expected = templateMap["testAppName"]["app"]["js"]["test_tmpl1"]
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	actual = templateSet.Get("testAppName", "anotherLayout", "test_tmpl1", "html")
-	expected = templateSet["testAppName"]["anotherLayout"]["html"]["test_tmpl1"]
+	actual = templateMap.Get("testAppName", "anotherLayout", "test_tmpl1", "html")
+	expected = templateMap["testAppName"]["anotherLayout"]["html"]["test_tmpl1"]
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	actual = templateSet.Get("unknownAppName", "app", "test_tmpl1", "html")
+	actual = templateMap.Get("unknownAppName", "app", "test_tmpl1", "html")
 	if actual != nil {
 		t.Errorf("Expect %v, but %v", nil, actual)
 	}
 
-	actual = templateSet.Get("testAppName", "app", "unknown_tmpl1", "html")
+	actual = templateMap.Get("testAppName", "app", "unknown_tmpl1", "html")
 	if actual != nil {
 		t.Errorf("Expect %v, but %v", nil, actual)
 	}
 
-	actual = templateSet.Get("testAppName", "app", "test_tmpl1", "xml")
+	actual = templateMap.Get("testAppName", "app", "test_tmpl1", "xml")
 	if actual != nil {
 		t.Errorf("Expect %v, but %v", nil, actual)
 	}
 }
 
-func TestTemplateSet_Ident(t *testing.T) {
-	templateSet := TemplateSet{}
+func TestTemplateMap_Ident(t *testing.T) {
+	templateMap := TemplateMap{}
 	for expected, args := range map[string][]string{
 		"a:b c.html":   []string{"a", "b", "c", "html"},
 		"b:a c.html":   []string{"b", "a", "c", "html"},
@@ -292,19 +292,26 @@ func TestTemplateSet_Ident(t *testing.T) {
 		"a:b c_d.html": []string{"a", "b", "cD", "html"},
 		"a:b c_d_e.js": []string{"a", "b", "CDE", "js"},
 	} {
-		actual := templateSet.Ident(args[0], args[1], args[2], args[3])
+		actual := templateMap.Ident(args[0], args[1], args[2], args[3])
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
 	}
 }
 
-func TestTemplateSetFromPaths(t *testing.T) {
-	actual := TemplateSetFromPaths(map[string][]string{
-		"appName": []string{
-			filepath.Join("testdata", "app", "views"),
+func TestTemplateSet_buildTemplateMap(t *testing.T) {
+	ts := TemplateSet{
+		{
+			Name: "appName",
+			Paths: []string{
+				filepath.Join("testdata", "app", "views"),
+			},
 		},
-	})
+	}
+	actual, err := ts.buildTemplateMap()
+	if err != nil {
+		t.Fatal(err)
+	}
 	expected := map[string]map[string]map[string]map[string]string{
 		"appName": {
 			"": {

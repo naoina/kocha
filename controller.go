@@ -94,9 +94,9 @@ func (c *Controller) Render(context ...interface{}) Result {
 	if format == "" {
 		panic(fmt.Errorf("unknown Content-Type: %v", c.Response.ContentType))
 	}
-	t := appConfig.TemplateSet.Get(appConfig.AppName, c.Layout, c.Name, format)
+	t := appConfig.templateMap.Get(appConfig.AppName, c.Layout, c.Name, format)
 	if t == nil {
-		panic(errors.New("no such template: " + appConfig.TemplateSet.Ident(appConfig.AppName, c.Layout, c.Name, format)))
+		panic(errors.New("no such template: " + appConfig.templateMap.Ident(appConfig.AppName, c.Layout, c.Name, format)))
 	}
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, ctx); err != nil {
@@ -175,7 +175,7 @@ func (c *Controller) RenderError(statusCode int, context ...interface{}) Result 
 	}
 	c.Response.StatusCode = statusCode
 	name := filepath.Join("errors", strconv.Itoa(statusCode))
-	t := appConfig.TemplateSet.Get(appConfig.AppName, c.Layout, name, format)
+	t := appConfig.templateMap.Get(appConfig.AppName, c.Layout, name, format)
 	if t == nil {
 		c.Response.ContentType = "text/plain"
 		return &ResultContent{

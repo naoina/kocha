@@ -10,22 +10,7 @@ func newTestAppConfig() *AppConfig {
 		AppPath:       "apppath/appname",
 		AppName:       "appname",
 		DefaultLayout: "app",
-		TemplateSet: TemplateSet{
-			"appname": {
-				"app": {
-					"html": {
-						"fixture_root_test_ctrl":   template.Must(template.New("tmpl1").Parse(`tmpl1`)),
-						"fixture_user_test_ctrl":   template.Must(template.New("tmpl2").Parse(`tmpl2-{{.id}}`)),
-						"fixture_date_test_ctrl":   template.Must(template.New("tmpl3").Parse(`tmpl3-{{.name}}-{{.year}}-{{.month}}-{{.day}}`)),
-						"fixture_error_test_ctrl":  template.Must(template.New("tmpl4").Parse(`tmpl4`)),
-						"fixture_teapot_test_ctrl": template.Must(template.New("tmpl6").Parse(`teapot`)),
-					},
-					"json": {
-						"fixture_json_test_ctrl": template.Must(template.New("tmpl5").Parse(`{"tmpl5":"json"}`)),
-					},
-				},
-			},
-		},
+		TemplateSet:   TemplateSet{},
 		RouteTable: RouteTable{
 			{
 				Name:       "root",
@@ -105,6 +90,22 @@ func newTestAppConfig() *AppConfig {
 		Session: &SessionConfig{
 			Name:  "test_session",
 			Store: newTestSessionCookieStore(),
+		},
+	}
+	config.templateMap = TemplateMap{
+		"appname": {
+			"app": {
+				"html": {
+					"fixture_root_test_ctrl":   template.Must(template.New("tmpl1").Parse(`tmpl1`)),
+					"fixture_user_test_ctrl":   template.Must(template.New("tmpl2").Parse(`tmpl2-{{.id}}`)),
+					"fixture_date_test_ctrl":   template.Must(template.New("tmpl3").Parse(`tmpl3-{{.name}}-{{.year}}-{{.month}}-{{.day}}`)),
+					"fixture_error_test_ctrl":  template.Must(template.New("tmpl4").Parse(`tmpl4`)),
+					"fixture_teapot_test_ctrl": template.Must(template.New("tmpl6").Parse(`teapot`)),
+				},
+				"json": {
+					"fixture_json_test_ctrl": template.Must(template.New("tmpl5").Parse(`{"tmpl5":"json"}`)),
+				},
+			},
 		},
 	}
 	router, err := config.RouteTable.buildRouter()
