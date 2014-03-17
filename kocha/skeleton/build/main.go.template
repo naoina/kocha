@@ -5,7 +5,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"{{.controllersImportPath}}"
+	config "{{.configImportPath}}"
 	{{if and .dbImportPath .migrationsImportPath}}
 	db "{{.dbImportPath}}"
 	migrations "{{.migrationsImportPath}}"
@@ -32,17 +32,25 @@ func main() {
 		os.Exit(0)
 	}
 	migrate()
-	kocha.Init({{.appConfig|goString}})
+	if len(config.AppConfig.TemplateSet) != {{.appConfig.TemplateSet|len}} {
+		fmt.Fprintf(os.Stderr, "abort: length of config.AppConfig.TemplateSet is mismatched between build-time and run-time")
+		os.Exit(1)
+	}
+	{{range $i, $info := .appConfig.TemplateSet}}
+	config.AppConfig.TemplateSet[{{$i}}].AppTemplateSet = {{$info.AppTemplateSet|goString}}
+	{{end}}
+	if len(config.AppConfig.RouteTable) != {{.appConfig.RouteTable|len}} {
+		fmt.Fprintf(os.Stderr, "abort: length of config.AppConfig.RouteTable is mismatched between build-time and run-time")
+		os.Exit(1)
+	}
+	{{range $i, $route := .appConfig.RouteTable}}
+	config.AppConfig.RouteTable[{{$i}}].MethodTypes = {{$route.MethodTypes|goString}}
+	{{end}}
+	kocha.Init(config.AppConfig)
 	{{range $name, $data := .resources}}
 	kocha.AddResource("{{$name}}", kocha.Gunzip({{$data|printf "%q"}}))
 	{{end}}
-	kocha.Run(kocha.SettingEnv("KOCHA_ADDR", "{{.addr}}"))
-}
-
-func init() {
-	config := kocha.Config("{{.appConfig.AppName}}")
-	{{range $name, $value := .config}}
-	config.Set("{{$name}}", {{$value|goString}}){{end}}
+	kocha.Run(config.Addr)
 }
 
 func migrate() {

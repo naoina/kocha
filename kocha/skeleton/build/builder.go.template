@@ -41,9 +41,7 @@ func main() {
 	}
 	data := map[string]interface{}{
 		"appConfig":             appConfig,
-		"addr":                  config.Addr,
-		"config":                kocha.Config(appConfig.AppName),
-		"controllersImportPath": "{{.controllersImportPath}}",
+		"configImportPath":      "{{.configImportPath}}",
 		"dbImportPath":          "{{.dbImportPath}}",
 		"migrationsImportPath":  "{{.migrationsImportPath}}",
 		"resources":             resources,

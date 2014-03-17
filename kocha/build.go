@@ -69,10 +69,6 @@ func (c *buildCommand) Run() {
 	if err != nil {
 		kocha.PanicOnError(c, "abort: cannot import `%s`: %v", path.Join(appDir, "config"), err)
 	}
-	controllersPkg, err := c.Package(path.Join(appDir, "app", "controllers"))
-	if err != nil {
-		kocha.PanicOnError(c, "abort: cannot import `%s`: %v", path.Join(appDir, "app", "controllers"), err)
-	}
 	var dbImportPath string
 	dbPkg, err := c.Package(path.Join(appDir, "db"))
 	if err == nil {
@@ -111,14 +107,13 @@ func (c *buildCommand) Run() {
 		resources = c.collectResourcePaths(filepath.Join(dir, kocha.StaticDir))
 	}
 	data := map[string]interface{}{
-		"configImportPath":      configPkg.ImportPath,
-		"controllersImportPath": controllersPkg.ImportPath,
-		"dbImportPath":          dbImportPath,
-		"migrationsImportPath":  migrationsImportPath,
-		"mainTemplate":          string(mainTemplate),
-		"mainFilePath":          mainFilePath,
-		"resources":             resources,
-		"version":               c.detectVersionTag(),
+		"configImportPath":     configPkg.ImportPath,
+		"dbImportPath":         dbImportPath,
+		"migrationsImportPath": migrationsImportPath,
+		"mainTemplate":         string(mainTemplate),
+		"mainFilePath":         mainFilePath,
+		"resources":            resources,
+		"version":              c.detectVersionTag(),
 	}
 	if err := t.Execute(file, data); err != nil {
 		kocha.PanicOnError(c, "abort: failed to write file: %v", err)
