@@ -123,23 +123,23 @@ func PanicOnError(usager usager, format string, a ...interface{}) {
 func CopyTemplate(u usager, srcPath, dstPath string, data map[string]interface{}) {
 	tmpl, err := template.ParseFiles(srcPath)
 	if err != nil {
-		PanicOnError(u, "abort: failed to parse template: %v", err)
+		PanicOnError(u, "abort: failed to parse template: %v: %v", srcPath, err)
 	}
 	var bufFrom bytes.Buffer
 	if err := tmpl.Execute(&bufFrom, data); err != nil {
-		PanicOnError(u, "abort: failed to process template: %v", err)
+		PanicOnError(u, "abort: failed to process template: %v: %v", srcPath, err)
 	}
 	buf := bufFrom.Bytes()
 	if strings.HasSuffix(srcPath, ".go.template") {
 		if buf, err = format.Source(buf); err != nil {
-			PanicOnError(u, "abort: failed to gofmt: %v", err)
+			PanicOnError(u, "abort: failed to gofmt: %v: %v", srcPath, err)
 		}
 	}
 	dstDir := filepath.Dir(dstPath)
 	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
 		PrintCreateDirectory(dstDir)
 		if err := os.MkdirAll(dstDir, 0755); err != nil {
-			PanicOnError(u, "abort: failed to create directory: %v", err)
+			PanicOnError(u, "abort: failed to create directory: %v: %v", dstDir, err)
 		}
 	}
 	printFunc := PrintCreate
@@ -157,11 +157,11 @@ func CopyTemplate(u usager, srcPath, dstPath string, data map[string]interface{}
 	}
 	dstFile, err := os.Create(dstPath)
 	if err != nil {
-		PanicOnError(u, "abort: failed to create file: %v", err)
+		PanicOnError(u, "abort: failed to create file: %v: %v", dstPath, err)
 	}
 	defer dstFile.Close()
 	if _, err := io.Copy(dstFile, bytes.NewBuffer(buf)); err != nil {
-		PanicOnError(u, "abort: failed to output file: %v", err)
+		PanicOnError(u, "abort: failed to output file: %v: %v", dstPath, err)
 	}
 	printFunc(dstPath)
 }
