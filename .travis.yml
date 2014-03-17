@@ -2,6 +2,8 @@ language: go
 
 go:
   - 1.2
+  - 1.2.1
+  - tip
 
 install:
   - go get -v github.com/mattn/go-sqlite3
