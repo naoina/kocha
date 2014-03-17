@@ -1,9 +1,6 @@
 package kocha
 
-import (
-	"os"
-	"runtime"
-)
+import "os"
 
 const (
 	DefaultHttpAddr          = "127.0.0.1:9100"
@@ -58,8 +55,4 @@ func SettingEnv(key, def string) string {
 	}
 	os.Setenv(key, def)
 	return def
-}
-
-func init() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
 }
