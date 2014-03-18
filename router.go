@@ -194,7 +194,7 @@ func (route *Route) buildMethodTypes() error {
 	if pkgDir == "" {
 		return fmt.Errorf("%v: package not found", pkgPath)
 	}
-	pkgInfo, err := build.ImportDir(pkgDir, 0)
+	pkgInfo, err := ImportDir(pkgDir, 0)
 	if err != nil {
 		return err
 	}

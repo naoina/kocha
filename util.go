@@ -29,6 +29,9 @@ import (
 var (
 	// Now returns current time. This is for mock in tests.
 	Now = func() time.Time { return time.Now() }
+
+	// for test.
+	ImportDir = build.ImportDir
 )
 
 // ToCamelCase returns a copy of the string s with all Unicode letters mapped to their camel case.

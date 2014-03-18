@@ -1,6 +1,7 @@
 package kocha
 
 import (
+	"go/build"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -8,6 +9,17 @@ import (
 )
 
 func Test_buildRouter(t *testing.T) {
+	func() {
+		ImportDir = build.ImportDir
+	}()
+	ImportDir = func(dir string, mode build.ImportMode) (*build.Package, error) {
+		pkg, err := build.ImportDir(dir, mode)
+		if err != nil {
+			return nil, err
+		}
+		pkg.GoFiles = []string{"testfixtures_test.go"}
+		return pkg, err
+	}
 	for _, v := range []interface{}{
 		nil,
 		"",
