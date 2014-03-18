@@ -30,8 +30,8 @@ var (
 			Name: "{{.appName}}_session",
 			Store: &kocha.SessionCookieStore{
 				// AUTO-GENERATED Random keys. DO NOT EDIT.
-				SecretKey:  "{{.secretKey}}",
-				SigningKey: "{{.signedKey}}",
+				SecretKey:  {{.secretKey}},
+				SigningKey: {{.signedKey}},
 			},
 
 			// Expiration of session cookie, in seconds, from now.
