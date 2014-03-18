@@ -127,16 +127,16 @@ func TestGoString(t *testing.T) {
 
 	aBuf, err := format.Source([]byte(GoString(struct {
 		Name, path string
-		Route      map[string]interface{}
+		Route      orderedOutputMap
 		G          *testGoString
 	}{
 		Name: "foo",
 		path: "path",
-		Route: orderedOutputMap(map[string]interface{}{
+		Route: orderedOutputMap{
 			"first":  "Tokyo",
 			"second": "Kyoto",
 			"third":  []int{10, 11, 20},
-		}),
+		},
 		G: &testGoString{},
 	})))
 	if err != nil {
@@ -146,7 +146,7 @@ func TestGoString(t *testing.T) {
 struct {
 	Name string
 	path string
-	Route map[string]interface{}
+	Route kocha.orderedOutputMap
 	G *kocha.testGoString
 }{
 
@@ -154,21 +154,7 @@ struct {
 
 	Name: "foo",
 
-	Route: map[string]interface{}{
-
-		"first": "Tokyo",
-
-		"second": "Kyoto",
-
-		"third": []int{
-
-			10,
-
-			11,
-
-			20,
-		},
-	},
+	Route: map[string]interface{}{"first": "Tokyo", "second": "Kyoto", "third": []int{10, 11, 20}},
 }`))
 	if err != nil {
 		t.Fatal(err)
