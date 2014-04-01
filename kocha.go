@@ -1,6 +1,10 @@
 package kocha
 
-import "os"
+import (
+	"os"
+
+	"github.com/joho/godotenv"
+)
 
 const (
 	DefaultHttpAddr          = "127.0.0.1:9100"
@@ -68,4 +72,10 @@ func SettingEnv(key, def string) string {
 	}
 	os.Setenv(key, def)
 	return def
+}
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		panic(err)
+	}
 }
