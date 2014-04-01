@@ -75,7 +75,5 @@ func SettingEnv(key, def string) string {
 }
 
 func init() {
-	if err := godotenv.Load(); err != nil {
-		panic(err)
-	}
+	_ = godotenv.Load()
 }
