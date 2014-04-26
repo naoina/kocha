@@ -81,7 +81,7 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 	cc.Request = request
 	cc.Response = response
 	cc.Params.Values = request.Form
-	if err := request.ParseMultipartForm(appConfig.MaxClientBodySize); err != nil {
+	if err := request.ParseMultipartForm(appConfig.MaxClientBodySize); err != nil && err != http.ErrNotMultipart {
 		panic(err)
 	}
 	for _, m := range appConfig.Middlewares {
