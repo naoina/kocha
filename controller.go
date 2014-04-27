@@ -60,10 +60,12 @@ type Controller struct {
 	Response *Response
 
 	// Parameters of form values.
-	Params Params
+	Params *Params
 
 	// Session.
 	Session Session
+
+	errors map[string][]*ParamError
 }
 
 // Context is shorthand type for map[string]interface{}
@@ -258,31 +260,54 @@ func (c *Controller) Redirect(url string, permanently bool) Result {
 
 func (c *Controller) buildContext(context []interface{}) (interface{}, error) {
 	switch len(context) {
-	case 1: // do nothing.
-	case 0:
-		return c.Context, nil
-	default: // > 1
-		return nil, errors.New("too many arguments")
-	}
-	if c.Context == nil {
-		return context[0], nil
-	}
-	if ctx, ok := context[0].(Context); ok {
+	case 1:
+		ctx, ok := context[0].(Context)
+		if !ok {
+			if len(c.Context) == 0 {
+				return context[0], nil
+			}
+			return nil, fmt.Errorf("contexts of multiple types has been set: Controller.Context has been set,"+
+				" but context of other type was given: %v", reflect.TypeOf(context))
+		}
+		if c.Context == nil {
+			c.Context = Context{}
+		}
 		for k, v := range ctx {
 			c.Context[k] = v
 		}
-		return c.Context, nil
+	case 0:
+		if c.Context == nil {
+			c.Context = Context{}
+		}
+	default: // > 1
+		return nil, fmt.Errorf("too many arguments")
 	}
-	if len(c.Context) != 0 {
-		return nil, fmt.Errorf("contexts of multiple types has been set: Controller.Context has been set,"+
-			" but context of other type was given: %v", reflect.TypeOf(context))
+	if _, exists := c.Context["errors"]; exists {
+		Log.Warn("kocha: Context: `errors' key has already been set, skipped")
+	} else {
+		c.Context["errors"] = c.Errors()
 	}
-	return context[0], nil
+	return c.Context, nil
 }
 
 // Invoke is an alias to Invoke(unit, newFunc, defaultFunc).
 func (c *Controller) Invoke(unit Unit, newFunc func(), defaultFunc func()) {
 	Invoke(unit, newFunc, defaultFunc)
+}
+
+// Errors returns map of errors that relate to the form values.
+// A map key is field name, and value is slice of errors.
+// The errors will be set by Controller.Params.Bind().
+func (c *Controller) Errors() map[string][]*ParamError {
+	if c.errors == nil {
+		c.errors = make(map[string][]*ParamError)
+	}
+	return c.errors
+}
+
+// HasErrors returns whether it has errors.
+func (c *Controller) HasErrors() bool {
+	return len(c.errors) > 0
 }
 
 // StaticServe is generic controller for serve a static file.
@@ -309,9 +334,4 @@ func NewErrorController(statusCode int) *ErrorController {
 
 func (c *ErrorController) Get() Result {
 	return c.RenderError(c.StatusCode)
-}
-
-// Params is represents form values.
-type Params struct {
-	url.Values
 }

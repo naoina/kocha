@@ -463,3 +463,12 @@ func FindAppDir() (string, error) {
 	dstBasePath := filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src")
 	return filepath.ToSlash(dir)[len(dstBasePath)+1:], nil
 }
+
+// IsUnexportedField returns whether the field is unexported.
+// This function is to avoid the bug in versions older than Go1.3.
+// See following links:
+//     https://code.google.com/p/go/issues/detail?id=7247
+//     http://golang.org/ref/spec#Exported_identifiers
+func IsUnexportedField(field reflect.StructField) bool {
+	return !(field.PkgPath == "" && unicode.IsUpper(rune(field.Name[0])))
+}

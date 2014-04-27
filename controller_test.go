@@ -57,7 +57,7 @@ func newTestController(name, layout string) *Controller {
 		Layout:   layout,
 		Request:  NewRequest(req),
 		Response: NewResponse(w),
-		Params:   Params{},
+		Params:   &Params{},
 	}
 }
 
@@ -141,10 +141,16 @@ func TestControllerRender_without_Context(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	actual := string(buf)
-	expected := "tmpl1"
+	var actual interface{} = string(buf)
+	var expected interface{} = "tmpl1"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+
+	actual = c.Context
+	expected = Context{"errors": c.errors}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Controller.Context => %#v, want %#v", actual, expected)
 	}
 }
 
@@ -165,6 +171,7 @@ func TestControllerRender_with_Context(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		ctx["errors"] = c.errors
 		actual := string(buf)
 		expected := fmt.Sprintf("tmpl_ctx: %v", ctx)
 		if !reflect.DeepEqual(actual, expected) {
@@ -208,9 +215,10 @@ func TestControllerRender_with_Context(t *testing.T) {
 		}
 		actual := string(buf)
 		expected := fmt.Sprintf("tmpl_ctx: %v", Context{
-			"c5": "v5",
-			"c6": "test",
-			"c7": "v7",
+			"c5":     "v5",
+			"c6":     "test",
+			"c7":     "v7",
+			"errors": c.errors,
 		})
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
@@ -241,6 +249,53 @@ func TestControllerRender_with_Context(t *testing.T) {
 			}
 		}()
 		c.Render(ctx)
+	}()
+
+	func() {
+		c := newTestController("testctrlr_ctx", "app")
+		c.Context = Context{"c1": "v1"}
+		c.Render()
+		actual := c.Context
+		expected := Context{
+			"c1":     "v1",
+			"errors": make(map[string][]*ParamError),
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Controller.Context => %#v, want %#v", actual, expected)
+		}
+	}()
+
+	func() {
+		c := newTestController("testctrlr_ctx", "app")
+		ctx := Context{"c1": "v1"}
+		c.Render(ctx)
+		actual := c.Context
+		expected := Context{
+			"c1":     "v1",
+			"errors": make(map[string][]*ParamError),
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Controller.Context => %#v, want %#v", actual, expected)
+		}
+	}()
+
+	func() {
+		origLog := Log
+		defer func() {
+			Log = origLog
+		}()
+		Log = initLogger(nil)
+		c := newTestController("testctrlr_ctx", "app")
+		c.Context = Context{"c1": "v1", "errors": "testerr"}
+		c.Render()
+		actual := c.Context
+		expected := Context{
+			"c1":     "v1",
+			"errors": "testerr",
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Controller.Context => %#v, want %#v", actual, expected)
+		}
 	}()
 }
 
@@ -640,6 +695,56 @@ func TestControllerRedirect(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
+}
+
+func TestControllerErrors(t *testing.T) {
+	func() {
+		c := &Controller{}
+		actual := c.Errors()
+		expected := make(map[string][]*ParamError)
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Controller.Errors() => %#v, want %#v", actual, expected)
+		}
+	}()
+
+	func() {
+		c := &Controller{}
+		c.errors = map[string][]*ParamError{
+			"e1": {&ParamError{}},
+			"e2": {&ParamError{}, &ParamError{}},
+		}
+		actual := c.Errors()
+		expected := map[string][]*ParamError{
+			"e1": {&ParamError{}},
+			"e2": {&ParamError{}, &ParamError{}},
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Controller.Errors() => %#v, want %#v", actual, expected)
+		}
+	}()
+}
+
+func TestControllerHasError(t *testing.T) {
+	func() {
+		c := &Controller{}
+		actual := c.HasErrors()
+		expected := false
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Controller.HasErrors() => %#v, want %#v", actual, expected)
+		}
+	}()
+
+	func() {
+		c := &Controller{}
+		c.errors = map[string][]*ParamError{
+			"e1": {&ParamError{}},
+		}
+		actual := c.HasErrors()
+		expected := true
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Controller.HasErrors() => %#v, want %#v", actual, expected)
+		}
+	}()
 }
 
 func TestStaticServeGet(t *testing.T) {

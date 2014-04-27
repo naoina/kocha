@@ -77,10 +77,10 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 	}
 	cc.Name = ac.Type().Name()
 	cc.Layout = appConfig.DefaultLayout
-	cc.Context = make(Context)
+	cc.Context = Context{}
 	cc.Request = request
 	cc.Response = response
-	cc.Params.Values = request.Form
+	cc.Params = newParams(cc, request.Form, "")
 	if err := request.ParseMultipartForm(appConfig.MaxClientBodySize); err != nil && err != http.ErrNotMultipart {
 		panic(err)
 	}
