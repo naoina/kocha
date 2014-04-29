@@ -8,6 +8,7 @@ import (
 	htmltemplate "html/template"
 	"io"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"os"
 	"path"
@@ -380,7 +381,14 @@ func Gunzip(gz string) string {
 	return string(result)
 }
 
-func detectContentType(r io.Reader) (contentType string) {
+// Get Content-Type by extension of filename.
+func detectContentTypeByExt(path string) (contentType string) {
+	ext := filepath.Ext(path)
+	return mime.TypeByExtension(ext)
+}
+
+// Get Content-Type by content body
+func detectContentTypeByBody(r io.Reader) (contentType string) {
 	buf := make([]byte, 512)
 	if n, err := io.ReadFull(r, buf); err != nil {
 		if err != io.EOF && err != io.ErrUnexpectedEOF {
