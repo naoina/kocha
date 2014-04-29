@@ -1,10 +1,12 @@
 package kocha
 
 import (
+	"bytes"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"reflect"
 	"testing"
@@ -217,6 +219,38 @@ func TestServer(t *testing.T) {
 		status = w.Code
 		if !reflect.DeepEqual(status, http.StatusInternalServerError) {
 			t.Errorf("Expect %v, but %v", http.StatusInternalServerError, status)
+		}
+	}()
+}
+
+func TestServer_WithPOST(t *testing.T) {
+	oldAppConfig := appConfig
+	appConfig = newTestAppConfig()
+	defer func() {
+		appConfig = oldAppConfig
+	}()
+
+	func() {
+		values := url.Values{}
+		values.Set("name", "naoina")
+		values.Add("type", "human")
+		w := httptest.NewRecorder()
+		req, err := http.NewRequest("POST", "/post_test", bytes.NewBufferString(values.Encode()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		handler(w, req)
+		var actual interface{} = w.Code
+		var expected interface{} = http.StatusOK
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("POST /post_test status => %#v, want %#v", actual, expected)
+		}
+
+		actual = w.Body.String()
+		expected = `tmpl7-map[name:[naoina] type:[human]]`
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("POST /post_test body => %#v, want %#v", actual, expected)
 		}
 	}()
 }

@@ -75,15 +75,15 @@ func render(req *http.Request, writer http.ResponseWriter, controller, method *r
 	default:
 		panic(fmt.Errorf("BUG: Controller field must be struct of %T or that pointer, but %T", cc, c))
 	}
+	if err := request.ParseMultipartForm(appConfig.MaxClientBodySize); err != nil && err != http.ErrNotMultipart {
+		panic(err)
+	}
 	cc.Name = ac.Type().Name()
 	cc.Layout = appConfig.DefaultLayout
 	cc.Context = Context{}
 	cc.Request = request
 	cc.Response = response
 	cc.Params = newParams(cc, request.Form, "")
-	if err := request.ParseMultipartForm(appConfig.MaxClientBodySize); err != nil && err != http.ErrNotMultipart {
-		panic(err)
-	}
 	for _, m := range appConfig.Middlewares {
 		m.Before(cc)
 	}

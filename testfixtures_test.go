@@ -88,12 +88,21 @@ func newTestAppConfig() *AppConfig {
 					},
 				},
 			},
+			{
+				Name:       "post_test",
+				Path:       "/post_test",
+				Controller: FixturePostTestCtrl{},
+				MethodTypes: map[string]MethodArgs{
+					"Post": MethodArgs{},
+				},
+			},
 		},
 		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
 		Session: &SessionConfig{
 			Name:  "test_session",
 			Store: newTestSessionCookieStore(),
 		},
+		MaxClientBodySize: DefaultMaxClientBodySize,
 	}
 	config.templateMap = TemplateMap{
 		"appname": {
@@ -104,6 +113,7 @@ func newTestAppConfig() *AppConfig {
 					"fixture_date_test_ctrl":   template.Must(template.New("tmpl3").Parse(`tmpl3-{{.name}}-{{.year}}-{{.month}}-{{.day}}`)),
 					"fixture_error_test_ctrl":  template.Must(template.New("tmpl4").Parse(`tmpl4`)),
 					"fixture_teapot_test_ctrl": template.Must(template.New("tmpl6").Parse(`teapot`)),
+					"fixture_post_test_ctrl":   template.Must(template.New("tmpl7").Parse(`tmpl7-{{.params}}`)),
 				},
 				"json": {
 					"fixture_json_test_ctrl": template.Must(template.New("tmpl5").Parse(`{"tmpl5":"json"}`)),
@@ -242,4 +252,16 @@ type FixtureTypeUndefinedCtrl struct{ *Controller }
 
 func (c *FixtureTypeUndefinedCtrl) Get(id int32) Result {
 	return c.RenderText("")
+}
+
+type FixturePostTestCtrl struct {
+	*Controller
+}
+
+func (c *FixturePostTestCtrl) Post() Result {
+	m := orderedOutputMap{}
+	for k, v := range c.Params.Values {
+		m[k] = v
+	}
+	return c.Render(Context{"params": m})
 }
