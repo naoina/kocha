@@ -18,6 +18,7 @@ const fdKey = "KOCHA_FD"
 
 func handler(writer http.ResponseWriter, req *http.Request) {
 	controller, method, args := appConfig.router.dispatch(req)
+	req.ParseForm()
 	if controller == nil {
 		c := NewErrorController(http.StatusNotFound)
 		cValue := reflect.ValueOf(c)
