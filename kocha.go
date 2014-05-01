@@ -24,7 +24,7 @@ type AppConfig struct {
 	Session           *SessionConfig
 	MaxClientBodySize int64
 
-	router      *Router
+	router      *router
 	templateMap TemplateMap
 }
 

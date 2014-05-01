@@ -143,7 +143,7 @@ func Test_buildRouter(t *testing.T) {
 	}()
 }
 
-func Test_Router_dispatch_with_route_missing(t *testing.T) {
+func Test_router_dispatch_with_route_missing(t *testing.T) {
 	oldAppConfig := appConfig
 	appConfig = newTestAppConfig()
 	defer func() {
@@ -165,7 +165,7 @@ func Test_Router_dispatch_with_route_missing(t *testing.T) {
 	}
 }
 
-func Test_Router_dispatch(t *testing.T) {
+func Test_router_dispatch(t *testing.T) {
 	oldAppConfig := appConfig
 	appConfig = newTestAppConfig()
 	defer func() {

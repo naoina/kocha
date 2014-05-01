@@ -39,7 +39,7 @@ var (
 
 type RouteTable []*Route
 
-func (rt RouteTable) buildRouter() (*Router, error) {
+func (rt RouteTable) buildRouter() (*router, error) {
 	for _, route := range rt {
 		route.normalize()
 	}
@@ -76,16 +76,16 @@ func (rt RouteTable) buildRouter() (*Router, error) {
 	return router, nil
 }
 
-// Router represents a router of kocha.
-type Router struct {
+// router represents a router of kocha.
+type router struct {
 	forward    forwardRouter
 	reverse    reverseRouter
 	routeTable RouteTable
 }
 
-// newRouter returns a new Router.
-func newRouter(rt RouteTable) (*Router, error) {
-	router := &Router{routeTable: rt}
+// newRouter returns a new router.
+func newRouter(rt RouteTable) (*router, error) {
+	router := &router{routeTable: rt}
 	if err := router.buildForward(); err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func newRouter(rt RouteTable) (*Router, error) {
 	return router, nil
 }
 
-func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
+func (router *router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
 	methodName := strings.Title(strings.ToLower(req.Method))
 	path := util.NormPath(req.URL.Path)
 	data, params := router.forward.Lookup(path)
@@ -107,7 +107,7 @@ func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, me
 }
 
 // buildForward builds forward router.
-func (router *Router) buildForward() error {
+func (router *router) buildForward() error {
 	records := make([]urlrouter.Record, len(router.routeTable))
 	for i, route := range router.routeTable {
 		records[i] = urlrouter.NewRecord(route.Path, route)
@@ -120,7 +120,7 @@ func (router *Router) buildForward() error {
 }
 
 // buildReverse builds reverse router.
-func (router *Router) buildReverse() error {
+func (router *router) buildReverse() error {
 	router.reverse = make(reverseRouter)
 	for _, route := range router.routeTable {
 		paramNames := urlrouter.ParamNames(route.Path)
