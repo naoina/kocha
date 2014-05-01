@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/naoina/kocha"
 	"github.com/naoina/kocha/util"
 )
 
@@ -58,8 +57,8 @@ func (c *newCommand) Run() {
 	data := map[string]interface{}{
 		"appName":   filepath.Base(appPath),
 		"appPath":   appPath,
-		"secretKey": fmt.Sprintf("%q", string(kocha.GenerateRandomKey(32))), // AES-256
-		"signedKey": fmt.Sprintf("%q", string(kocha.GenerateRandomKey(16))),
+		"secretKey": fmt.Sprintf("%q", string(util.GenerateRandomKey(32))), // AES-256
+		"signedKey": fmt.Sprintf("%q", string(util.GenerateRandomKey(16))),
 	}
 	filepath.Walk(skeletonDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

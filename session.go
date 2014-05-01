@@ -297,12 +297,3 @@ func (store *SessionCookieStore) hash(src []byte) []byte {
 	hash.Write(src)
 	return hash.Sum(nil)
 }
-
-// Generate a random bytes.
-func GenerateRandomKey(length int) []byte {
-	result := make([]byte, length)
-	if _, err := io.ReadFull(rand.Reader, result); err != nil {
-		panic(err)
-	}
-	return result
-}

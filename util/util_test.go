@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"testing/quick"
 )
 
 type orderedOutputMap map[string]interface{}
@@ -290,4 +291,21 @@ func TestIsUnexportedField(t *testing.T) {
 			t.Errorf("IsUnexportedField(%q) => %v, want %v", v, actual, expected)
 		}
 	}()
+}
+
+func TestGenerateRandomKey(t *testing.T) {
+	if err := quick.Check(func(length uint16) bool {
+		already := make([][]byte, 0, 100)
+		for i := 0; i < 100; i++ {
+			buf := GenerateRandomKey(int(length))
+			for _, v := range already {
+				if !reflect.DeepEqual(buf, v) {
+					return false
+				}
+			}
+		}
+		return true
+	}, &quick.Config{MaxCount: 10}); err != nil {
+		t.Error(err)
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"crypto/rand"
 	"fmt"
 	htmltemplate "html/template"
 	"io"
@@ -479,4 +480,13 @@ func FindAppDir() (string, error) {
 //     http://golang.org/ref/spec#Exported_identifiers
 func IsUnexportedField(field reflect.StructField) bool {
 	return !(field.PkgPath == "" && unicode.IsUpper(rune(field.Name[0])))
+}
+
+// Generate a random bytes.
+func GenerateRandomKey(length int) []byte {
+	result := make([]byte, length)
+	if _, err := io.ReadFull(rand.Reader, result); err != nil {
+		panic(err)
+	}
+	return result
 }
