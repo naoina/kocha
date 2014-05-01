@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/naoina/kocha/util"
 )
 
 var (
@@ -118,11 +120,11 @@ type FileExtTemplateSet map[string]*template.Template
 
 // Get gets a parsed template.
 func (t TemplateMap) Get(appName, layoutName, name, format string) *template.Template {
-	return t[appName][layoutName][format][ToSnakeCase(name)]
+	return t[appName][layoutName][format][util.ToSnakeCase(name)]
 }
 
 func (t TemplateMap) Ident(appName, layoutName, name, format string) string {
-	return fmt.Sprintf("%s:%s %s.%s", appName, layoutName, ToSnakeCase(name), format)
+	return fmt.Sprintf("%s:%s %s.%s", appName, layoutName, util.ToSnakeCase(name), format)
 }
 
 func collectLayoutPaths(layoutPaths map[string]map[string]string, layoutDir string) error {
@@ -137,7 +139,7 @@ func collectLayoutPaths(layoutPaths map[string]map[string]string, layoutDir stri
 		if err != nil {
 			return err
 		}
-		name, ext := SplitExt(baseName)
+		name, ext := util.SplitExt(baseName)
 		if _, exists := layoutPaths[name]; !exists {
 			layoutPaths[name] = make(map[string]string)
 		}
@@ -164,7 +166,7 @@ func collectTemplatePaths(templatePaths map[string]map[string]string, templateDi
 		if err != nil {
 			return err
 		}
-		name, ext := SplitExt(baseName)
+		name, ext := util.SplitExt(baseName)
 		if _, exists := templatePaths[ext]; !exists {
 			templatePaths[ext] = make(map[string]string)
 		}

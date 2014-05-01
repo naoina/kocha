@@ -18,6 +18,7 @@ import (
 
 	"github.com/naoina/kocha-urlrouter"
 	_ "github.com/naoina/kocha-urlrouter/doublearray"
+	"github.com/naoina/kocha/util"
 )
 
 var (
@@ -96,7 +97,7 @@ func newRouter(rt RouteTable) (*Router, error) {
 
 func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
 	methodName := strings.Title(strings.ToLower(req.Method))
-	path := normPath(req.URL.Path)
+	path := util.NormPath(req.URL.Path)
 	data, params := router.forward.Lookup(path)
 	if data == nil {
 		return nil, nil, nil
@@ -194,7 +195,7 @@ func (route *Route) buildMethodTypes() error {
 	if pkgDir == "" {
 		return fmt.Errorf("%v: package not found", pkgPath)
 	}
-	pkgInfo, err := ImportDir(pkgDir, 0)
+	pkgInfo, err := util.ImportDir(pkgDir, 0)
 	if err != nil {
 		return err
 	}
@@ -405,7 +406,7 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	}
 	replacer := strings.NewReplacer(oldnew...)
 	path := replacer.Replace(route.Path)
-	return normPath(path)
+	return util.NormPath(path)
 }
 
 // TypeValidateParser is an interface of validator and parser for any type value.

@@ -3,8 +3,7 @@ package generator
 import (
 	"flag"
 	"path/filepath"
-
-	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 )
 
 // unitGenerator is the generator of unit.
@@ -25,14 +24,14 @@ func (g *unitGenerator) DefineFlags(fs *flag.FlagSet) {
 func (g *unitGenerator) Generate() {
 	name := g.flag.Arg(0)
 	if name == "" {
-		kocha.PanicOnError(g, "abort: no NAME given")
+		util.PanicOnError(g, "abort: no NAME given")
 	}
-	camelCaseName := kocha.ToCamelCase(name)
-	snakeCaseName := kocha.ToSnakeCase(name)
+	camelCaseName := util.ToCamelCase(name)
+	snakeCaseName := util.ToSnakeCase(name)
 	data := map[string]interface{}{
 		"Name": camelCaseName,
 	}
-	kocha.CopyTemplate(g,
+	util.CopyTemplate(g,
 		filepath.Join(SkeletonDir("unit"), "unit.go.template"),
 		filepath.Join("app", "units", snakeCaseName+".go"), data)
 }

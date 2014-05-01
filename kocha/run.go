@@ -9,7 +9,7 @@ import (
 	"runtime"
 
 	"github.com/howeyc/fsnotify"
-	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 )
 
 type runCommand struct {
@@ -96,7 +96,7 @@ func (c *runCommand) execCmd(name string, args ...string) *exec.Cmd {
 	cmd := exec.Command(name, args...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err := cmd.Start(); err != nil {
-		kocha.PanicOnError(c, "abort: %v", err)
+		util.PanicOnError(c, "abort: %v", err)
 	}
 	return cmd
 }

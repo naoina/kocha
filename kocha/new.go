@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 )
 
 // newCommand implements `command` interface for `new` command.
@@ -45,14 +46,14 @@ func (c *newCommand) DefineFlags(fs *flag.FlagSet) {
 func (c *newCommand) Run() {
 	appPath := c.flag.Arg(0)
 	if appPath == "" {
-		kocha.PanicOnError(c, "abort: no APP_PATH given")
+		util.PanicOnError(c, "abort: no APP_PATH given")
 	}
 	dstBasePath := filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src", appPath)
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
 	skeletonDir := filepath.Join(baseDir, "skeleton", "new")
 	if _, err := os.Stat(filepath.Join(dstBasePath, "config", "app.go")); err == nil {
-		kocha.PanicOnError(c, "abort: Kocha application is already exists")
+		util.PanicOnError(c, "abort: Kocha application is already exists")
 	}
 	data := map[string]interface{}{
 		"appName":   filepath.Base(appPath),
@@ -71,12 +72,12 @@ func (c *newCommand) Run() {
 		dstDir := filepath.Dir(dstPath)
 		dirCreated, err := mkdirAllIfNotExists(dstDir)
 		if err != nil {
-			kocha.PanicOnError(c, "abort: failed to create directory: %v", err)
+			util.PanicOnError(c, "abort: failed to create directory: %v", err)
 		}
 		if dirCreated {
-			kocha.PrintCreateDirectory(dstDir)
+			util.PrintCreateDirectory(dstDir)
 		}
-		kocha.CopyTemplate(c, path, dstPath, data)
+		util.CopyTemplate(c, path, dstPath, data)
 		return nil
 	})
 }

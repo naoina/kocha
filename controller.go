@@ -15,6 +15,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/naoina/kocha/util"
 )
 
 type mimeTypeFormats map[string]string
@@ -232,9 +234,9 @@ func (c *Controller) SendFile(path string) Result {
 			panic(err)
 		}
 	}
-	c.Response.ContentType = detectContentTypeByExt(path)
+	c.Response.ContentType = util.DetectContentTypeByExt(path)
 	if c.Response.ContentType == "" {
-		c.Response.ContentType = detectContentTypeByBody(file)
+		c.Response.ContentType = util.DetectContentTypeByBody(file)
 	}
 	return &ResultContent{
 		Body: file,

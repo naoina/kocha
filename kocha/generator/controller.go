@@ -15,6 +15,7 @@ import (
 	"reflect"
 
 	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 )
 
 var (
@@ -39,17 +40,17 @@ func (g *controllerGenerator) DefineFlags(fs *flag.FlagSet) {
 func (g *controllerGenerator) Generate() {
 	name := g.flag.Arg(0)
 	if name == "" {
-		kocha.PanicOnError(g, "abort: no NAME given")
+		util.PanicOnError(g, "abort: no NAME given")
 	}
-	camelCaseName := kocha.ToCamelCase(name)
-	snakeCaseName := kocha.ToSnakeCase(name)
+	camelCaseName := util.ToCamelCase(name)
+	snakeCaseName := util.ToSnakeCase(name)
 	data := map[string]interface{}{
 		"Name": camelCaseName,
 	}
-	kocha.CopyTemplate(g,
+	util.CopyTemplate(g,
 		filepath.Join(SkeletonDir("controller"), "controller.go.template"),
 		filepath.Join("app", "controllers", snakeCaseName+".go"), data)
-	kocha.CopyTemplate(g,
+	util.CopyTemplate(g,
 		filepath.Join(SkeletonDir("controller"), "view.html"),
 		filepath.Join("app", "views", snakeCaseName+".html"), data)
 	g.addRouteToFile(name)
@@ -60,10 +61,10 @@ func (g *controllerGenerator) addRouteToFile(name string) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, routeFilePath, nil, 0)
 	if err != nil {
-		kocha.PanicOnError(g, "abort: failed to read file: %v", err)
+		util.PanicOnError(g, "abort: failed to read file: %v", err)
 	}
-	routeStructName := kocha.ToCamelCase(name)
-	routeName := kocha.ToSnakeCase(name)
+	routeStructName := util.ToCamelCase(name)
+	routeName := util.ToSnakeCase(name)
 	routeTableAST := findRouteTableAST(f)
 	if routeTableAST == nil {
 		return
@@ -77,14 +78,14 @@ func (g *controllerGenerator) addRouteToFile(name string) {
 	}
 	routeFile, err := os.OpenFile(routeFilePath, os.O_RDWR, 0644)
 	if err != nil {
-		kocha.PanicOnError(g, "abort: failed to open file: %v", err)
+		util.PanicOnError(g, "abort: failed to open file: %v", err)
 	}
 	defer routeFile.Close()
 	lastRouteAST := routeASTs[len(routeASTs)-1]
 	offset := int64(fset.Position(lastRouteAST.End()).Offset)
 	var buf bytes.Buffer
 	if _, err := io.CopyN(&buf, routeFile, offset); err != nil {
-		kocha.PanicOnError(g, "abort: failed to read file: %v", err)
+		util.PanicOnError(g, "abort: failed to read file: %v", err)
 	}
 	buf.WriteString(fmt.Sprintf(`, {
 	Name:       "%s",
@@ -92,14 +93,14 @@ func (g *controllerGenerator) addRouteToFile(name string) {
 	Controller: controllers.%s{},
 }`, routeName, routeName, routeStructName))
 	if _, err := io.Copy(&buf, routeFile); err != nil {
-		kocha.PanicOnError(g, "abort: failed to read file: %v", err)
+		util.PanicOnError(g, "abort: failed to read file: %v", err)
 	}
 	formatted, err := format.Source(buf.Bytes())
 	if err != nil {
-		kocha.PanicOnError(g, "abort: failed to format file: %v", err)
+		util.PanicOnError(g, "abort: failed to format file: %v", err)
 	}
 	if _, err := routeFile.WriteAt(formatted, 0); err != nil {
-		kocha.PanicOnError(g, "abort: failed to update file: %v", err)
+		util.PanicOnError(g, "abort: failed to update file: %v", err)
 	}
 }
 

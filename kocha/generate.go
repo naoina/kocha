@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"os"
 	"text/template"
-
-	"github.com/naoina/kocha"
 	"github.com/naoina/kocha/kocha/generator"
+	"github.com/naoina/kocha/util"
 )
 
 // newCommand implements `command` interface for `generate` command.
@@ -51,11 +50,11 @@ func (c *generateCommand) DefineFlags(fs *flag.FlagSet) {
 func (c *generateCommand) Run() {
 	generatorName := c.flag.Arg(0)
 	if generatorName == "" {
-		kocha.PanicOnError(c, "abort: no GENERATOR given")
+		util.PanicOnError(c, "abort: no GENERATOR given")
 	}
 	generator := generator.Get(generatorName)
 	if generator == nil {
-		kocha.PanicOnError(c, "abort: could not find generator: %v", generatorName)
+		util.PanicOnError(c, "abort: could not find generator: %v", generatorName)
 	}
 	flagSet := flag.NewFlagSet(generatorName, flag.ExitOnError)
 	flagSet.Usage = func() {
@@ -75,7 +74,7 @@ Options:
 	}
 	defer func() {
 		if err := recover(); err != nil {
-			if err, ok := err.(kocha.Error); ok {
+			if err, ok := err.(util.Error); ok {
 				fmt.Fprintln(os.Stderr, err.Message)
 				fmt.Fprintf(os.Stderr, "usage: %s %s %s\n", os.Args[0], c.Name(), err.Usager.Usage())
 				os.Exit(1)

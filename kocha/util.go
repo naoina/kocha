@@ -3,12 +3,11 @@ package main
 import (
 	"fmt"
 	"strconv"
-
-	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 )
 
 func printSettingEnv() {
-	env, err := kocha.FindSettingEnv()
+	env, err := util.FindSettingEnv()
 	if err != nil {
 		panic(err)
 	}

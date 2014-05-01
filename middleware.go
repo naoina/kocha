@@ -2,6 +2,8 @@ package kocha
 
 import (
 	"strconv"
+
+	"github.com/naoina/kocha/util"
 )
 
 // Middleware is the interface that middleware.
@@ -59,7 +61,7 @@ func (m *SessionMiddleware) Before(c *Controller) {
 	if err != nil {
 		panic(NewErrSession(err.Error()))
 	}
-	if expires < Now().Unix() {
+	if expires < util.Now().Unix() {
 		panic(NewErrSessionExpected("session has been expired"))
 	}
 	c.Session = sess

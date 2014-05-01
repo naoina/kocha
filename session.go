@@ -10,10 +10,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/ugorji/go/codec"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/naoina/kocha/util"
+	"github.com/ugorji/go/codec"
 )
 
 // SessionConfig represents a configuration of session.
@@ -104,11 +106,11 @@ func expiresFromDuration(d time.Duration) (expires time.Time, maxAge int) {
 	switch d {
 	case -1:
 		// persistent
-		expires = Now().UTC().AddDate(20, 0, 0)
+		expires = util.Now().UTC().AddDate(20, 0, 0)
 	case 0:
 		expires = time.Time{}
 	default:
-		expires = Now().UTC().Add(d)
+		expires = util.Now().UTC().Add(d)
 		maxAge = int(d.Seconds())
 	}
 	return expires, maxAge

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 )
 
 const DefaultTxType = "genmai"
@@ -34,33 +35,33 @@ func (g *migrationGenerator) DefineFlags(fs *flag.FlagSet) {
 func (g *migrationGenerator) Generate() {
 	name := g.flag.Arg(0)
 	if name == "" {
-		kocha.PanicOnError(g, "abort: no NAME given")
+		util.PanicOnError(g, "abort: no NAME given")
 	}
 	tx := kocha.TxTypeMap[g.txType]
 	if tx == nil {
-		kocha.PanicOnError(g, "abort: unsupported transaction type: `%v`", g.txType)
+		util.PanicOnError(g, "abort: unsupported transaction type: `%v`", g.txType)
 	}
 	now := Now().Format("20060102150405")
 	data := map[string]interface{}{
-		"Name":       kocha.ToCamelCase(name),
+		"Name":       util.ToCamelCase(name),
 		"TimeStamp":  now,
 		"ImportPath": tx.ImportPath(),
 		"TxType":     reflect.TypeOf(tx.TransactionType()).String(),
 	}
-	kocha.CopyTemplate(g,
+	util.CopyTemplate(g,
 		filepath.Join(SkeletonDir("migration"), "migration.go.template"),
-		filepath.Join("db", "migrations", fmt.Sprintf("%v_%v.go", now, kocha.ToSnakeCase(name))), data)
+		filepath.Join("db", "migrations", fmt.Sprintf("%v_%v.go", now, util.ToSnakeCase(name))), data)
 	initPath := filepath.Join("db", "migrations", "init.go")
 	if _, err := os.Stat(initPath); os.IsNotExist(err) {
-		appDir, err := kocha.FindAppDir()
+		appDir, err := util.FindAppDir()
 		if err != nil {
 			panic(err)
 		}
-		kocha.CopyTemplate(g,
+		util.CopyTemplate(g,
 			filepath.Join(SkeletonDir("migration"), "init.go.template"),
 			initPath, map[string]interface{}{
 				"typeName":     g.txType,
-				"tx":           strings.TrimSpace(kocha.GoString(tx)),
+				"tx":           strings.TrimSpace(util.GoString(tx)),
 				"dbImportPath": path.Join(appDir, "db"),
 			})
 	}

@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/naoina/kocha/util"
 )
 
 func TestDefaultMiddlewares(t *testing.T) {
@@ -65,12 +67,12 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 		return req, res
 	}
 
-	origNow := Now
-	Now = func() time.Time { return time.Unix(1383820443, 0) }
+	origNow := util.Now
+	util.Now = func() time.Time { return time.Unix(1383820443, 0) }
 	oldAppConfig := appConfig
 	appConfig = newTestAppConfig()
 	defer func() {
-		Now = origNow
+		util.Now = origNow
 		appConfig = oldAppConfig
 	}()
 
@@ -220,10 +222,10 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 func TestSessionMiddlewareAfter(t *testing.T) {
 	oldAppConfig := appConfig
 	appConfig = newTestAppConfig()
-	origNow := Now
-	Now = func() time.Time { return time.Unix(1383820443, 0) }
+	origNow := util.Now
+	util.Now = func() time.Time { return time.Unix(1383820443, 0) }
 	defer func() {
-		Now = origNow
+		util.Now = origNow
 		appConfig = oldAppConfig
 	}()
 	r, err := http.NewRequest("GET", "/", nil)
@@ -254,7 +256,7 @@ func TestSessionMiddlewareAfter(t *testing.T) {
 		Name:     appConfig.Session.Name,
 		Value:    appConfig.Session.Store.Save(c.Session),
 		Path:     "/",
-		Expires:  Now().UTC().Add(appConfig.Session.CookieExpires),
+		Expires:  util.Now().UTC().Add(appConfig.Session.CookieExpires),
 		MaxAge:   2,
 		Secure:   false,
 		HttpOnly: appConfig.Session.HttpOnly,
