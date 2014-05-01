@@ -33,7 +33,7 @@ func TestResponseContentTypeMiddlewareAfter(t *testing.T) {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	req, res := NewRequest(r), NewResponse(w)
+	req, res := newRequest(r), NewResponse(w)
 	m := &ResponseContentTypeMiddleware{}
 	actual := res.Header().Get("Content-Type")
 	expected := ""
@@ -59,7 +59,7 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		req := NewRequest(r)
+		req := newRequest(r)
 		if cookie != nil {
 			req.AddCookie(cookie)
 		}
@@ -233,7 +233,7 @@ func TestSessionMiddlewareAfter(t *testing.T) {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	req, res := NewRequest(r), NewResponse(w)
+	req, res := newRequest(r), NewResponse(w)
 	c := &Controller{Request: req, Response: res}
 	c.Session = make(Session)
 	appConfig.Session.SessionExpires = time.Duration(1) * time.Second

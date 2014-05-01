@@ -56,7 +56,7 @@ func newTestController(name, layout string) *Controller {
 	return &Controller{
 		Name:     name,
 		Layout:   layout,
-		Request:  NewRequest(req),
+		Request:  newRequest(req),
 		Response: NewResponse(w),
 		Params:   &Params{},
 	}
@@ -787,7 +787,7 @@ func TestStaticServeGet(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 	c := &StaticServe{Controller: &Controller{}}
-	c.Controller.Request = NewRequest(req)
+	c.Controller.Request = newRequest(req)
 	c.Controller.Response = NewResponse(w)
 	u, err := url.Parse(tmpFile.Name())
 	if err != nil {
@@ -827,7 +827,7 @@ func TestErrorControllerGet(t *testing.T) {
 		Controller: &Controller{},
 		StatusCode: http.StatusTeapot,
 	}
-	c.Controller.Request = NewRequest(req)
+	c.Controller.Request = newRequest(req)
 	c.Controller.Response = NewResponse(w)
 	buf, err := ioutil.ReadAll(c.Get().(*ResultContent).Body)
 	if err != nil {

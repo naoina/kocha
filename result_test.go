@@ -44,7 +44,7 @@ func TestResultRedirectProc(t *testing.T) {
 		panic(err)
 	}
 	result := &ResultRedirect{
-		Request:     NewRequest(req),
+		Request:     newRequest(req),
 		URL:         "/path/to/redirect",
 		Permanently: false,
 	}
@@ -63,7 +63,7 @@ func TestResultRedirectProc(t *testing.T) {
 	}
 
 	result = &ResultRedirect{
-		Request:     NewRequest(req),
+		Request:     newRequest(req),
 		URL:         "/path/to/redirect/permanently",
 		Permanently: true,
 	}

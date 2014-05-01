@@ -7,12 +7,12 @@ import (
 	"testing"
 )
 
-func TestNewRequest(t *testing.T) {
+func Test_newRequest(t *testing.T) {
 	req, err := http.NewRequest("testMethod", "testUrl", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	actual := NewRequest(req)
+	actual := newRequest(req)
 	expected := &Request{
 		Request: req,
 	}
