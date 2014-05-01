@@ -13,7 +13,7 @@ func TestResultContentProc(t *testing.T) {
 	buf := bytes.NewBufferString("foobar")
 	result := &ResultContent{Body: buf}
 	w := httptest.NewRecorder()
-	res := NewResponse(w)
+	res := newResponse(w)
 	result.Proc(res)
 	var actual interface{} = w.Body.String()
 	var expected interface{} = "foobar"
@@ -24,7 +24,7 @@ func TestResultContentProc(t *testing.T) {
 	closer := &testCloser{bytes.NewBufferString("brown fox"), false}
 	result = &ResultContent{Body: closer}
 	w = httptest.NewRecorder()
-	res = NewResponse(w)
+	res = newResponse(w)
 	result.Proc(res)
 	actual = w.Body.String()
 	expected = "brown fox"
@@ -49,7 +49,7 @@ func TestResultRedirectProc(t *testing.T) {
 		Permanently: false,
 	}
 	w := httptest.NewRecorder()
-	res := NewResponse(w)
+	res := newResponse(w)
 	result.Proc(res)
 	var actual interface{} = w.Code
 	var expected interface{} = http.StatusFound
@@ -68,7 +68,7 @@ func TestResultRedirectProc(t *testing.T) {
 		Permanently: true,
 	}
 	w = httptest.NewRecorder()
-	res = NewResponse(w)
+	res = newResponse(w)
 	result.Proc(res)
 	actual = w.Code
 	expected = http.StatusMovedPermanently
