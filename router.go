@@ -78,8 +78,8 @@ func (rt RouteTable) buildRouter() (*Router, error) {
 
 // Router represents a router of kocha.
 type Router struct {
-	forward    ForwardRouter
-	reverse    ReverseRouter
+	forward    forwardRouter
+	reverse    reverseRouter
 	routeTable RouteTable
 }
 
@@ -121,7 +121,7 @@ func (router *Router) buildForward() error {
 
 // buildReverse builds reverse router.
 func (router *Router) buildReverse() error {
-	router.reverse = make(ReverseRouter)
+	router.reverse = make(reverseRouter)
 	for _, route := range router.routeTable {
 		paramNames := urlrouter.ParamNames(route.Path)
 		names := make([]string, len(paramNames))
@@ -137,8 +137,8 @@ func (router *Router) buildReverse() error {
 	return nil
 }
 
-type ForwardRouter urlrouter.URLRouter
-type ReverseRouter map[string]*routeInfo
+type forwardRouter urlrouter.URLRouter
+type reverseRouter map[string]*routeInfo
 
 // Route represents a route.
 type Route struct {
