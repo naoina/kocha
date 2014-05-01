@@ -138,7 +138,7 @@ func TestControllerRender_without_Context(t *testing.T) {
 		appConfig = oldAppConfig
 	}()
 	c := newTestController("testctrlr", "app")
-	buf, err := ioutil.ReadAll(c.Render().(*ResultContent).Body)
+	buf, err := ioutil.ReadAll(c.Render().(*resultContent).Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +168,7 @@ func TestControllerRender_with_Context(t *testing.T) {
 			"c1": "v1",
 			"c2": "v2",
 		}
-		buf, err := ioutil.ReadAll(c.Render(ctx).(*ResultContent).Body)
+		buf, err := ioutil.ReadAll(c.Render(ctx).(*resultContent).Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -189,7 +189,7 @@ func TestControllerRender_with_Context(t *testing.T) {
 			"c3": "v3",
 			"c4": "v4",
 		}
-		buf, err := ioutil.ReadAll(c.Render().(*ResultContent).Body)
+		buf, err := ioutil.ReadAll(c.Render().(*resultContent).Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -210,7 +210,7 @@ func TestControllerRender_with_Context(t *testing.T) {
 			"c6": "test",
 			"c7": "v7",
 		}
-		buf, err := ioutil.ReadAll(c.Render(ctx).(*ResultContent).Body)
+		buf, err := ioutil.ReadAll(c.Render(ctx).(*resultContent).Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -229,7 +229,7 @@ func TestControllerRender_with_Context(t *testing.T) {
 	func() {
 		c := newTestController("testctrlr_ctx", "app")
 		ctx := "test_ctx"
-		buf, err := ioutil.ReadAll(c.Render(ctx).(*ResultContent).Body)
+		buf, err := ioutil.ReadAll(c.Render(ctx).(*resultContent).Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -308,7 +308,7 @@ func TestControllerRender_with_ContentType(t *testing.T) {
 	}()
 	c := newTestController("testctrlr", "app")
 	c.Response.ContentType = "application/json"
-	buf, err := ioutil.ReadAll(c.Render().(*ResultContent).Body)
+	buf, err := ioutil.ReadAll(c.Render().(*resultContent).Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -354,7 +354,7 @@ func TestControllerRender_with_another_layout(t *testing.T) {
 		appConfig = oldAppConfig
 	}()
 	c := newTestController("testctrlr", "anotherLayout")
-	buf, err := ioutil.ReadAll(c.Render().(*ResultContent).Body)
+	buf, err := ioutil.ReadAll(c.Render().(*resultContent).Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -367,7 +367,7 @@ func TestControllerRender_with_another_layout(t *testing.T) {
 
 func TestControllerRenderJSON(t *testing.T) {
 	c := newTestController("testctrlr", "app")
-	buf, err := ioutil.ReadAll(c.RenderJSON(struct{ A, B string }{"hoge", "foo"}).(*ResultContent).Body)
+	buf, err := ioutil.ReadAll(c.RenderJSON(struct{ A, B string }{"hoge", "foo"}).(*resultContent).Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -388,7 +388,7 @@ func TestControllerRenderXML(t *testing.T) {
 		A       string   `xml:"id"`
 		B       string   `xml:"name"`
 	}{A: "hoge", B: "foo"}
-	buf, err := ioutil.ReadAll(c.RenderXML(ctx).(*ResultContent).Body)
+	buf, err := ioutil.ReadAll(c.RenderXML(ctx).(*resultContent).Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -404,7 +404,7 @@ func TestControllerRenderXML(t *testing.T) {
 
 func TestControllerRenderText(t *testing.T) {
 	c := newTestController("testctrlr", "app")
-	buf, err := ioutil.ReadAll(c.RenderText("test_content_data").(*ResultContent).Body)
+	buf, err := ioutil.ReadAll(c.RenderText("test_content_data").(*resultContent).Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -425,7 +425,7 @@ func TestControllerRenderError(t *testing.T) {
 		appConfig = oldAppConfig
 	}()
 	c := newTestController("testctrlr", "app")
-	buf, err := ioutil.ReadAll(c.RenderError(http.StatusInternalServerError).(*ResultContent).Body)
+	buf, err := ioutil.ReadAll(c.RenderError(http.StatusInternalServerError).(*resultContent).Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -441,7 +441,7 @@ func TestControllerRenderError(t *testing.T) {
 	}
 
 	c = newTestController("testctrlr", "app")
-	buf, err = ioutil.ReadAll(c.RenderError(http.StatusBadRequest).(*ResultContent).Body)
+	buf, err = ioutil.ReadAll(c.RenderError(http.StatusBadRequest).(*resultContent).Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -458,7 +458,7 @@ func TestControllerRenderError(t *testing.T) {
 
 	c = newTestController("testctrlr", "app")
 	c.Response.ContentType = "application/json"
-	buf, err = ioutil.ReadAll(c.RenderError(http.StatusInternalServerError).(*ResultContent).Body)
+	buf, err = ioutil.ReadAll(c.RenderError(http.StatusInternalServerError).(*resultContent).Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -495,7 +495,7 @@ func TestControllerRenderError(t *testing.T) {
 	}()
 
 	c = newTestController("testctrlr", "app")
-	buf, err = ioutil.ReadAll(c.RenderError(http.StatusTeapot).(*ResultContent).Body)
+	buf, err = ioutil.ReadAll(c.RenderError(http.StatusTeapot).(*resultContent).Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -524,9 +524,9 @@ func TestControllerSendFile(t *testing.T) {
 			t.Fatal(err)
 		}
 		c := newTestController("testctrlr", "app")
-		result, ok := c.SendFile(tmpFile.Name()).(*ResultContent)
+		result, ok := c.SendFile(tmpFile.Name()).(*resultContent)
 		if !ok {
-			t.Errorf("Expect %T, but %T", &ResultContent{}, result)
+			t.Errorf("Expect %T, but %T", &resultContent{}, result)
 		}
 
 		buf, err := ioutil.ReadAll(result.Body)
@@ -562,9 +562,9 @@ func TestControllerSendFile(t *testing.T) {
 			t.Fatal(err)
 		}
 		c := newTestController("testctrlr", "app")
-		result, ok := c.SendFile(filepath.Base(tmpFile.Name())).(*ResultContent)
+		result, ok := c.SendFile(filepath.Base(tmpFile.Name())).(*resultContent)
 		if !ok {
-			t.Errorf("Expect %T, but %T", &ResultContent{}, result)
+			t.Errorf("Expect %T, but %T", &resultContent{}, result)
 		}
 
 		buf, err := ioutil.ReadAll(result.Body)
@@ -586,9 +586,9 @@ func TestControllerSendFile(t *testing.T) {
 			appConfig = oldAppConfig
 		}()
 		c := newTestController("testctrlr", "app")
-		result, ok := c.SendFile("unknown/path").(*ResultContent)
+		result, ok := c.SendFile("unknown/path").(*resultContent)
 		if !ok {
-			t.Errorf("Expect %T, but %T", &ResultContent{}, result)
+			t.Errorf("Expect %T, but %T", &resultContent{}, result)
 		}
 		buf, err := ioutil.ReadAll(result.Body)
 		if err != nil {
@@ -663,9 +663,9 @@ func TestControllerSendFile(t *testing.T) {
 		}()
 		includedResources["testrcname"] = &resource{[]byte("foobarbaz")}
 		c := newTestController("testctrlr", "app")
-		result, ok := c.SendFile("testrcname").(*ResultContent)
+		result, ok := c.SendFile("testrcname").(*resultContent)
 		if !ok {
-			t.Errorf("Expect %T, but %T", &ResultContent{}, result)
+			t.Errorf("Expect %T, but %T", &resultContent{}, result)
 		}
 
 		buf, err := ioutil.ReadAll(result.Body)
@@ -699,7 +699,7 @@ func TestControllerSendFile(t *testing.T) {
 func TestControllerRedirect(t *testing.T) {
 	c := newTestController("testctrlr", "app")
 	actual := c.Redirect("/path/to/redirect/permanently", true)
-	expected := &ResultRedirect{
+	expected := &resultRedirect{
 		Request:     c.Request,
 		URL:         "/path/to/redirect/permanently",
 		Permanently: true,
@@ -709,7 +709,7 @@ func TestControllerRedirect(t *testing.T) {
 	}
 
 	actual = c.Redirect("/path/to/redirect", false)
-	expected = &ResultRedirect{
+	expected = &resultRedirect{
 		Request:     c.Request,
 		URL:         "/path/to/redirect",
 		Permanently: false,
@@ -793,9 +793,9 @@ func TestStaticServeGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, ok := c.Get(u).(*ResultContent)
+	result, ok := c.Get(u).(*resultContent)
 	if !ok {
-		t.Errorf("Expect %T, but %T", &ResultContent{}, result)
+		t.Errorf("Expect %T, but %T", &resultContent{}, result)
 	}
 }
 
@@ -829,7 +829,7 @@ func TestErrorControllerGet(t *testing.T) {
 	}
 	c.Controller.Request = newRequest(req)
 	c.Controller.Response = newResponse(w)
-	buf, err := ioutil.ReadAll(c.Get().(*ResultContent).Body)
+	buf, err := ioutil.ReadAll(c.Get().(*resultContent).Body)
 	if err != nil {
 		t.Fatal(err)
 	}

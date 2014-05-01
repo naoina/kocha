@@ -9,9 +9,9 @@ import (
 	"testing"
 )
 
-func TestResultContentProc(t *testing.T) {
+func Test_resultContentProc(t *testing.T) {
 	buf := bytes.NewBufferString("foobar")
-	result := &ResultContent{Body: buf}
+	result := &resultContent{Body: buf}
 	w := httptest.NewRecorder()
 	res := newResponse(w)
 	result.Proc(res)
@@ -22,7 +22,7 @@ func TestResultContentProc(t *testing.T) {
 	}
 
 	closer := &testCloser{bytes.NewBufferString("brown fox"), false}
-	result = &ResultContent{Body: closer}
+	result = &resultContent{Body: closer}
 	w = httptest.NewRecorder()
 	res = newResponse(w)
 	result.Proc(res)
@@ -38,12 +38,12 @@ func TestResultContentProc(t *testing.T) {
 	}
 }
 
-func TestResultRedirectProc(t *testing.T) {
+func Test_resultRedirectProc(t *testing.T) {
 	req, err := http.NewRequest("GET", "/path/to/request", nil)
 	if err != nil {
 		panic(err)
 	}
-	result := &ResultRedirect{
+	result := &resultRedirect{
 		Request:     newRequest(req),
 		URL:         "/path/to/redirect",
 		Permanently: false,
@@ -62,7 +62,7 @@ func TestResultRedirectProc(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	result = &ResultRedirect{
+	result = &resultRedirect{
 		Request:     newRequest(req),
 		URL:         "/path/to/redirect/permanently",
 		Permanently: true,
