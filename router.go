@@ -145,7 +145,7 @@ type Route struct {
 	Name        string
 	Path        string
 	Controller  interface{}
-	MethodTypes map[string]MethodArgs
+	MethodTypes methodTypes
 	paramNames  []string
 }
 
@@ -205,7 +205,7 @@ func (route *Route) buildMethodTypes() error {
 			return err
 		}
 	}
-	route.MethodTypes = make(map[string]MethodArgs)
+	route.MethodTypes = make(map[string]map[string]string)
 	for _, file := range astFiles {
 		for _, d := range file.Decls {
 			ast.Inspect(d, func(node ast.Node) bool {
@@ -227,7 +227,7 @@ func (route *Route) buildMethodTypes() error {
 				if _, ok := controllerMethods[methodName]; !ok {
 					return false
 				}
-				route.MethodTypes[methodName] = make(MethodArgs)
+				route.MethodTypes[methodName] = make(map[string]string)
 				for _, v := range fdecl.Type.Params.List {
 					typeName := astTypeName(v.Type)
 					for _, name := range v.Names {
@@ -358,7 +358,11 @@ func (route *Route) validateControllerType() error {
 	return nil
 }
 
-type MethodArgs map[string]string
+type methodTypes map[string]map[string]string
+
+func (mt methodTypes) GoString() string {
+	return util.GoString(map[string]map[string]string(mt))
+}
 
 type routeInfo struct {
 	route         *Route
@@ -389,7 +393,7 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	case vlen+nlen == 0:
 		return route.Path
 	}
-	var arg MethodArgs
+	var arg map[string]string
 	for _, arg = range route.MethodTypes {
 		break
 	}
