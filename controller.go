@@ -232,8 +232,9 @@ func (c *Controller) SendFile(path string) Result {
 			panic(err)
 		}
 	}
+	c.Response.ContentType = detectContentTypeByExt(path)
 	if c.Response.ContentType == "" {
-		c.Response.ContentType = detectContentType(file)
+		c.Response.ContentType = detectContentTypeByBody(file)
 	}
 	return &ResultContent{
 		Body: file,

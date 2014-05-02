@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -600,7 +601,7 @@ func TestControllerSendFile(t *testing.T) {
 		}
 	}()
 
-	// test detect content type
+	// test detect content type by body
 	func() {
 		tmpFile, err := ioutil.TempFile("", "TestControllerSendFile")
 		if err != nil {
@@ -629,6 +630,27 @@ func TestControllerSendFile(t *testing.T) {
 		c.SendFile(tmpFile.Name())
 		actual = c.Response.ContentType
 		expected = "image/png"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
+
+	// test detect content type by ext
+	func() {
+		currentPath, err := os.Getwd()
+		if err != nil {
+			t.Fatal(err)
+		}
+		tmpFile, err := os.Open(filepath.Join(currentPath, "testdata", "public", "test.js"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tmpFile.Close()
+		mime.AddExtensionType(".js", "application/javascript") // To avoid differences between environments.
+		c := newTestController("testctrlr", "app")
+		c.SendFile(tmpFile.Name())
+		actual := c.Response.ContentType
+		expected := "application/javascript"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
