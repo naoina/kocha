@@ -25,7 +25,7 @@ type AppConfig struct {
 	MaxClientBodySize int64
 
 	router      *router
-	templateMap TemplateMap
+	templateMap templateMap
 }
 
 var (

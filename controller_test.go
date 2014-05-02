@@ -21,7 +21,7 @@ func newControllerTestAppConfig() *AppConfig {
 		AppName:     "testAppName",
 		TemplateSet: TemplateSet{},
 	}
-	config.templateMap = TemplateMap{
+	config.templateMap = templateMap{
 		"testAppName": {
 			"app": {
 				"html": {

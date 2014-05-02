@@ -102,7 +102,7 @@ func TestTemplateFuncs_invoke_template(t *testing.T) {
 	defer func() {
 		appConfig = oldAppConfig
 	}()
-	appConfig.templateMap = TemplateMap{
+	appConfig.templateMap = templateMap{
 		appConfig.AppName: {
 			"": {
 				"html": {
@@ -232,7 +232,7 @@ func TestTemplateFuncs_date(t *testing.T) {
 }
 
 func TestTemplateMap_Get(t *testing.T) {
-	templateMap := TemplateMap{
+	templateMap := templateMap{
 		"testAppName": {
 			"app": {
 				"html": {
@@ -284,7 +284,7 @@ func TestTemplateMap_Get(t *testing.T) {
 }
 
 func TestTemplateMap_Ident(t *testing.T) {
-	templateMap := TemplateMap{}
+	templateMap := templateMap{}
 	for expected, args := range map[string][]string{
 		"a:b c.html":   []string{"a", "b", "c", "html"},
 		"b:a c.html":   []string{"b", "a", "c", "html"},

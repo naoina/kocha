@@ -104,7 +104,7 @@ func newTestAppConfig() *AppConfig {
 		},
 		MaxClientBodySize: DefaultMaxClientBodySize,
 	}
-	config.templateMap = TemplateMap{
+	config.templateMap = templateMap{
 		"appname": {
 			"app": {
 				"html": {

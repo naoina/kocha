@@ -73,20 +73,20 @@ type TemplatePathInfo struct {
 	Paths []string
 
 	// For internal use.
-	AppTemplateSet AppTemplateSet
+	AppTemplateSet appTemplateSet
 }
 
-// buildTemplateMap returns TemplateMap constructed from templateSet.
-func (ts TemplateSet) buildTemplateMap() (TemplateMap, error) {
+// buildTemplateMap returns templateMap constructed from templateSet.
+func (ts TemplateSet) buildTemplateMap() (templateMap, error) {
 	layoutPaths := make(map[string]map[string]map[string]string)
 	templatePaths := make(map[string]map[string]map[string]string)
-	templateSet := make(TemplateMap)
+	templateSet := templateMap{}
 	for _, info := range ts {
 		if info.AppTemplateSet != nil {
 			templateSet[info.Name] = info.AppTemplateSet
 			continue
 		}
-		info.AppTemplateSet = make(AppTemplateSet)
+		info.AppTemplateSet = appTemplateSet{}
 		templateSet[info.Name] = info.AppTemplateSet
 		layoutPaths[info.Name] = make(map[string]map[string]string)
 		templatePaths[info.Name] = make(map[string]map[string]string)
@@ -113,17 +113,22 @@ func (ts TemplateSet) buildTemplateMap() (TemplateMap, error) {
 	return templateSet, nil
 }
 
-type TemplateMap map[string]AppTemplateSet
-type AppTemplateSet map[string]LayoutTemplateSet
-type LayoutTemplateSet map[string]FileExtTemplateSet
-type FileExtTemplateSet map[string]*template.Template
+type templateMap map[string]appTemplateSet
+type appTemplateSet map[string]map[string]map[string]*template.Template
+
+func (ts appTemplateSet) GoString() string {
+	return util.GoString(map[string]map[string]map[string]*template.Template(ts))
+}
+
+type layoutTemplateSet map[string]map[string]*template.Template
+type fileExtTemplateSet map[string]*template.Template
 
 // Get gets a parsed template.
-func (t TemplateMap) Get(appName, layoutName, name, format string) *template.Template {
+func (t templateMap) Get(appName, layoutName, name, format string) *template.Template {
 	return t[appName][layoutName][format][util.ToSnakeCase(name)]
 }
 
-func (t TemplateMap) Ident(appName, layoutName, name, format string) string {
+func (t templateMap) Ident(appName, layoutName, name, format string) string {
 	return fmt.Sprintf("%s:%s %s.%s", appName, layoutName, util.ToSnakeCase(name), format)
 }
 
@@ -178,10 +183,10 @@ func collectTemplatePaths(templatePaths map[string]map[string]string, templateDi
 	})
 }
 
-func buildSingleAppTemplateSet(appTemplateSet AppTemplateSet, templates map[string]map[string]string) error {
-	layoutTemplateSet := make(LayoutTemplateSet)
+func buildSingleAppTemplateSet(appTemplateSet appTemplateSet, templates map[string]map[string]string) error {
+	layoutTemplateSet := layoutTemplateSet{}
 	for ext, templateInfos := range templates {
-		layoutTemplateSet[ext] = make(FileExtTemplateSet)
+		layoutTemplateSet[ext] = fileExtTemplateSet{}
 		for name, path := range templateInfos {
 			templateBytes, err := ioutil.ReadFile(path)
 			if err != nil {
@@ -195,11 +200,11 @@ func buildSingleAppTemplateSet(appTemplateSet AppTemplateSet, templates map[stri
 	return nil
 }
 
-func buildLayoutAppTemplateSet(appTemplateSet AppTemplateSet, layouts map[string]map[string]string, templates map[string]map[string]string) error {
+func buildLayoutAppTemplateSet(appTemplateSet appTemplateSet, layouts map[string]map[string]string, templates map[string]map[string]string) error {
 	for layoutName, layoutInfos := range layouts {
-		layoutTemplateSet := make(LayoutTemplateSet)
+		layoutTemplateSet := layoutTemplateSet{}
 		for ext, layoutPath := range layoutInfos {
-			layoutTemplateSet[ext] = make(FileExtTemplateSet)
+			layoutTemplateSet[ext] = fileExtTemplateSet{}
 			layoutBytes, err := ioutil.ReadFile(layoutPath)
 			if err != nil {
 				return err
