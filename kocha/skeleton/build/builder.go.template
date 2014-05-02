@@ -4,6 +4,7 @@ package main
 
 import (
 	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 	"io/ioutil"
 	config "{{.configImportPath}}"
 	"os"
@@ -16,7 +17,7 @@ const (
 
 func main() {
 	funcMap := template.FuncMap{
-		"goString": kocha.GoString,
+		"goString": util.GoString,
 	}
 	t := template.Must(template.New("main").Funcs(funcMap).Parse(mainTemplate))
 	file, err := os.Create("{{.mainFilePath}}")
@@ -37,7 +38,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		resources[name] = kocha.Gzip(string(buf))
+		resources[name] = util.Gzip(string(buf))
 	}
 	data := map[string]interface{}{
 		"appConfig":             appConfig,

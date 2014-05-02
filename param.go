@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/naoina/kocha/util"
 )
 
 var (
@@ -92,7 +94,7 @@ func (params *Params) Bind(obj interface{}, fieldNames ...string) error {
 			_, filename, line, _ := runtime.Caller(1)
 			Log.Warn(
 				"kocha: Bind: %s:%s: field name `%s' given, but %s.%s is undefined",
-				filepath.Base(filename), line, name, rtype.Name(), ToCamelCase(name))
+				filepath.Base(filename), line, name, rtype.Name(), util.ToCamelCase(name))
 			continue
 		}
 		fname := params.prefixedName(params.prefix, name)
@@ -130,14 +132,14 @@ func (params *Params) findFieldIndex(rtype reflect.Type, name string, index []in
 	var embeddedFieldInfos []*embeddefFieldInfo
 	for i := 0; i < rtype.NumField(); i++ {
 		field := rtype.Field(i)
-		if IsUnexportedField(field) {
+		if util.IsUnexportedField(field) {
 			continue
 		}
 		if field.Anonymous {
 			embeddedFieldInfos = append(embeddedFieldInfos, &embeddefFieldInfo{field, name, append(index, i)})
 			continue
 		}
-		if field.Name == ToCamelCase(name) {
+		if field.Name == util.ToCamelCase(name) {
 			return append(index, i)
 		}
 	}

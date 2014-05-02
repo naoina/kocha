@@ -15,6 +15,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/naoina/kocha/util"
 )
 
 type mimeTypeFormats map[string]string
@@ -118,7 +120,7 @@ func (c *Controller) Render(context ...interface{}) Result {
 	if err := t.Execute(&buf, ctx); err != nil {
 		panic(err)
 	}
-	return &ResultContent{
+	return &resultContent{
 		Body: &buf,
 	}
 }
@@ -137,7 +139,7 @@ func (c *Controller) RenderJSON(context ...interface{}) Result {
 	if err != nil {
 		panic(err)
 	}
-	return &ResultContent{
+	return &resultContent{
 		Body: bytes.NewReader(buf),
 	}
 }
@@ -156,7 +158,7 @@ func (c *Controller) RenderXML(context ...interface{}) Result {
 	if err != nil {
 		panic(err)
 	}
-	return &ResultContent{
+	return &resultContent{
 		Body: bytes.NewReader(buf),
 	}
 }
@@ -166,7 +168,7 @@ func (c *Controller) RenderXML(context ...interface{}) Result {
 // ContentType set to "text/plain" if not specified.
 func (c *Controller) RenderText(content string) Result {
 	c.setContentTypeIfNotExists("text/plain")
-	return &ResultContent{
+	return &resultContent{
 		Body: strings.NewReader(content),
 	}
 }
@@ -194,7 +196,7 @@ func (c *Controller) RenderError(statusCode int, context ...interface{}) Result 
 	t := appConfig.templateMap.Get(appConfig.AppName, c.Layout, name, format)
 	if t == nil {
 		c.Response.ContentType = "text/plain"
-		return &ResultContent{
+		return &resultContent{
 			Body: bytes.NewReader([]byte(http.StatusText(statusCode))),
 		}
 	}
@@ -202,7 +204,7 @@ func (c *Controller) RenderError(statusCode int, context ...interface{}) Result 
 	if err := t.Execute(&buf, ctx); err != nil {
 		panic(err)
 	}
-	return &ResultContent{
+	return &resultContent{
 		Body: &buf,
 	}
 }
@@ -232,11 +234,11 @@ func (c *Controller) SendFile(path string) Result {
 			panic(err)
 		}
 	}
-	c.Response.ContentType = detectContentTypeByExt(path)
+	c.Response.ContentType = util.DetectContentTypeByExt(path)
 	if c.Response.ContentType == "" {
-		c.Response.ContentType = detectContentTypeByBody(file)
+		c.Response.ContentType = util.DetectContentTypeByBody(file)
 	}
-	return &ResultContent{
+	return &resultContent{
 		Body: file,
 	}
 }
@@ -252,7 +254,7 @@ func (c *Controller) setContentTypeIfNotExists(contentType string) {
 // If permanently is true, redirect to url with 301. (http.StatusMovedPermanently)
 // Otherwise redirect to url with 302. (http.StatusFound)
 func (c *Controller) Redirect(url string, permanently bool) Result {
-	return &ResultRedirect{
+	return &resultRedirect{
 		Request:     c.Request,
 		URL:         url,
 		Permanently: permanently,

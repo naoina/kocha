@@ -30,8 +30,8 @@ func handler(writer http.ResponseWriter, req *http.Request) {
 }
 
 func render(req *http.Request, writer http.ResponseWriter, controller, method *reflect.Value, args []reflect.Value) {
-	request := NewRequest(req)
-	response := NewResponse(writer)
+	request := newRequest(req)
+	response := newResponse(writer)
 	var (
 		cc     *Controller
 		result []reflect.Value

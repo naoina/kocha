@@ -9,11 +9,11 @@ import (
 	"testing"
 )
 
-func TestResultContentProc(t *testing.T) {
+func Test_resultContentProc(t *testing.T) {
 	buf := bytes.NewBufferString("foobar")
-	result := &ResultContent{Body: buf}
+	result := &resultContent{Body: buf}
 	w := httptest.NewRecorder()
-	res := NewResponse(w)
+	res := newResponse(w)
 	result.Proc(res)
 	var actual interface{} = w.Body.String()
 	var expected interface{} = "foobar"
@@ -22,9 +22,9 @@ func TestResultContentProc(t *testing.T) {
 	}
 
 	closer := &testCloser{bytes.NewBufferString("brown fox"), false}
-	result = &ResultContent{Body: closer}
+	result = &resultContent{Body: closer}
 	w = httptest.NewRecorder()
-	res = NewResponse(w)
+	res = newResponse(w)
 	result.Proc(res)
 	actual = w.Body.String()
 	expected = "brown fox"
@@ -38,18 +38,18 @@ func TestResultContentProc(t *testing.T) {
 	}
 }
 
-func TestResultRedirectProc(t *testing.T) {
+func Test_resultRedirectProc(t *testing.T) {
 	req, err := http.NewRequest("GET", "/path/to/request", nil)
 	if err != nil {
 		panic(err)
 	}
-	result := &ResultRedirect{
-		Request:     NewRequest(req),
+	result := &resultRedirect{
+		Request:     newRequest(req),
 		URL:         "/path/to/redirect",
 		Permanently: false,
 	}
 	w := httptest.NewRecorder()
-	res := NewResponse(w)
+	res := newResponse(w)
 	result.Proc(res)
 	var actual interface{} = w.Code
 	var expected interface{} = http.StatusFound
@@ -62,13 +62,13 @@ func TestResultRedirectProc(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	result = &ResultRedirect{
-		Request:     NewRequest(req),
+	result = &resultRedirect{
+		Request:     newRequest(req),
 		URL:         "/path/to/redirect/permanently",
 		Permanently: true,
 	}
 	w = httptest.NewRecorder()
-	res = NewResponse(w)
+	res = newResponse(w)
 	result.Proc(res)
 	actual = w.Code
 	expected = http.StatusMovedPermanently

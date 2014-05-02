@@ -141,20 +141,3 @@ func Test_SessionCookieStore_Validate(t *testing.T) {
 		}
 	}
 }
-
-func Test_GenerateRandomKey(t *testing.T) {
-	if err := quick.Check(func(length uint16) bool {
-		already := make([][]byte, 0, 100)
-		for i := 0; i < 100; i++ {
-			buf := GenerateRandomKey(int(length))
-			for _, v := range already {
-				if !reflect.DeepEqual(buf, v) {
-					return false
-				}
-			}
-		}
-		return true
-	}, &quick.Config{MaxCount: 10}); err != nil {
-		t.Error(err)
-	}
-}

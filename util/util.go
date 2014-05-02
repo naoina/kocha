@@ -1,9 +1,10 @@
-package kocha
+package util
 
 import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"crypto/rand"
 	"fmt"
 	htmltemplate "html/template"
 	"io"
@@ -90,7 +91,7 @@ func SplitExt(path string) (name, ext string) {
 	return path, ""
 }
 
-func normPath(p string) string {
+func NormPath(p string) string {
 	result := path.Clean(p)
 	// path.Clean() truncate the trailing slash but add it.
 	if p[len(p)-1] == '/' && result != "/" {
@@ -280,7 +281,7 @@ func GoString(i interface{}) string {
 				panic(err)
 			}
 		}
-		return fmt.Sprintf(`template.Must(template.New(%q).Funcs(kocha.TemplateFuncs).Parse(kocha.Gunzip(%q)))`, t.Name(), Gzip(buf.String()))
+		return fmt.Sprintf(`template.Must(template.New(%q).Funcs(kocha.TemplateFuncs).Parse(util.Gunzip(%q)))`, t.Name(), Gzip(buf.String()))
 	case fmt.GoStringer:
 		return t.GoString()
 	case nil:
@@ -382,13 +383,13 @@ func Gunzip(gz string) string {
 }
 
 // Get Content-Type by extension of filename.
-func detectContentTypeByExt(path string) (contentType string) {
+func DetectContentTypeByExt(path string) (contentType string) {
 	ext := filepath.Ext(path)
 	return mime.TypeByExtension(ext)
 }
 
 // Get Content-Type by content body
-func detectContentTypeByBody(r io.Reader) (contentType string) {
+func DetectContentTypeByBody(r io.Reader) (contentType string) {
 	buf := make([]byte, 512)
 	if n, err := io.ReadFull(r, buf); err != nil {
 		if err != io.EOF && err != io.ErrUnexpectedEOF {
@@ -479,4 +480,13 @@ func FindAppDir() (string, error) {
 //     http://golang.org/ref/spec#Exported_identifiers
 func IsUnexportedField(field reflect.StructField) bool {
 	return !(field.PkgPath == "" && unicode.IsUpper(rune(field.Name[0])))
+}
+
+// Generate a random bytes.
+func GenerateRandomKey(length int) []byte {
+	result := make([]byte, length)
+	if _, err := io.ReadFull(rand.Reader, result); err != nil {
+		panic(err)
+	}
+	return result
 }

@@ -11,8 +11,7 @@ import (
 	"runtime"
 
 	"go/build"
-
-	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 )
 
 type migrateCommand struct {
@@ -49,14 +48,14 @@ func (c *migrateCommand) Run() {
 	case "up", "down":
 		// do nothing.
 	default:
-		kocha.PanicOnError(c, `abort: no "up" or "down" specified`)
+		util.PanicOnError(c, `abort: no "up" or "down" specified`)
 	}
 	tmpDir, err := filepath.Abs("tmp")
 	if err != nil {
 		panic(err)
 	}
 	if err := os.MkdirAll(tmpDir, 0755); err != nil && !os.IsExist(err) {
-		kocha.PanicOnError(c, "abort: failed to create directory: %v", err)
+		util.PanicOnError(c, "abort: failed to create directory: %v", err)
 	}
 	_, filename, _, _ := runtime.Caller(0)
 	skeletonDir := filepath.Join(filepath.Dir(filename), "skeleton", "migrate")
@@ -64,10 +63,10 @@ func (c *migrateCommand) Run() {
 	mainFilePath := filepath.ToSlash(filepath.Join(tmpDir, "migrate.go"))
 	file, err := os.Create(mainFilePath)
 	if err != nil {
-		kocha.PanicOnError(c, "abort: failed to create file: %v", err)
+		util.PanicOnError(c, "abort: failed to create file: %v", err)
 	}
 	defer file.Close()
-	appDir, err := kocha.FindAppDir()
+	appDir, err := util.FindAppDir()
 	if err != nil {
 		panic(err)
 	}
@@ -78,19 +77,19 @@ func (c *migrateCommand) Run() {
 		"limit":                c.limit,
 	}
 	if err := t.Execute(file, data); err != nil {
-		kocha.PanicOnError(c, "abort: failed to write file: %v", err)
+		util.PanicOnError(c, "abort: failed to write file: %v", err)
 	}
 	c.execCmd("go", "run", mainFilePath)
 	if err := os.RemoveAll(tmpDir); err != nil {
 		panic(err)
 	}
-	kocha.PrintGreen("All migrations are successful!\n")
+	util.PrintGreen("All migrations are successful!\n")
 }
 
 func (c *migrateCommand) Package(importPath string) *build.Package {
 	pkg, err := build.Import(importPath, "", build.FindOnly)
 	if err != nil {
-		kocha.PanicOnError(c, "abort: cannot import `%s`: %v", importPath, err)
+		util.PanicOnError(c, "abort: cannot import `%s`: %v", importPath, err)
 	}
 	return pkg
 }
@@ -99,6 +98,6 @@ func (c *migrateCommand) execCmd(cmd string, args ...string) {
 	command := exec.Command(cmd, args...)
 	command.Stdout, command.Stderr = os.Stdout, os.Stderr
 	if err := command.Run(); err != nil {
-		kocha.PanicOnError(c, "abort: migration failed: %v", err)
+		util.PanicOnError(c, "abort: migration failed: %v", err)
 	}
 }

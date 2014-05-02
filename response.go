@@ -12,8 +12,8 @@ type Response struct {
 	cookies     []*http.Cookie
 }
 
-// NewResponse returns a new Response that responds to rw.
-func NewResponse(rw http.ResponseWriter) *Response {
+// newResponse returns a new Response that responds to rw.
+func newResponse(rw http.ResponseWriter) *Response {
 	return &Response{
 		ResponseWriter: rw,
 		ContentType:    "",

@@ -11,8 +11,8 @@ type Request struct {
 	*http.Request
 }
 
-// NewRequest returns a new Request that given a *http.Request.
-func NewRequest(req *http.Request) *Request {
+// newRequest returns a new Request that given a *http.Request.
+func newRequest(req *http.Request) *Request {
 	return &Request{
 		Request: req,
 	}

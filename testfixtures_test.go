@@ -19,16 +19,16 @@ func newTestAppConfig() *AppConfig {
 				Name:       "root",
 				Path:       "/",
 				Controller: FixtureRootTestCtrl{},
-				MethodTypes: map[string]MethodArgs{
-					"Get": MethodArgs{},
+				MethodTypes: map[string]map[string]string{
+					"Get": {},
 				},
 			},
 			{
 				Name:       "user",
 				Path:       "/user/:id",
 				Controller: FixtureUserTestCtrl{},
-				MethodTypes: map[string]MethodArgs{
-					"Get": MethodArgs{
+				MethodTypes: map[string]map[string]string{
+					"Get": {
 						"id": "int",
 					},
 				},
@@ -37,8 +37,8 @@ func newTestAppConfig() *AppConfig {
 				Name:       "date",
 				Path:       "/:year/:month/:day/user/:name",
 				Controller: FixtureDateTestCtrl{},
-				MethodTypes: map[string]MethodArgs{
-					"Get": MethodArgs{
+				MethodTypes: map[string]map[string]string{
+					"Get": {
 						"year":  "int",
 						"month": "int",
 						"day":   "int",
@@ -50,40 +50,40 @@ func newTestAppConfig() *AppConfig {
 				Name:       "error",
 				Path:       "/error",
 				Controller: FixtureErrorTestCtrl{},
-				MethodTypes: map[string]MethodArgs{
-					"Get": MethodArgs{},
+				MethodTypes: map[string]map[string]string{
+					"Get": {},
 				},
 			},
 			{
 				Name:       "json",
 				Path:       "/json",
 				Controller: FixtureJsonTestCtrl{},
-				MethodTypes: map[string]MethodArgs{
-					"Get": MethodArgs{},
+				MethodTypes: map[string]map[string]string{
+					"Get": {},
 				},
 			},
 			{
 				Name:       "teapot",
 				Path:       "/teapot",
 				Controller: FixtureTeapotTestCtrl{},
-				MethodTypes: map[string]MethodArgs{
-					"Get": MethodArgs{},
+				MethodTypes: map[string]map[string]string{
+					"Get": {},
 				},
 			},
 			{
 				Name:       "panic_in_render",
 				Path:       "/panic_in_render",
 				Controller: FixturePanicInRenderTestCtrl{},
-				MethodTypes: map[string]MethodArgs{
-					"Get": MethodArgs{},
+				MethodTypes: map[string]map[string]string{
+					"Get": {},
 				},
 			},
 			{
 				Name:       "static",
 				Path:       "/static/*path",
 				Controller: StaticServe{},
-				MethodTypes: map[string]MethodArgs{
-					"Get": MethodArgs{
+				MethodTypes: map[string]map[string]string{
+					"Get": {
 						"path": "*url.URL",
 					},
 				},
@@ -92,8 +92,8 @@ func newTestAppConfig() *AppConfig {
 				Name:       "post_test",
 				Path:       "/post_test",
 				Controller: FixturePostTestCtrl{},
-				MethodTypes: map[string]MethodArgs{
-					"Post": MethodArgs{},
+				MethodTypes: map[string]map[string]string{
+					"Post": {},
 				},
 			},
 		},
@@ -104,7 +104,7 @@ func newTestAppConfig() *AppConfig {
 		},
 		MaxClientBodySize: DefaultMaxClientBodySize,
 	}
-	config.templateMap = TemplateMap{
+	config.templateMap = templateMap{
 		"appname": {
 			"app": {
 				"html": {

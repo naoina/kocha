@@ -10,8 +10,8 @@ type Result interface {
 	Proc(*Response)
 }
 
-// ResultContent represents a result of any content.
-type ResultContent struct {
+// resultContent represents a result of any content.
+type resultContent struct {
 	// The content body.
 	Body io.Reader
 }
@@ -19,7 +19,7 @@ type ResultContent struct {
 // Proc writes content to response.
 //
 // If Body implements io.Closer interface, call Body.Close() in end of Proc.
-func (r *ResultContent) Proc(res *Response) {
+func (r *resultContent) Proc(res *Response) {
 	if closer, ok := r.Body.(io.Closer); ok {
 		defer closer.Close()
 	}
@@ -28,8 +28,8 @@ func (r *ResultContent) Proc(res *Response) {
 	}
 }
 
-// ResultRedirect represents a result of redirect.
-type ResultRedirect struct {
+// resultRedirect represents a result of redirect.
+type resultRedirect struct {
 	Request *Request
 
 	// URL for redirect.
@@ -40,7 +40,7 @@ type ResultRedirect struct {
 }
 
 // Proc writes redirect header to response.
-func (r *ResultRedirect) Proc(res *Response) {
+func (r *resultRedirect) Proc(res *Response) {
 	statusCode := http.StatusFound
 	if r.Permanently {
 		statusCode = http.StatusMovedPermanently

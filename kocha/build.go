@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 )
 
 // buildCommand implements `command` interface for `build` command.
@@ -60,14 +61,14 @@ func (c *buildCommand) Run() {
 	if err != nil {
 		panic(err)
 	}
-	appDir, err := kocha.FindAppDir()
+	appDir, err := util.FindAppDir()
 	if err != nil {
 		panic(err)
 	}
 	appName := filepath.Base(dir)
 	configPkg, err := c.Package(path.Join(appDir, "config"))
 	if err != nil {
-		kocha.PanicOnError(c, "abort: cannot import `%s`: %v", path.Join(appDir, "config"), err)
+		util.PanicOnError(c, "abort: cannot import `%s`: %v", path.Join(appDir, "config"), err)
 	}
 	var dbImportPath string
 	dbPkg, err := c.Package(path.Join(appDir, "db"))
@@ -84,7 +85,7 @@ func (c *buildCommand) Run() {
 		panic(err)
 	}
 	if err := os.Mkdir(tmpDir, 0755); err != nil && !os.IsExist(err) {
-		kocha.PanicOnError(c, "abort: failed to create directory: %v", err)
+		util.PanicOnError(c, "abort: failed to create directory: %v", err)
 	}
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
@@ -97,7 +98,7 @@ func (c *buildCommand) Run() {
 	builderFilePath := filepath.ToSlash(filepath.Join(tmpDir, "builder.go"))
 	file, err := os.Create(builderFilePath)
 	if err != nil {
-		kocha.PanicOnError(c, "abort: failed to create file: %v", err)
+		util.PanicOnError(c, "abort: failed to create file: %v", err)
 	}
 	defer file.Close()
 	builderTemplatePath := filepath.ToSlash(filepath.Join(skeletonDir, "builder.go.template"))
@@ -116,7 +117,7 @@ func (c *buildCommand) Run() {
 		"version":              c.detectVersionTag(),
 	}
 	if err := t.Execute(file, data); err != nil {
-		kocha.PanicOnError(c, "abort: failed to write file: %v", err)
+		util.PanicOnError(c, "abort: failed to write file: %v", err)
 	}
 	execName := appName
 	if runtime.GOOS == "windows" {
@@ -129,7 +130,7 @@ func (c *buildCommand) Run() {
 	}
 	printSettingEnv()
 	fmt.Printf("build all-in-one binary to %v\n", filepath.Join(dir, execName))
-	kocha.PrintGreen("Build successful!\n")
+	util.PrintGreen("Build successful!\n")
 }
 
 func (c *buildCommand) Package(importPath string) (*build.Package, error) {
@@ -143,7 +144,7 @@ func (c *buildCommand) Package(importPath string) (*build.Package, error) {
 func (c *buildCommand) execCmd(cmd string, args ...string) {
 	command := exec.Command(cmd, args...)
 	if msg, err := command.CombinedOutput(); err != nil {
-		kocha.PanicOnError(c, "abort: build failed: %v\n%v", err, string(msg))
+		util.PanicOnError(c, "abort: build failed: %v\n%v", err, string(msg))
 	}
 }
 
@@ -193,7 +194,7 @@ func (c *buildCommand) detectVersionTag() string {
 		}
 		line, err := exec.Command(bin, "rev-parse", "HEAD").Output()
 		if err != nil {
-			kocha.PanicOnError(c, "abort: unexpected error: %v\nplease specify version explicitly with '-tag' option for avoid the this error.", err)
+			util.PanicOnError(c, "abort: unexpected error: %v\nplease specify version explicitly with '-tag' option for avoid the this error.", err)
 		}
 		version = strings.TrimSpace(string(line))
 	case ".hg":
@@ -204,7 +205,7 @@ func (c *buildCommand) detectVersionTag() string {
 		}
 		line, err := exec.Command(bin, "identify").Output()
 		if err != nil {
-			kocha.PanicOnError(c, "abort: unexpected error: %v\nplease specify version explicitly with '-tag' option for avoid the this error.", err)
+			util.PanicOnError(c, "abort: unexpected error: %v\nplease specify version explicitly with '-tag' option for avoid the this error.", err)
 		}
 		version = strings.TrimSpace(string(line))
 	}

@@ -1,6 +1,7 @@
-package kocha
+package util
 
 import (
+	"fmt"
 	"go/build"
 	"go/format"
 	"html/template"
@@ -9,8 +10,38 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
+	"strings"
 	"testing"
+	"testing/quick"
 )
+
+type orderedOutputMap map[string]interface{}
+
+func (m orderedOutputMap) String() string {
+	keys := make([]string, 0, len(m))
+	for key, _ := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	outputs := make([]string, 0, len(keys))
+	for _, key := range keys {
+		outputs = append(outputs, fmt.Sprintf("%s:%s", key, m[key]))
+	}
+	return fmt.Sprintf("map[%v]", strings.Join(outputs, " "))
+}
+
+func (m orderedOutputMap) GoString() string {
+	keys := make([]string, 0, len(m))
+	for key, _ := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for i, key := range keys {
+		keys[i] = fmt.Sprintf("%#v:%#v", key, m[key])
+	}
+	return fmt.Sprintf("map[string]interface{}{%v}", strings.Join(keys, ", "))
+}
 
 func TestToCamelCase(t *testing.T) {
 	for v, expected := range map[string]string{
@@ -67,7 +98,7 @@ func Test_SplitExt(t *testing.T) {
 	}
 }
 
-func Test_normPath(t *testing.T) {
+func Test_NormPath(t *testing.T) {
 	for v, expected := range map[string]string{
 		"/":           "/",
 		"/path":       "/path",
@@ -76,7 +107,7 @@ func Test_normPath(t *testing.T) {
 		"/path/to":    "/path/to",
 		"/path/to///": "/path/to/",
 	} {
-		actual := normPath(v)
+		actual := NormPath(v)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%v: Expect %v, but %v", v, expected, actual)
 		}
@@ -93,7 +124,7 @@ func TestGoString(t *testing.T) {
 
 	tmpl := template.Must(template.New("test").Parse(`foo{{.name}}bar`))
 	actual = GoString(tmpl)
-	expected = `template.Must(template.New("test").Funcs(kocha.TemplateFuncs).Parse(kocha.Gunzip("\x1f\x8b\b\x00\x00\tn\x88\x02\xffJ\xcbϯ\xae\xd6\xcbK\xccM\xad\xadMJ,\x02\x04\x00\x00\xff\xff4%\x83\xb6\x0f\x00\x00\x00")))`
+	expected = `template.Must(template.New("test").Funcs(kocha.TemplateFuncs).Parse(util.Gunzip("\x1f\x8b\b\x00\x00\tn\x88\x02\xffJ\xcbϯ\xae\xd6\xcbK\xccM\xad\xadMJ,\x02\x04\x00\x00\xff\xff4%\x83\xb6\x0f\x00\x00\x00")))`
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -146,8 +177,8 @@ func TestGoString(t *testing.T) {
 struct {
 	Name string
 	path string
-	Route kocha.orderedOutputMap
-	G *kocha.testGoString
+	Route util.orderedOutputMap
+	G *util.testGoString
 }{
 
 	G: gostring,
@@ -260,4 +291,21 @@ func TestIsUnexportedField(t *testing.T) {
 			t.Errorf("IsUnexportedField(%q) => %v, want %v", v, actual, expected)
 		}
 	}()
+}
+
+func TestGenerateRandomKey(t *testing.T) {
+	if err := quick.Check(func(length uint16) bool {
+		already := make([][]byte, 0, 100)
+		for i := 0; i < 100; i++ {
+			buf := GenerateRandomKey(int(length))
+			for _, v := range already {
+				if !reflect.DeepEqual(buf, v) {
+					return false
+				}
+			}
+		}
+		return true
+	}, &quick.Config{MaxCount: 10}); err != nil {
+		t.Error(err)
+	}
 }

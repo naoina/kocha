@@ -6,8 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 )
 
 const DefaultORM = "genmai"
@@ -100,45 +99,45 @@ func (g *modelGenerator) DefineFlags(fs *flag.FlagSet) {
 func (g *modelGenerator) Generate() {
 	name := g.flag.Arg(0)
 	if name == "" {
-		kocha.PanicOnError(g, "abort: no NAME given")
+		util.PanicOnError(g, "abort: no NAME given")
 	}
 	mt := modelTypeMap[g.orm]
 	if mt == nil {
-		kocha.PanicOnError(g, "abort: unsupported ORM type: `%v`", g.orm)
+		util.PanicOnError(g, "abort: unsupported ORM type: `%v`", g.orm)
 	}
 	m := mt.FieldTypeMap()
 	var fields []modelField
 	for _, arg := range g.flag.Args()[1:] {
 		input := strings.Split(arg, ":")
 		if len(input) != 2 {
-			kocha.PanicOnError(g, "abort: invalid argument format has been specified: `%v`", strings.Join(input, ", "))
+			util.PanicOnError(g, "abort: invalid argument format has been specified: `%v`", strings.Join(input, ", "))
 		}
 		name, t := input[0], input[1]
 		if name == "" {
-			kocha.PanicOnError(g, "abort: field name hasn't been specified")
+			util.PanicOnError(g, "abort: field name hasn't been specified")
 		}
 		ft, found := m[t]
 		if !found {
-			kocha.PanicOnError(g, "abort: unsupported field type: `%v`", t)
+			util.PanicOnError(g, "abort: unsupported field type: `%v`", t)
 		}
 		fields = append(fields, modelField{
-			Name:       kocha.ToCamelCase(name),
+			Name:       util.ToCamelCase(name),
 			Type:       ft.Name,
-			Column:     kocha.ToSnakeCase(name),
+			Column:     util.ToSnakeCase(name),
 			OptionTags: ft.OptionTags,
 		})
 	}
-	camelCaseName := kocha.ToCamelCase(name)
-	snakeCaseName := kocha.ToSnakeCase(name)
+	camelCaseName := util.ToCamelCase(name)
+	snakeCaseName := util.ToSnakeCase(name)
 	data := map[string]interface{}{
 		"Name":   camelCaseName,
 		"Fields": fields,
 	}
 	templatePath, configTemplatePath := mt.TemplatePath()
-	kocha.CopyTemplate(g, templatePath, filepath.Join("app", "models", snakeCaseName+".go"), data)
+	util.CopyTemplate(g, templatePath, filepath.Join("app", "models", snakeCaseName+".go"), data)
 	initPath := filepath.Join("db", "config.go")
 	if _, err := os.Stat(initPath); os.IsNotExist(err) {
-		kocha.CopyTemplate(g, configTemplatePath, initPath, nil)
+		util.CopyTemplate(g, configTemplatePath, initPath, nil)
 	}
 }
 

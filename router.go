@@ -18,6 +18,7 @@ import (
 
 	"github.com/naoina/kocha-urlrouter"
 	_ "github.com/naoina/kocha-urlrouter/doublearray"
+	"github.com/naoina/kocha/util"
 )
 
 var (
@@ -38,7 +39,7 @@ var (
 
 type RouteTable []*Route
 
-func (rt RouteTable) buildRouter() (*Router, error) {
+func (rt RouteTable) buildRouter() (*router, error) {
 	for _, route := range rt {
 		route.normalize()
 	}
@@ -75,16 +76,16 @@ func (rt RouteTable) buildRouter() (*Router, error) {
 	return router, nil
 }
 
-// Router represents a router of kocha.
-type Router struct {
-	forward    ForwardRouter
-	reverse    ReverseRouter
+// router represents a router of kocha.
+type router struct {
+	forward    forwardRouter
+	reverse    reverseRouter
 	routeTable RouteTable
 }
 
-// newRouter returns a new Router.
-func newRouter(rt RouteTable) (*Router, error) {
-	router := &Router{routeTable: rt}
+// newRouter returns a new router.
+func newRouter(rt RouteTable) (*router, error) {
+	router := &router{routeTable: rt}
 	if err := router.buildForward(); err != nil {
 		return nil, err
 	}
@@ -94,9 +95,9 @@ func newRouter(rt RouteTable) (*Router, error) {
 	return router, nil
 }
 
-func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
+func (router *router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
 	methodName := strings.Title(strings.ToLower(req.Method))
-	path := normPath(req.URL.Path)
+	path := util.NormPath(req.URL.Path)
 	data, params := router.forward.Lookup(path)
 	if data == nil {
 		return nil, nil, nil
@@ -106,7 +107,7 @@ func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, me
 }
 
 // buildForward builds forward router.
-func (router *Router) buildForward() error {
+func (router *router) buildForward() error {
 	records := make([]urlrouter.Record, len(router.routeTable))
 	for i, route := range router.routeTable {
 		records[i] = urlrouter.NewRecord(route.Path, route)
@@ -119,8 +120,8 @@ func (router *Router) buildForward() error {
 }
 
 // buildReverse builds reverse router.
-func (router *Router) buildReverse() error {
-	router.reverse = make(ReverseRouter)
+func (router *router) buildReverse() error {
+	router.reverse = make(reverseRouter)
 	for _, route := range router.routeTable {
 		paramNames := urlrouter.ParamNames(route.Path)
 		names := make([]string, len(paramNames))
@@ -136,15 +137,15 @@ func (router *Router) buildReverse() error {
 	return nil
 }
 
-type ForwardRouter urlrouter.URLRouter
-type ReverseRouter map[string]*routeInfo
+type forwardRouter urlrouter.URLRouter
+type reverseRouter map[string]*routeInfo
 
 // Route represents a route.
 type Route struct {
 	Name        string
 	Path        string
 	Controller  interface{}
-	MethodTypes map[string]MethodArgs
+	MethodTypes methodTypes
 	paramNames  []string
 }
 
@@ -194,7 +195,7 @@ func (route *Route) buildMethodTypes() error {
 	if pkgDir == "" {
 		return fmt.Errorf("%v: package not found", pkgPath)
 	}
-	pkgInfo, err := ImportDir(pkgDir, 0)
+	pkgInfo, err := util.ImportDir(pkgDir, 0)
 	if err != nil {
 		return err
 	}
@@ -204,7 +205,7 @@ func (route *Route) buildMethodTypes() error {
 			return err
 		}
 	}
-	route.MethodTypes = make(map[string]MethodArgs)
+	route.MethodTypes = make(map[string]map[string]string)
 	for _, file := range astFiles {
 		for _, d := range file.Decls {
 			ast.Inspect(d, func(node ast.Node) bool {
@@ -226,7 +227,7 @@ func (route *Route) buildMethodTypes() error {
 				if _, ok := controllerMethods[methodName]; !ok {
 					return false
 				}
-				route.MethodTypes[methodName] = make(MethodArgs)
+				route.MethodTypes[methodName] = make(map[string]string)
 				for _, v := range fdecl.Type.Params.List {
 					typeName := astTypeName(v.Type)
 					for _, name := range v.Names {
@@ -357,7 +358,11 @@ func (route *Route) validateControllerType() error {
 	return nil
 }
 
-type MethodArgs map[string]string
+type methodTypes map[string]map[string]string
+
+func (mt methodTypes) GoString() string {
+	return util.GoString(map[string]map[string]string(mt))
+}
 
 type routeInfo struct {
 	route         *Route
@@ -388,7 +393,7 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	case vlen+nlen == 0:
 		return route.Path
 	}
-	var arg MethodArgs
+	var arg map[string]string
 	for _, arg = range route.MethodTypes {
 		break
 	}
@@ -405,7 +410,7 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	}
 	replacer := strings.NewReplacer(oldnew...)
 	path := replacer.Replace(route.Path)
-	return normPath(path)
+	return util.NormPath(path)
 }
 
 // TypeValidateParser is an interface of validator and parser for any type value.

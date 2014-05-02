@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func TestNewResponse(t *testing.T) {
+func Test_newResponse(t *testing.T) {
 	rw := httptest.NewRecorder()
-	actual := NewResponse(rw)
+	actual := newResponse(rw)
 	expected := &Response{
 		ResponseWriter: rw,
 		ContentType:    "",

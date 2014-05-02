@@ -6,13 +6,15 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+
+	"github.com/naoina/kocha/util"
 )
 
 func Test_buildRouter(t *testing.T) {
 	func() {
-		ImportDir = build.ImportDir
+		util.ImportDir = build.ImportDir
 	}()
-	ImportDir = func(dir string, mode build.ImportMode) (*build.Package, error) {
+	util.ImportDir = func(dir string, mode build.ImportMode) (*build.Package, error) {
 		pkg, err := build.ImportDir(dir, mode)
 		if err != nil {
 			return nil, err
@@ -141,7 +143,7 @@ func Test_buildRouter(t *testing.T) {
 	}()
 }
 
-func Test_Router_dispatch_with_route_missing(t *testing.T) {
+func Test_router_dispatch_with_route_missing(t *testing.T) {
 	oldAppConfig := appConfig
 	appConfig = newTestAppConfig()
 	defer func() {
@@ -163,7 +165,7 @@ func Test_Router_dispatch_with_route_missing(t *testing.T) {
 	}
 }
 
-func Test_Router_dispatch(t *testing.T) {
+func Test_router_dispatch(t *testing.T) {
 	oldAppConfig := appConfig
 	appConfig = newTestAppConfig()
 	defer func() {

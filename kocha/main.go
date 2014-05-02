@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"os"
 	"text/template"
-
-	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 )
 
 // command is the interface that sub-command.
@@ -53,7 +52,7 @@ func main() {
 	progName := os.Args[0]
 	defer func() {
 		if err := recover(); err != nil {
-			if err, ok := err.(kocha.Error); ok {
+			if err, ok := err.(util.Error); ok {
 				fmt.Fprintln(os.Stderr, err.Message)
 				fmt.Fprintf(os.Stderr, "usage: %s %s\n", progName, err.Usager.Usage())
 				os.Exit(1)

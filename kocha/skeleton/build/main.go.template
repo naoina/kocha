@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 
 	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/util"
 )
 
 const Version = "{{.version}}"
@@ -48,7 +49,7 @@ func main() {
 	{{end}}
 	kocha.Init(config.AppConfig)
 	{{range $name, $data := .resources}}
-	kocha.AddResource("{{$name}}", kocha.Gunzip({{$data|printf "%q"}}))
+	kocha.AddResource("{{$name}}", util.Gunzip({{$data|printf "%q"}}))
 	{{end}}
 	kocha.Run(config.Addr)
 }
