@@ -17,62 +17,65 @@ var (
 	// ErrNotExist is passed to ErrorHandler if handler not exists.
 	ErrNotExist = errors.New("handler not exist")
 
-	workersPerQueue   = 1
-	queues            = make(map[string]Queue)
-	handlerQueueNames = make(map[string]handlerQueueName)
-	workers           []*worker
-	wg                = struct{ enqueue, dequeue sync.WaitGroup }{}
+	workersPerQueue = 1
+	queues          = make(map[string]Queue)
+	handlerQueues   = make(map[string]map[string][]handlerFunc)
+	workers         []*worker
+	wg              = struct{ enqueue, dequeue sync.WaitGroup }{}
 )
 
-// AddHandler adds handler that related to name and queue.
+// AddHandler adds handlers that related to name and queue.
 // The name is an event name such as "log.error" that will be used for Trigger.
 // The queueName is a name of queue registered by RegisterQueue in advance.
+// If you add handler by name that has already been added, handler will associated
+// to that name additionally.
 // If queue of queueName still hasn't been registered, it returns error.
-// Also it returns error if you try to add same handler name twice.
 func AddHandler(name string, queueName string, handler func(args ...interface{}) error) error {
 	queue := queues[queueName]
 	if queue == nil {
 		return fmt.Errorf("kocha: event: queue `%s' isn't registered", queueName)
 	}
-	if _, exist := handlerQueueNames[name]; exist {
-		return fmt.Errorf("kocha: event: AddHandler called twice for handler %s", name)
+	if _, exist := handlerQueues[name]; !exist {
+		handlerQueues[name] = make(map[string][]handlerFunc)
 	}
-	handlerQueueNames[name] = handlerQueueName{handler, queueName}
+	hq := handlerQueues[name]
+	hq[queueName] = append(hq[queueName], handler)
 	return nil
 }
 
 // Trigger emits the event.
 // The name is an event name. It must be added in advance using AddHandler.
 // If Trigger called by not added name, it returns error.
-// If args are given, they will be passed to handler added by AddHandler.
+// If args are given, they will be passed to handlers added by AddHandler.
 func Trigger(name string, args ...interface{}) error {
-	hq, exist := handlerQueueNames[name]
+	hq, exist := handlerQueues[name]
 	if !exist {
 		return fmt.Errorf("kocha: event: handler `%s' isn't added", name)
 	}
-	queue := queues[hq.queueName]
-	wg.enqueue.Add(1)
-	go func() {
-		defer wg.enqueue.Done()
-		defer func() {
-			if err := recover(); err != nil {
-				ErrorHandler(err)
-			}
-		}()
-		if err := enqueue(queue, payload{name, args}); err != nil {
-			panic(err)
-		}
-	}()
+	triggerAll(hq, name, args...)
 	return nil
 }
 
-type handlerQueueName struct {
-	handler   handler
-	queueName string
+func triggerAll(hq map[string][]handlerFunc, name string, args ...interface{}) {
+	wg.enqueue.Add(len(hq))
+	for queueName := range hq {
+		queue := queues[queueName]
+		go func() {
+			defer wg.enqueue.Done()
+			defer func() {
+				if err := recover(); err != nil {
+					ErrorHandler(err)
+				}
+			}()
+			if err := enqueue(queue, payload{name, args}); err != nil {
+				panic(err)
+			}
+		}()
+	}
 }
 
 // alias.
-type handler func(args ...interface{}) error
+type handlerFunc func(args ...interface{}) error
 
 func enqueue(queue Queue, pld payload) error {
 	var data string
@@ -88,7 +91,7 @@ func enqueue(queue Queue, pld payload) error {
 func Start() {
 	for name, queue := range queues {
 		for i := 0; i < workersPerQueue; i++ {
-			worker := newWorker(name, queue.New(workersPerQueue), handlerQueueNames, &wg.dequeue)
+			worker := newWorker(name, queue.New(workersPerQueue), handlerQueues, &wg.dequeue)
 			workers = append(workers, worker)
 			go worker.start()
 		}

@@ -5,11 +5,11 @@ import "sync"
 type worker struct {
 	queueName string
 	queue     Queue
-	m         map[string]handlerQueueName
+	m         map[string]map[string][]handlerFunc
 	wg        *sync.WaitGroup
 }
 
-func newWorker(queueName string, queue Queue, m map[string]handlerQueueName, wg *sync.WaitGroup) *worker {
+func newWorker(queueName string, queue Queue, m map[string]map[string][]handlerFunc, wg *sync.WaitGroup) *worker {
 	return &worker{
 		queueName: queueName,
 		queue:     queue,
@@ -49,14 +49,25 @@ func (w *worker) run() (err error) {
 	if !exist {
 		return ErrNotExist
 	}
-	w.wg.Add(1)
-	go func() {
-		defer w.wg.Done()
-		if err := hq.handler(pld.Args...); err != nil {
-			ErrorHandler(err)
-		}
-	}()
+	w.runAll(hq, pld)
 	return nil
+}
+
+func (w *worker) runAll(hq map[string][]handlerFunc, pld payload) {
+	for queueName, handlers := range hq {
+		if w.queueName != queueName {
+			continue
+		}
+		w.wg.Add(len(handlers))
+		for _, h := range handlers {
+			go func(handler handlerFunc) {
+				defer w.wg.Done()
+				if err := handler(pld.Args...); err != nil {
+					ErrorHandler(err)
+				}
+			}(h)
+		}
+	}
 }
 
 func (w *worker) dequeue() (pld payload, err error) {

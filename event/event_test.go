@@ -56,8 +56,8 @@ func TestAddHandler(t *testing.T) {
 	}
 	if err := AddHandler(handlerName, queueName, func(args ...interface{}) error {
 		return nil
-	}); err == nil {
-		t.Errorf("AddHandler(%q, %q, func) => nil, want error", handlerName, queueName)
+	}); err != nil {
+		t.Errorf("AddHandler(%q, %q, func) => %#v, want nil", handlerName, queueName, err)
 	}
 }
 
@@ -117,6 +117,52 @@ func TestTrigger(t *testing.T) {
 		expected := strings.Repeat("|call testTriggerWithArgs([1 true arg])", i)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Trigger(%q) has try to call handler, actual => %#v, want %#v", handlerName, actual, expected)
+		}
+	}
+
+	handlerName = "testTriggerWithMultipleHandlers"
+	actual = ""
+	actual2 := ""
+	timer2 := make(chan struct{})
+	if err := AddHandler(handlerName, queueName, func(args ...interface{}) error {
+		defer func() {
+			timer <- struct{}{}
+		}()
+		actual += fmt.Sprintf("|call1 %s(%v)", handlerName, args)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := AddHandler(handlerName, queueName, func(args ...interface{}) error {
+		defer func() {
+			timer2 <- struct{}{}
+		}()
+		actual2 += fmt.Sprintf("|call2 %s(%v)", handlerName, args)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for i := 1; i <= 2; i++ {
+		if err := Trigger(handlerName); err != nil {
+			t.Errorf("Trigger(%q) => %#v, want nil", handlerName, err)
+		}
+		select {
+		case <-timer:
+		case <-time.After(3 * time.Second):
+			t.Fatalf("Trigger(%q) has try to call handler but hasn't been called within 3 seconds", handlerName)
+		}
+		expected := strings.Repeat("|call1 testTriggerWithMultipleHandlers([])", i)
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Trigger(%q) has try to call handler, actual => %#v, want %#v", handlerName, actual, expected)
+		}
+		select {
+		case <-timer2:
+		case <-time.After(3 * time.Second):
+			t.Fatalf("Trigger(%q) has try to call handler but hasn't been called within 3 seconds", handlerName)
+		}
+		expected = strings.Repeat("|call2 testTriggerWithMultipleHandlers([])", i)
+		if !reflect.DeepEqual(actual2, expected) {
+			t.Errorf("Trigger(%q) has try to call handler, actual => %#v, want %#v", handlerName, actual2, expected)
 		}
 	}
 }
