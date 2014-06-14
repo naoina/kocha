@@ -16,8 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/naoina/kocha-urlrouter"
-	_ "github.com/naoina/kocha-urlrouter/doublearray"
+	"github.com/naoina/denco"
 	"github.com/naoina/kocha/util"
 )
 
@@ -78,8 +77,8 @@ func (rt RouteTable) buildRouter() (*router, error) {
 
 // router represents a router of kocha.
 type router struct {
-	forward    forwardRouter
-	reverse    reverseRouter
+	forward    *denco.Router
+	reverse    map[string]*routeInfo
 	routeTable RouteTable
 }
 
@@ -98,8 +97,8 @@ func newRouter(rt RouteTable) (*router, error) {
 func (router *router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
 	methodName := strings.Title(strings.ToLower(req.Method))
 	path := util.NormPath(req.URL.Path)
-	data, params := router.forward.Lookup(path)
-	if data == nil {
+	data, params, found := router.forward.Lookup(path)
+	if !found {
 		return nil, nil, nil
 	}
 	route := data.(*Route)
@@ -108,11 +107,11 @@ func (router *router) dispatch(req *http.Request) (controller *reflect.Value, me
 
 // buildForward builds forward router.
 func (router *router) buildForward() error {
-	records := make([]urlrouter.Record, len(router.routeTable))
+	records := make([]denco.Record, len(router.routeTable))
 	for i, route := range router.routeTable {
-		records[i] = urlrouter.NewRecord(route.Path, route)
+		records[i] = denco.NewRecord(route.Path, route)
 	}
-	router.forward = urlrouter.NewURLRouter("doublearray")
+	router.forward = denco.New()
 	if err := router.forward.Build(records); err != nil {
 		return err
 	}
@@ -121,9 +120,9 @@ func (router *router) buildForward() error {
 
 // buildReverse builds reverse router.
 func (router *router) buildReverse() error {
-	router.reverse = make(reverseRouter)
+	router.reverse = make(map[string]*routeInfo)
 	for _, route := range router.routeTable {
-		paramNames := urlrouter.ParamNames(route.Path)
+		paramNames := route.ParamNames()
 		names := make([]string, len(paramNames))
 		for i := 0; i < len(paramNames); i++ {
 			names[i] = paramNames[i][1:] // truncate the meta character.
@@ -137,9 +136,6 @@ func (router *router) buildReverse() error {
 	return nil
 }
 
-type forwardRouter urlrouter.URLRouter
-type reverseRouter map[string]*routeInfo
-
 // Route represents a route.
 type Route struct {
 	Name        string
@@ -149,7 +145,7 @@ type Route struct {
 	paramNames  []string
 }
 
-func (route *Route) dispatch(methodName string, params []urlrouter.Param) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
+func (route *Route) dispatch(methodName string, params []denco.Param) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
 	methodArgs := route.MethodTypes[methodName]
 	if methodArgs == nil {
 		return nil, nil, nil
@@ -182,6 +178,18 @@ func (route *Route) normalize() {
 	} else {
 		route.Controller = nil
 	}
+}
+
+func (route *Route) ParamNames() (names []string) {
+	path := route.Path
+	for i := 0; i < len(route.Path); i++ {
+		if c := path[i]; c == denco.ParamCharacter || c == denco.WildcardCharacter {
+			next := denco.NextSeparator(path, i+1)
+			names = append(names, path[i:next])
+			i = next
+		}
+	}
+	return names
 }
 
 func (route *Route) buildMethodTypes() error {
