@@ -3,18 +3,13 @@ package kocha
 import (
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
-	"os/signal"
 	"reflect"
 	"runtime"
-	"strconv"
-	"sync"
-	"syscall"
-)
 
-const fdKey = "KOCHA_FD"
+	"github.com/naoina/miyabi"
+)
 
 func handler(writer http.ResponseWriter, req *http.Request) {
 	controller, method, args := appConfig.router.dispatch(req)
@@ -101,100 +96,23 @@ func Run(addr string) {
 	if addr == "" {
 		addr = DefaultHttpAddr
 	}
-	l, reloaded := serverListener(addr)
-	listener := &waitableListener{
-		Listener: l,
-		wg:       &sync.WaitGroup{},
-	}
-	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGHUP)
-	go func() {
-		switch <-c {
-		case syscall.SIGHUP:
-			pid := gracefulRestart(listener)
-			Log.Warn("graceful restarted. new pid: %d", pid)
-			if err := listener.Close(); err != nil {
-				panic(err)
-			}
+	pid := os.Getpid()
+	miyabi.ServerState = func(state miyabi.State) {
+		switch state {
+		case miyabi.StateStart:
+			fmt.Printf("Listening on %s\n", addr)
+			fmt.Printf("Server PID: %d\n", pid)
+		case miyabi.StateRestart:
+			Log.Warn("graceful restarted")
+		case miyabi.StateShutdown:
+			Log.Warn("graceful shutdown")
 		}
-	}()
-	server := &http.Server{
+	}
+	server := &miyabi.Server{
+		Addr:    addr,
 		Handler: http.HandlerFunc(handler),
 	}
-	if !reloaded {
-		fmt.Printf("Listen on %s, pid %d\n", addr, os.Getpid())
-	}
-	server.Serve(listener)
-	listener.wg.Wait()
-}
-
-func gracefulRestart(listener *waitableListener) (pid int) {
-	pwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	fdValue := reflect.Indirect(reflect.Indirect(reflect.ValueOf(listener.Listener)).FieldByName("fd"))
-	sysfd := uintptr(fdValue.FieldByName("sysfd").Int())
-	proc, err := os.StartProcess(os.Args[0], os.Args, &os.ProcAttr{
-		Dir:   pwd,
-		Env:   append(os.Environ(), fmt.Sprintf("%s=%d", fdKey, sysfd)),
-		Files: []*os.File{os.Stdin, os.Stdout, os.Stderr, os.NewFile(sysfd, "sysfile")},
-	})
-	if err != nil {
-		panic(err)
-	}
-	return proc.Pid
-}
-
-func serverListener(addr string) (listener net.Listener, reloaded bool) {
-	if fdStr := os.Getenv(fdKey); fdStr != "" {
-		fd, err := strconv.Atoi(fdStr)
-		if err != nil {
-			panic(err)
-		}
-		file := os.NewFile(uintptr(fd), "listen socket")
-		l, err := net.FileListener(file)
-		if err != nil {
-			panic(err)
-		}
-		return l, true
-	}
-	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
-	if err != nil {
-		panic(err)
-	}
-	l, err := net.ListenTCP("tcp", tcpAddr)
-	if err != nil {
-		panic(err)
-	}
-	return l, false
-}
-
-type waitableListener struct {
-	net.Listener
-	wg *sync.WaitGroup
-}
-
-func (l *waitableListener) Accept() (net.Conn, error) {
-	conn, err := l.Listener.Accept()
-	if err != nil {
-		return conn, err
-	}
-	l.wg.Add(1)
-	return &waitableConn{Conn: conn, wg: l.wg}, nil
-}
-
-type waitableConn struct {
-	net.Conn
-	wg *sync.WaitGroup
-}
-
-func (c *waitableConn) Close() error {
-	if err := c.Conn.Close(); err != nil {
-		return err
-	}
-	c.wg.Done()
-	return nil
+	server.ListenAndServe()
 }
 
 func logStackAndError(err interface{}) {
