@@ -8,8 +8,8 @@ import (
 
 // Middleware is the interface that middleware.
 type Middleware interface {
-	Before(c *Controller)
-	After(c *Controller)
+	Before(app *Application, c *Controller)
+	After(app *Application, c *Controller)
 }
 
 var (
@@ -22,11 +22,11 @@ var (
 // Middleware that set Content-Type header.
 type ResponseContentTypeMiddleware struct{}
 
-func (m *ResponseContentTypeMiddleware) Before(c *Controller) {
+func (m *ResponseContentTypeMiddleware) Before(app *Application, c *Controller) {
 	// do nothing
 }
 
-func (m *ResponseContentTypeMiddleware) After(c *Controller) {
+func (m *ResponseContentTypeMiddleware) After(app *Application, c *Controller) {
 	res := c.Response
 	res.Header().Set("Content-Type", res.ContentType)
 }
@@ -34,7 +34,7 @@ func (m *ResponseContentTypeMiddleware) After(c *Controller) {
 // Session processing middleware.
 type SessionMiddleware struct{}
 
-func (m *SessionMiddleware) Before(c *Controller) {
+func (m *SessionMiddleware) Before(app *Application, c *Controller) {
 	defer func() {
 		if err := recover(); err != nil {
 			switch err.(type) {
@@ -48,11 +48,11 @@ func (m *SessionMiddleware) Before(c *Controller) {
 			c.Session = make(Session)
 		}
 	}()
-	cookie, err := c.Request.Cookie(appConfig.Session.Name)
+	cookie, err := c.Request.Cookie(app.Config.Session.Name)
 	if err != nil {
 		panic(NewErrSessionExpected("new session"))
 	}
-	sess := appConfig.Session.Store.Load(cookie.Value)
+	sess := app.Config.Session.Store.Load(cookie.Value)
 	expiresStr, ok := sess[SessionExpiresKey]
 	if !ok {
 		panic(NewErrSession("expires value not found"))
@@ -67,21 +67,21 @@ func (m *SessionMiddleware) Before(c *Controller) {
 	c.Session = sess
 }
 
-func (m *SessionMiddleware) After(c *Controller) {
-	expires, _ := expiresFromDuration(appConfig.Session.SessionExpires)
+func (m *SessionMiddleware) After(app *Application, c *Controller) {
+	expires, _ := expiresFromDuration(app.Config.Session.SessionExpires)
 	c.Session[SessionExpiresKey] = strconv.FormatInt(expires.Unix(), 10)
-	cookie := newSessionCookie(c)
-	cookie.Value = appConfig.Session.Store.Save(c.Session)
+	cookie := newSessionCookie(app, c)
+	cookie.Value = app.Config.Session.Store.Save(c.Session)
 	c.Response.SetCookie(cookie)
 }
 
 // Request logging middleware.
 type RequestLoggingMiddleware struct{}
 
-func (m *RequestLoggingMiddleware) Before(c *Controller) {
+func (m *RequestLoggingMiddleware) Before(app *Application, c *Controller) {
 	// do nothing.
 }
 
-func (m *RequestLoggingMiddleware) After(c *Controller) {
+func (m *RequestLoggingMiddleware) After(app *Application, c *Controller) {
 	Log.Info(`"%v %v %v" %v`, c.Request.Method, c.Request.RequestURI, c.Request.Proto, c.Response.StatusCode)
 }

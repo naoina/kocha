@@ -67,6 +67,9 @@ type Controller struct {
 	// Session.
 	Session Session
 
+	// An application.
+	App *Application
+
 	errors map[string][]*ParamError
 }
 
@@ -112,9 +115,9 @@ func (c *Controller) Render(context ...interface{}) Result {
 	if format == "" {
 		panic(fmt.Errorf("unknown Content-Type: %v", c.Response.ContentType))
 	}
-	t := appConfig.templateMap.Get(appConfig.AppName, c.Layout, c.Name, format)
+	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, format)
 	if t == nil {
-		panic(errors.New("no such template: " + appConfig.templateMap.Ident(appConfig.AppName, c.Layout, c.Name, format)))
+		panic(errors.New("no such template: " + c.App.Template.Ident(c.App.Config.AppName, c.Layout, c.Name, format)))
 	}
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, ctx); err != nil {
@@ -193,7 +196,7 @@ func (c *Controller) RenderError(statusCode int, context ...interface{}) Result 
 	}
 	c.Response.StatusCode = statusCode
 	name := filepath.Join("errors", strconv.Itoa(statusCode))
-	t := appConfig.templateMap.Get(appConfig.AppName, c.Layout, name, format)
+	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, name, format)
 	if t == nil {
 		c.Response.ContentType = "text/plain"
 		return &resultContent{
@@ -224,7 +227,7 @@ func (c *Controller) SendFile(path string) Result {
 		file = rc.Open()
 	} else {
 		if !filepath.IsAbs(path) {
-			path = filepath.Join(appConfig.AppPath, StaticDir, path)
+			path = filepath.Join(c.App.Config.AppPath, StaticDir, path)
 		}
 		if _, err := os.Stat(path); err != nil {
 			return c.RenderError(http.StatusNotFound)

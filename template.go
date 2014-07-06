@@ -14,54 +14,6 @@ import (
 	"github.com/naoina/kocha/util"
 )
 
-var (
-	TemplateFuncs = template.FuncMap{
-		"in": func(a, b interface{}) bool {
-			v := reflect.ValueOf(a)
-			switch v.Kind() {
-			case reflect.Slice, reflect.Array, reflect.String:
-				if v.IsNil() {
-					return false
-				}
-				for i := 0; i < v.Len(); i++ {
-					if v.Index(i).Interface() == b {
-						return true
-					}
-				}
-			default:
-				panic(fmt.Errorf("invalid type %v: valid types are slice, array and string", v.Type().Name()))
-			}
-			return false
-		},
-		"url": Reverse,
-		"nl2br": func(text string) template.HTML {
-			return template.HTML(strings.Replace(template.HTMLEscapeString(text), "\n", "<br>", -1))
-		},
-		"raw": func(text string) template.HTML {
-			return template.HTML(text)
-		},
-		"invoke_template": func(unit Unit, tmplName, defTmplName string, context ...interface{}) (html template.HTML) {
-			var ctx interface{}
-			switch len(context) {
-			case 0: // do nothing.
-			case 1:
-				ctx = context[0]
-			default:
-				panic(fmt.Errorf("number of context must be 0 or 1"))
-			}
-			Invoke(unit, func() {
-				html = mustReadTemplate(readPartialTemplate(tmplName, ctx))
-			}, func() {
-				html = mustReadTemplate(readPartialTemplate(defTmplName, ctx))
-			})
-			return html
-		},
-		"date": func(date time.Time, layout string) string {
-			return date.Format(layout)
-		},
-	}
-)
-
 type TemplateSet []*TemplatePathInfo
 
 // TemplatePathInfo represents an information of template paths.
@@ -76,12 +28,56 @@ type TemplatePathInfo struct {
 	AppTemplateSet appTemplateSet
 }
 
+type Template struct {
+	FuncMap template.FuncMap
+
+	m   templateMap
+	app *Application
+}
+
+func newTemplate(app *Application) *Template {
+	return &Template{app: app}
+}
+
+// Get gets a parsed template.
+func (t *Template) Get(appName, layoutName, name, format string) *template.Template {
+	return t.m[appName][layoutName][format][util.ToSnakeCase(name)]
+}
+
+func (t *Template) Ident(appName, layoutName, name, format string) string {
+	return fmt.Sprintf("%s:%s %s.%s", appName, layoutName, util.ToSnakeCase(name), format)
+}
+
+func (t *Template) build() (*Template, error) {
+	t, err := t.buildFuncMap()
+	if err != nil {
+		return nil, err
+	}
+	t, err = t.buildTemplateMap()
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+func (t *Template) buildFuncMap() (*Template, error) {
+	t.FuncMap = template.FuncMap{
+		"in":              t.in,
+		"url":             t.url,
+		"nl2br":           t.nl2br,
+		"raw":             t.raw,
+		"invoke_template": t.invokeTemplate,
+		"date":            t.date,
+	}
+	return t, nil
+}
+
 // buildTemplateMap returns templateMap constructed from templateSet.
-func (ts TemplateSet) buildTemplateMap() (templateMap, error) {
+func (t *Template) buildTemplateMap() (*Template, error) {
 	layoutPaths := make(map[string]map[string]map[string]string)
 	templatePaths := make(map[string]map[string]map[string]string)
 	templateSet := templateMap{}
-	for _, info := range ts {
+	for _, info := range t.app.Config.TemplateSet {
 		if info.AppTemplateSet != nil {
 			templateSet[info.Name] = info.AppTemplateSet
 			continue
@@ -92,25 +88,26 @@ func (ts TemplateSet) buildTemplateMap() (templateMap, error) {
 		templatePaths[info.Name] = make(map[string]map[string]string)
 		for _, rootPath := range info.Paths {
 			layoutDir := filepath.Join(rootPath, "layouts")
-			if err := collectLayoutPaths(layoutPaths[info.Name], layoutDir); err != nil {
+			if err := t.collectLayoutPaths(layoutPaths[info.Name], layoutDir); err != nil {
 				return nil, err
 			}
-			if err := collectTemplatePaths(templatePaths[info.Name], rootPath, layoutDir); err != nil {
+			if err := t.collectTemplatePaths(templatePaths[info.Name], rootPath, layoutDir); err != nil {
 				return nil, err
 			}
 		}
 	}
 	for appName, templates := range templatePaths {
-		if err := buildSingleAppTemplateSet(templateSet[appName], templates); err != nil {
+		if err := t.buildSingleAppTemplateSet(templateSet[appName], templates); err != nil {
 			return nil, err
 		}
 	}
 	for appName, layouts := range layoutPaths {
-		if err := buildLayoutAppTemplateSet(templateSet[appName], layouts, templatePaths[appName]); err != nil {
+		if err := t.buildLayoutAppTemplateSet(templateSet[appName], layouts, templatePaths[appName]); err != nil {
 			return nil, err
 		}
 	}
-	return templateSet, nil
+	t.m = templateSet
+	return t, nil
 }
 
 type templateMap map[string]appTemplateSet
@@ -123,16 +120,7 @@ func (ts appTemplateSet) GoString() string {
 type layoutTemplateSet map[string]map[string]*template.Template
 type fileExtTemplateSet map[string]*template.Template
 
-// Get gets a parsed template.
-func (t templateMap) Get(appName, layoutName, name, format string) *template.Template {
-	return t[appName][layoutName][format][util.ToSnakeCase(name)]
-}
-
-func (t templateMap) Ident(appName, layoutName, name, format string) string {
-	return fmt.Sprintf("%s:%s %s.%s", appName, layoutName, util.ToSnakeCase(name), format)
-}
-
-func collectLayoutPaths(layoutPaths map[string]map[string]string, layoutDir string) error {
+func (t *Template) collectLayoutPaths(layoutPaths map[string]map[string]string, layoutDir string) error {
 	return filepath.Walk(layoutDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -156,7 +144,7 @@ func collectLayoutPaths(layoutPaths map[string]map[string]string, layoutDir stri
 	})
 }
 
-func collectTemplatePaths(templatePaths map[string]map[string]string, templateDir, excludeDir string) error {
+func (t *Template) collectTemplatePaths(templatePaths map[string]map[string]string, templateDir, excludeDir string) error {
 	return filepath.Walk(templateDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -183,7 +171,7 @@ func collectTemplatePaths(templatePaths map[string]map[string]string, templateDi
 	})
 }
 
-func buildSingleAppTemplateSet(appTemplateSet appTemplateSet, templates map[string]map[string]string) error {
+func (t *Template) buildSingleAppTemplateSet(appTemplateSet appTemplateSet, templates map[string]map[string]string) error {
 	layoutTemplateSet := layoutTemplateSet{}
 	for ext, templateInfos := range templates {
 		layoutTemplateSet[ext] = fileExtTemplateSet{}
@@ -192,7 +180,7 @@ func buildSingleAppTemplateSet(appTemplateSet appTemplateSet, templates map[stri
 			if err != nil {
 				return err
 			}
-			t := template.Must(template.New(name).Funcs(TemplateFuncs).Parse(string(templateBytes)))
+			t := template.Must(template.New(name).Funcs(t.FuncMap).Parse(string(templateBytes)))
 			layoutTemplateSet[ext][name] = t
 		}
 	}
@@ -200,7 +188,7 @@ func buildSingleAppTemplateSet(appTemplateSet appTemplateSet, templates map[stri
 	return nil
 }
 
-func buildLayoutAppTemplateSet(appTemplateSet appTemplateSet, layouts map[string]map[string]string, templates map[string]map[string]string) error {
+func (t *Template) buildLayoutAppTemplateSet(appTemplateSet appTemplateSet, layouts map[string]map[string]string, templates map[string]map[string]string) error {
 	for layoutName, layoutInfos := range layouts {
 		layoutTemplateSet := layoutTemplateSet{}
 		for ext, layoutPath := range layoutInfos {
@@ -211,7 +199,7 @@ func buildLayoutAppTemplateSet(appTemplateSet appTemplateSet, layouts map[string
 			}
 			for name, path := range templates[ext] {
 				// do not use the layoutTemplate.Clone() in order to retrieve layout as string by `kocha build`
-				layout := template.Must(template.New("layout").Funcs(TemplateFuncs).Parse(string(layoutBytes)))
+				layout := template.Must(template.New("layout").Funcs(t.FuncMap).Parse(string(layoutBytes)))
 				t := template.Must(layout.ParseFiles(path))
 				layoutTemplateSet[ext][name] = t
 			}
@@ -221,21 +209,71 @@ func buildLayoutAppTemplateSet(appTemplateSet appTemplateSet, layouts map[string
 	return nil
 }
 
-func readPartialTemplate(name string, ctx interface{}) (template.HTML, error) {
-	t := appConfig.templateMap.Get(appConfig.AppName, "", name, "html")
-	if t == nil {
+// in is for "in" template function.
+func (t *Template) in(a, b interface{}) bool {
+	v := reflect.ValueOf(a)
+	switch v.Kind() {
+	case reflect.Slice, reflect.Array, reflect.String:
+		if v.IsNil() {
+			return false
+		}
+		for i := 0; i < v.Len(); i++ {
+			if v.Index(i).Interface() == b {
+				return true
+			}
+		}
+	default:
+		panic(fmt.Errorf("invalid type %v: valid types are slice, array and string", v.Type().Name()))
+	}
+	return false
+}
+
+// url is for "url" template function.
+func (t *Template) url(name string, v ...interface{}) string {
+	return t.app.Router.Reverse(name, v...)
+}
+
+// nl2br is for "nl2br" template function.
+func (t *Template) nl2br(text string) template.HTML {
+	return template.HTML(strings.Replace(template.HTMLEscapeString(text), "\n", "<br>", -1))
+}
+
+// raw is for "raw" template function.
+func (t *Template) raw(text string) template.HTML {
+	return template.HTML(text)
+}
+
+// invokeTemplate is for "invoke_template" template function.
+func (t *Template) invokeTemplate(unit Unit, tmplName, defTmplName string, context ...interface{}) (html template.HTML, err error) {
+	var ctx interface{}
+	switch len(context) {
+	case 0: // do nothing.
+	case 1:
+		ctx = context[0]
+	default:
+		return "", fmt.Errorf("number of context must be 0 or 1")
+	}
+	Invoke(unit, func() {
+		html, err = t.readPartialTemplate(tmplName, ctx)
+	}, func() {
+		html, err = t.readPartialTemplate(defTmplName, ctx)
+	})
+	return html, err
+}
+
+// date is for "date" template function.
+func (t *Template) date(date time.Time, layout string) string {
+	return date.Format(layout)
+}
+
+func (t *Template) readPartialTemplate(name string, ctx interface{}) (template.HTML, error) {
+	tmpl := t.Get(t.app.Config.AppName, "", name, "html")
+	if tmpl == nil {
 		return "", fmt.Errorf("%v: template not found", name)
 	}
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, ctx); err != nil {
+	if err := tmpl.Execute(&buf, ctx); err != nil {
 		return "", err
 	}
 	return template.HTML(buf.String()), nil
-}
-
-func mustReadTemplate(html template.HTML, err error) template.HTML {
-	if err != nil {
-		panic(err)
-	}
-	return html
 }

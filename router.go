@@ -38,7 +38,7 @@ var (
 
 type RouteTable []*Route
 
-func (rt RouteTable) buildRouter() (*router, error) {
+func (rt RouteTable) buildRouter() (*Router, error) {
 	for _, route := range rt {
 		route.normalize()
 	}
@@ -75,16 +75,17 @@ func (rt RouteTable) buildRouter() (*router, error) {
 	return router, nil
 }
 
-// router represents a router of kocha.
-type router struct {
+// Router represents a router of kocha.
+type Router struct {
 	forward    *denco.Router
 	reverse    map[string]*routeInfo
 	routeTable RouteTable
+	app        *Application
 }
 
-// newRouter returns a new router.
-func newRouter(rt RouteTable) (*router, error) {
-	router := &router{routeTable: rt}
+// newRouter returns a new Router.
+func newRouter(rt RouteTable) (*Router, error) {
+	router := &Router{routeTable: rt}
 	if err := router.buildForward(); err != nil {
 		return nil, err
 	}
@@ -94,7 +95,7 @@ func newRouter(rt RouteTable) (*router, error) {
 	return router, nil
 }
 
-func (router *router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
+func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
 	methodName := strings.Title(strings.ToLower(req.Method))
 	path := util.NormPath(req.URL.Path)
 	data, params, found := router.forward.Lookup(path)
@@ -106,7 +107,7 @@ func (router *router) dispatch(req *http.Request) (controller *reflect.Value, me
 }
 
 // buildForward builds forward router.
-func (router *router) buildForward() error {
+func (router *Router) buildForward() error {
 	records := make([]denco.Record, len(router.routeTable))
 	for i, route := range router.routeTable {
 		records[i] = denco.NewRecord(route.Path, route)
@@ -119,7 +120,7 @@ func (router *router) buildForward() error {
 }
 
 // buildReverse builds reverse router.
-func (router *router) buildReverse() error {
+func (router *Router) buildReverse() error {
 	router.reverse = make(map[string]*routeInfo)
 	for _, route := range router.routeTable {
 		paramNames := route.ParamNames()
@@ -134,6 +135,19 @@ func (router *router) buildReverse() error {
 		}
 	}
 	return nil
+}
+
+// Reverse returns path of route by name and any params.
+func (router *Router) Reverse(name string, v ...interface{}) string {
+	info := router.reverse[name]
+	if info == nil {
+		types := make([]string, len(v))
+		for i, value := range v {
+			types[i] = reflect.TypeOf(value).Name()
+		}
+		panic(fmt.Errorf("no match route found: %v (%v)", name, strings.Join(types, ", ")))
+	}
+	return info.reverse(v...)
 }
 
 // Route represents a route.
@@ -376,19 +390,6 @@ type routeInfo struct {
 	route         *Route
 	rawParamNames []string
 	paramNames    []string
-}
-
-// Reverse returns path of route by name and any params.
-func Reverse(name string, v ...interface{}) string {
-	info := appConfig.router.reverse[name]
-	if info == nil {
-		types := make([]string, len(v))
-		for i, value := range v {
-			types[i] = reflect.TypeOf(value).Name()
-		}
-		panic(fmt.Errorf("no match route found: %v (%v)", name, strings.Join(types, ", ")))
-	}
-	return info.reverse(v...)
 }
 
 func (ri *routeInfo) reverse(v ...interface{}) string {

@@ -37,20 +37,6 @@ type SessionConfig struct {
 }
 
 func (config *SessionConfig) Validate() error {
-	var sm *SessionMiddleware
-	for _, m := range appConfig.Middlewares {
-		if middleware, ok := m.(*SessionMiddleware); ok {
-			sm = middleware
-		}
-	}
-	if sm != nil {
-		if config == nil {
-			return fmt.Errorf("Because %T is nil, %T cannot be used", config, *sm)
-		}
-		if config.Store == nil {
-			return fmt.Errorf("Because %T.Store is nil, %T cannot be used", *config, *sm)
-		}
-	}
 	if config == nil {
 		return nil
 	}
@@ -89,16 +75,16 @@ func (sess Session) Clear() {
 	}
 }
 
-func newSessionCookie(c *Controller) *http.Cookie {
-	expires, maxAge := expiresFromDuration(appConfig.Session.CookieExpires)
+func newSessionCookie(app *Application, c *Controller) *http.Cookie {
+	expires, maxAge := expiresFromDuration(app.Config.Session.CookieExpires)
 	return &http.Cookie{
-		Name:     appConfig.Session.Name,
+		Name:     app.Config.Session.Name,
 		Value:    "",
 		Path:     "/",
 		Expires:  expires,
 		MaxAge:   maxAge,
 		Secure:   c.Request.IsSSL(),
-		HttpOnly: appConfig.Session.HttpOnly,
+		HttpOnly: app.Config.Session.HttpOnly,
 	}
 }
 
