@@ -296,9 +296,9 @@ func (c *Controller) buildContext(context []interface{}) (interface{}, error) {
 	return c.Context, nil
 }
 
-// Invoke is an alias to Invoke(unit, newFunc, defaultFunc).
+// Invoke is shorthand of c.App.Invoke.
 func (c *Controller) Invoke(unit Unit, newFunc func(), defaultFunc func()) {
-	Invoke(unit, newFunc, defaultFunc)
+	c.App.Invoke(unit, newFunc, defaultFunc)
 }
 
 // Errors returns map of errors that relate to the form values.

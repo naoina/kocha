@@ -261,7 +261,7 @@ func (t *Template) invokeTemplate(unit Unit, tmplName, defTmplName string, conte
 	default:
 		return "", fmt.Errorf("number of context must be 0 or 1")
 	}
-	Invoke(unit, func() {
+	t.app.Invoke(unit, func() {
 		html, err = t.readPartialTemplate(tmplName, ctx)
 	}, func() {
 		html, err = t.readPartialTemplate(defTmplName, ctx)

@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"sync"
 
 	"github.com/joho/godotenv"
 	"github.com/naoina/miyabi"
@@ -60,11 +61,17 @@ type Application struct {
 
 	// ResourceSet is set of resource of an application.
 	ResourceSet ResourceSet
+
+	failedUnits map[string]struct{}
+	mu          sync.RWMutex
 }
 
 // New returns a new Application that configured by config.
 func New(config *Config) (*Application, error) {
-	app := &Application{Config: config}
+	app := &Application{
+		Config:      config,
+		failedUnits: make(map[string]struct{}),
+	}
 	if app.Config.Addr == "" {
 		config.Addr = DefaultHttpAddr
 	}
@@ -99,6 +106,34 @@ func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		args = []reflect.Value{}
 	}
 	app.render(w, r, controller, method, args)
+}
+
+// Invoke invokes newFunc.
+// It invokes newFunc but will behave to fallback.
+// When unit.ActiveIf returns false or any errors occurred in invoking, it invoke the defaultFunc if defaultFunc isn't nil.
+// Also if any errors occurred at least once, next invoking will always invoke the defaultFunc.
+func (app *Application) Invoke(unit Unit, newFunc func(), defaultFunc func()) {
+	name := reflect.TypeOf(unit).String()
+	defer func() {
+		if err := recover(); err != nil {
+			if err != ErrInvokeDefault {
+				logStackAndError(err)
+				app.mu.Lock()
+				app.failedUnits[name] = struct{}{}
+				app.mu.Unlock()
+			}
+			if defaultFunc != nil {
+				defaultFunc()
+			}
+		}
+	}()
+	app.mu.RLock()
+	_, failed := app.failedUnits[name]
+	app.mu.RUnlock()
+	if failed || !unit.ActiveIf() {
+		panic(ErrInvokeDefault)
+	}
+	newFunc()
 }
 
 func (app *Application) buildRouter() error {
