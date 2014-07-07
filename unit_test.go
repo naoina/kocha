@@ -1,8 +1,10 @@
-package kocha
+package kocha_test
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/naoina/kocha"
 )
 
 type testUnit struct {
@@ -22,12 +24,12 @@ func (u *testUnit2) ActiveIf() bool {
 	return true
 }
 
-func Test_Invoke(t *testing.T) {
+func TestInvoke(t *testing.T) {
 	// test that it invokes newFunc when ActiveIf returns true.
 	testInvokeWrapper(func() {
 		unit := &testUnit{"test1", true, 0}
 		called := false
-		Invoke(unit, func() {
+		kocha.Invoke(unit, func() {
 			called = true
 		}, func() {
 			t.Errorf("defaultFunc has been called")
@@ -43,7 +45,7 @@ func Test_Invoke(t *testing.T) {
 	testInvokeWrapper(func() {
 		unit := &testUnit{"test2", false, 0}
 		called := false
-		Invoke(unit, func() {
+		kocha.Invoke(unit, func() {
 			t.Errorf("newFunc has been called")
 		}, func() {
 			called = true
@@ -59,7 +61,7 @@ func Test_Invoke(t *testing.T) {
 	testInvokeWrapper(func() {
 		unit := &testUnit{"test3", true, 0}
 		called := false
-		Invoke(unit, func() {
+		kocha.Invoke(unit, func() {
 			panic("expected error")
 		}, func() {
 			called = true
@@ -81,7 +83,7 @@ func Test_Invoke(t *testing.T) {
 			}
 		}()
 		unit := &testUnit{"test4", false, 0}
-		Invoke(unit, func() {
+		kocha.Invoke(unit, func() {
 			t.Errorf("newFunc has been called")
 		}, func() {
 			panic("expected error in defaultFunc")
@@ -99,7 +101,7 @@ func Test_Invoke(t *testing.T) {
 		}()
 		unit := &testUnit{"test5", true, 0}
 		called := false
-		Invoke(unit, func() {
+		kocha.Invoke(unit, func() {
 			called = true
 			panic("expected error")
 		}, func() {
@@ -114,7 +116,7 @@ func Test_Invoke(t *testing.T) {
 
 	testInvokeWrapper(func() {
 		unit := &testUnit{"test6", true, 0}
-		Invoke(unit, func() {
+		kocha.Invoke(unit, func() {
 			panic("expected error")
 		}, func() {
 			// do nothing.
@@ -126,7 +128,7 @@ func Test_Invoke(t *testing.T) {
 		}
 
 		// again.
-		Invoke(unit, func() {
+		kocha.Invoke(unit, func() {
 			t.Errorf("newFunc has been called")
 		}, func() {
 			// do nothing.
@@ -140,7 +142,7 @@ func Test_Invoke(t *testing.T) {
 		// same unit type.
 		unit = &testUnit{"test7", true, 0}
 		called := false
-		Invoke(unit, func() {
+		kocha.Invoke(unit, func() {
 			t.Errorf("newFunc has been called")
 		}, func() {
 			called = true
@@ -154,7 +156,7 @@ func Test_Invoke(t *testing.T) {
 		// different unit type.
 		unit2 := &testUnit2{}
 		called = false
-		Invoke(unit2, func() {
+		kocha.Invoke(unit2, func() {
 			called = true
 		}, func() {
 			t.Errorf("defaultFunc has been called")

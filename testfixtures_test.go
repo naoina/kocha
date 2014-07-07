@@ -1,136 +1,91 @@
-package kocha
+package kocha_test
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
+	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/naoina/kocha"
 )
 
-func newTestAppConfig() *AppConfig {
-	config := &AppConfig{
-		AppPath:       "apppath/appname",
+func newTestApp() *kocha.Application {
+	config := &kocha.Config{
+		AppPath:       "testdata",
 		AppName:       "appname",
 		DefaultLayout: "app",
-		TemplateSet:   TemplateSet{},
-		RouteTable: RouteTable{
+		Template: &kocha.Template{
+			PathInfo: kocha.TemplatePathInfo{
+				Name: "appname",
+				Paths: []string{
+					filepath.Join("testdata", "app", "views"),
+				},
+			},
+		},
+		RouteTable: kocha.RouteTable{
 			{
 				Name:       "root",
 				Path:       "/",
 				Controller: FixtureRootTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {},
-				},
 			},
 			{
 				Name:       "user",
 				Path:       "/user/:id",
 				Controller: FixtureUserTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {
-						"id": "int",
-					},
-				},
 			},
 			{
 				Name:       "date",
 				Path:       "/:year/:month/:day/user/:name",
 				Controller: FixtureDateTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {
-						"year":  "int",
-						"month": "int",
-						"day":   "int",
-						"name":  "string",
-					},
-				},
 			},
 			{
 				Name:       "error",
 				Path:       "/error",
 				Controller: FixtureErrorTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {},
-				},
 			},
 			{
 				Name:       "json",
 				Path:       "/json",
 				Controller: FixtureJsonTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {},
-				},
 			},
 			{
 				Name:       "teapot",
 				Path:       "/teapot",
 				Controller: FixtureTeapotTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {},
-				},
 			},
 			{
 				Name:       "panic_in_render",
 				Path:       "/panic_in_render",
 				Controller: FixturePanicInRenderTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {},
-				},
 			},
 			{
 				Name:       "static",
 				Path:       "/static/*path",
 				Controller: StaticServe{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {
-						"path": "*url.URL",
-					},
-				},
 			},
 			{
 				Name:       "post_test",
 				Path:       "/post_test",
 				Controller: FixturePostTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Post": {},
-				},
 			},
 		},
-		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
-		Session: &SessionConfig{
+		Middlewares: append(kocha.DefaultMiddlewares, []kocha.Middleware{}...),
+		Session: &kocha.SessionConfig{
 			Name:  "test_session",
 			Store: newTestSessionCookieStore(),
 		},
-		MaxClientBodySize: DefaultMaxClientBodySize,
+		MaxClientBodySize: kocha.DefaultMaxClientBodySize,
 	}
-	config.templateMap = templateMap{
-		"appname": {
-			"app": {
-				"html": {
-					"fixture_root_test_ctrl":   template.Must(template.New("tmpl1").Parse(`tmpl1`)),
-					"fixture_user_test_ctrl":   template.Must(template.New("tmpl2").Parse(`tmpl2-{{.id}}`)),
-					"fixture_date_test_ctrl":   template.Must(template.New("tmpl3").Parse(`tmpl3-{{.name}}-{{.year}}-{{.month}}-{{.day}}`)),
-					"fixture_error_test_ctrl":  template.Must(template.New("tmpl4").Parse(`tmpl4`)),
-					"fixture_teapot_test_ctrl": template.Must(template.New("tmpl6").Parse(`teapot`)),
-					"fixture_post_test_ctrl":   template.Must(template.New("tmpl7").Parse(`tmpl7-{{.params}}`)),
-				},
-				"json": {
-					"fixture_json_test_ctrl": template.Must(template.New("tmpl5").Parse(`{"tmpl5":"json"}`)),
-				},
-			},
-		},
-	}
-	router, err := config.RouteTable.buildRouter()
+	app, err := kocha.New(config)
 	if err != nil {
 		panic(err)
 	}
-	config.router = router
-	return config
+	return app
 }
 
-func newTestSessionCookieStore() *SessionCookieStore {
-	return &SessionCookieStore{
+func newTestSessionCookieStore() *kocha.SessionCookieStore {
+	return &kocha.SessionCookieStore{
 		SecretKey:  "abcdefghijklmnopqrstuvwxyzABCDEF",
 		SigningKey: "abcdefghijklmn",
 	}
@@ -170,28 +125,28 @@ func (m orderedOutputMap) GoString() string {
 	return fmt.Sprintf("map[string]interface{}{%v}", strings.Join(keys, ", "))
 }
 
-type FixturePanicInRenderTestCtrl struct{ *Controller }
+type FixturePanicInRenderTestCtrl struct{ *kocha.Controller }
 
-func (c *FixturePanicInRenderTestCtrl) Get() Result {
+func (c *FixturePanicInRenderTestCtrl) Get() kocha.Result {
 	return c.RenderXML(Context{}) // Context is unsupported type in XML.
 }
 
 type FixtureUserTestCtrl struct {
-	*Controller
+	*kocha.Controller
 }
 
-func (c *FixtureUserTestCtrl) Get(id int) Result {
-	return c.Render(Context{
+func (c *FixtureUserTestCtrl) Get(id int) kocha.Result {
+	return c.Render(kocha.Context{
 		"id": id,
 	})
 }
 
 type FixtureDateTestCtrl struct {
-	Controller
+	kocha.Controller
 }
 
-func (c *FixtureDateTestCtrl) Get(year, month int, day int, name string) Result {
-	return c.Render(Context{
+func (c *FixtureDateTestCtrl) Get(year, month int, day int, name string) kocha.Result {
+	return c.Render(kocha.Context{
 		"year":  year,
 		"month": month,
 		"day":   day,
@@ -200,68 +155,67 @@ func (c *FixtureDateTestCtrl) Get(year, month int, day int, name string) Result 
 }
 
 type FixtureErrorTestCtrl struct {
-	Controller
+	kocha.Controller
 }
 
-func (c *FixtureErrorTestCtrl) Get() Result {
+func (c *FixtureErrorTestCtrl) Get() kocha.Result {
 	panic("panic test")
-	return c.Render()
 }
 
 type FixtureJsonTestCtrl struct {
-	Controller
+	kocha.Controller
 }
 
-func (c *FixtureJsonTestCtrl) Get() Result {
+func (c *FixtureJsonTestCtrl) Get() kocha.Result {
 	c.Response.ContentType = "application/json"
 	return c.Render()
 }
 
 type FixtureRootTestCtrl struct {
-	*Controller
+	*kocha.Controller
 }
 
-func (c *FixtureRootTestCtrl) Get() Result {
+func (c *FixtureRootTestCtrl) Get() kocha.Result {
 	return c.Render()
 }
 
 type FixtureTeapotTestCtrl struct {
-	Controller
+	kocha.Controller
 }
 
-func (c *FixtureTeapotTestCtrl) Get() Result {
+func (c *FixtureTeapotTestCtrl) Get() kocha.Result {
 	c.Response.StatusCode = http.StatusTeapot
 	return c.Render()
 }
 
 type FixtureInvalidReturnValueTypeTestCtrl struct {
-	*Controller
+	*kocha.Controller
 }
 
 func (c *FixtureInvalidReturnValueTypeTestCtrl) Get() string {
 	return ""
 }
 
-type FixtureInvalidNumberOfReturnValueTestCtrl struct{ *Controller }
+type FixtureInvalidNumberOfReturnValueTestCtrl struct{ *kocha.Controller }
 
-func (c *FixtureInvalidNumberOfReturnValueTestCtrl) Get() (Result, Result) {
+func (c *FixtureInvalidNumberOfReturnValueTestCtrl) Get() (kocha.Result, kocha.Result) {
 	return c.RenderText(""), c.RenderText("")
 }
 
-type FixtureTypeUndefinedCtrl struct{ *Controller }
+type FixtureTypeUndefinedCtrl struct{ *kocha.Controller }
 
-func (c *FixtureTypeUndefinedCtrl) Get(id int32) Result {
+func (c *FixtureTypeUndefinedCtrl) Get(id int32) kocha.Result {
 	return c.RenderText("")
 }
 
 type FixturePostTestCtrl struct {
-	*Controller
+	*kocha.Controller
 }
 
-func (c *FixturePostTestCtrl) Post() Result {
+func (c *FixturePostTestCtrl) Post() kocha.Result {
 	m := orderedOutputMap{}
 	for k, v := range c.Params.Values {
 		m[k] = v
 	}
-	return c.Render(Context{"params": m})
+	return c.Render(kocha.Context{"params": m})
 }

@@ -1,4 +1,4 @@
-package kocha
+package kocha_test
 
 import (
 	"net/url"

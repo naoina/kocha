@@ -1,9 +1,8 @@
-package kocha
+package kocha_test
 
 import (
 	"encoding/xml"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"mime"
 	"net/http"
@@ -13,47 +12,17 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/naoina/kocha"
 )
 
-func newControllerTestAppConfig() *AppConfig {
-	config := &AppConfig{
-		AppPath:     "testAppPath",
-		AppName:     "testAppName",
-		TemplateSet: TemplateSet{},
-	}
-	config.templateMap = templateMap{
-		"testAppName": {
-			"app": {
-				"html": {
-					"testctrlr":     template.Must(template.New("tmpl1").Parse(`tmpl1`)),
-					"testctrlr_ctx": template.Must(template.New("tmpl1_ctx").Parse(`tmpl_ctx: {{.}}`)),
-					"errors/500":    template.Must(template.New("tmpl3").Parse(`500 error`)),
-					"errors/400":    template.Must(template.New("tmpl4").Parse(`400 error`)),
-				},
-				"json": {
-
-					"testctrlr":     template.Must(template.New("tmpl2").Parse(`{"tmpl2":"content"}`)),
-					"testctrlr_ctx": template.Must(template.New("tmpl2_ctx").Parse("tmpl2_ctx: {{.}}")),
-					"errors/500":    template.Must(template.New("tmpl5").Parse(`{"error":500}`)),
-				},
-			},
-			"anotherLayout": {
-				"html": {
-					"testctrlr": template.Must(template.New("a_tmpl1").Parse(`<b>a_tmpl1</b>`)),
-				},
-			},
-		},
-	}
-	return config
-}
-
-func newTestController(name, layout string) *Controller {
+func newTestController(name, layout string) *kocha.Controller {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		panic(err)
 	}
 	w := httptest.NewRecorder()
-	return &Controller{
+	return &kocha.Controller{
 		Name:     name,
 		Layout:   layout,
 		Request:  newRequest(req),
@@ -63,7 +32,7 @@ func newTestController(name, layout string) *Controller {
 }
 
 func TestMimeTypeFormats(t *testing.T) {
-	actual := MimeTypeFormats
+	actual := kocha.MimeTypeFormats
 	expected := mimeTypeFormats{
 		"application/json": "json",
 		"application/xml":  "xml",
@@ -120,7 +89,7 @@ func TestMimeTypeFormatsDel(t *testing.T) {
 
 func TestControllerRender_with_too_many_contexts(t *testing.T) {
 	oldAppConfig := appConfig
-	appConfig = newControllerTestAppConfig()
+	appConfig = newControllerTestApp()
 	defer func() {
 		appConfig = oldAppConfig
 		if err := recover(); err == nil {
@@ -133,7 +102,7 @@ func TestControllerRender_with_too_many_contexts(t *testing.T) {
 
 func TestControllerRender_without_Context(t *testing.T) {
 	oldAppConfig := appConfig
-	appConfig = newControllerTestAppConfig()
+	appConfig = newControllerTestApp()
 	defer func() {
 		appConfig = oldAppConfig
 	}()
@@ -157,7 +126,7 @@ func TestControllerRender_without_Context(t *testing.T) {
 
 func TestControllerRender_with_Context(t *testing.T) {
 	oldAppConfig := appConfig
-	appConfig = newControllerTestAppConfig()
+	appConfig = newControllerTestApp()
 	defer func() {
 		appConfig = oldAppConfig
 	}()
@@ -302,7 +271,7 @@ func TestControllerRender_with_Context(t *testing.T) {
 
 func TestControllerRender_with_ContentType(t *testing.T) {
 	oldAppConfig := appConfig
-	appConfig = newControllerTestAppConfig()
+	appConfig = newControllerTestApp()
 	defer func() {
 		appConfig = oldAppConfig
 	}()
@@ -321,7 +290,7 @@ func TestControllerRender_with_ContentType(t *testing.T) {
 
 func TestControllerRender_with_missing_Template_in_AppName(t *testing.T) {
 	oldAppConfig := appConfig
-	appConfig = newControllerTestAppConfig()
+	appConfig = newControllerTestApp()
 	defer func() {
 		appConfig = oldAppConfig
 		if err := recover(); err == nil {
@@ -335,7 +304,7 @@ func TestControllerRender_with_missing_Template_in_AppName(t *testing.T) {
 
 func TestControllerRender_with_missing_Template(t *testing.T) {
 	oldAppConfig := appConfig
-	appConfig = newControllerTestAppConfig()
+	appConfig = newControllerTestApp()
 	defer func() {
 		appConfig = oldAppConfig
 		if err := recover(); err == nil {
@@ -349,7 +318,7 @@ func TestControllerRender_with_missing_Template(t *testing.T) {
 
 func TestControllerRender_with_another_layout(t *testing.T) {
 	oldAppConfig := appConfig
-	appConfig = newControllerTestAppConfig()
+	appConfig = newControllerTestApp()
 	defer func() {
 		appConfig = oldAppConfig
 	}()
@@ -420,7 +389,7 @@ func TestControllerRenderText(t *testing.T) {
 
 func TestControllerRenderError(t *testing.T) {
 	oldAppConfig := appConfig
-	appConfig = newControllerTestAppConfig()
+	appConfig = newControllerTestApp()
 	defer func() {
 		appConfig = oldAppConfig
 	}()
@@ -553,7 +522,7 @@ func TestControllerSendFile(t *testing.T) {
 		defer tmpFile.Close()
 		defer os.RemoveAll(tmpDir)
 		oldAppConfig := appConfig
-		appConfig = newControllerTestAppConfig()
+		appConfig = newControllerTestApp()
 		appConfig.AppPath = filepath.Dir(tmpDir)
 		defer func() {
 			appConfig = oldAppConfig
@@ -581,7 +550,7 @@ func TestControllerSendFile(t *testing.T) {
 	// test file not found
 	func() {
 		oldAppConfig := appConfig
-		appConfig = newControllerTestAppConfig()
+		appConfig = newControllerTestApp()
 		defer func() {
 			appConfig = oldAppConfig
 		}()
@@ -771,7 +740,7 @@ func TestControllerHasError(t *testing.T) {
 
 func TestStaticServeGet(t *testing.T) {
 	oldAppConfig := appConfig
-	appConfig = newControllerTestAppConfig()
+	appConfig = newControllerTestApp()
 	defer func() {
 		appConfig = oldAppConfig
 	}()
@@ -814,7 +783,7 @@ func TestNewErrorController(t *testing.T) {
 
 func TestErrorControllerGet(t *testing.T) {
 	oldAppConfig := appConfig
-	appConfig = newControllerTestAppConfig()
+	appConfig = newControllerTestApp()
 	defer func() {
 		appConfig = oldAppConfig
 	}()

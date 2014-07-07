@@ -1,4 +1,4 @@
-package kocha
+package kocha_test
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"testing/quick"
+
+	"github.com/naoina/kocha"
 )
 
 func Test_Constants(t *testing.T) {
@@ -65,8 +67,8 @@ func Test_SessionConfig_Validate(t *testing.T) {
 
 type ValidateTestSessionStore struct{ validated bool }
 
-func (s *ValidateTestSessionStore) Save(sess Session) string { return "" }
-func (s *ValidateTestSessionStore) Load(key string) Session  { return nil }
+func (s *ValidateTestSessionStore) Save(sess kocha.Session) string { return "" }
+func (s *ValidateTestSessionStore) Load(key string) kocha.Session  { return nil }
 func (s *ValidateTestSessionStore) Validate() error {
 	s.validated = true
 	return fmt.Errorf("")
