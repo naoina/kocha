@@ -74,6 +74,12 @@ func (t *Template) buildFuncMap() (*Template, error) {
 
 // buildTemplateMap returns templateMap constructed from templateSet.
 func (t *Template) buildTemplateMap() (*Template, error) {
+	if data := t.app.ResourceSet.Get("_kocha_template_map"); data != nil {
+		if m, ok := data.(templateMap); ok {
+			t.m = templateMap(m)
+			return t, nil
+		}
+	}
 	layoutPaths := make(map[string]map[string]map[string]string)
 	templatePaths := make(map[string]map[string]map[string]string)
 	templateSet := templateMap{}
