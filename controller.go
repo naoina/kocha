@@ -223,8 +223,8 @@ func (c *Controller) RenderError(statusCode int, context ...interface{}) Result 
 func (c *Controller) SendFile(path string) Result {
 	var file io.ReadSeeker
 	path = filepath.FromSlash(path)
-	if rc, ok := includedResources[path]; ok {
-		file = rc.Open()
+	if rc := c.App.ResourceSet.Get(path); rc != nil {
+		file = bytes.NewReader(rc.([]byte))
 	} else {
 		if !filepath.IsAbs(path) {
 			path = filepath.Join(c.App.Config.AppPath, StaticDir, path)

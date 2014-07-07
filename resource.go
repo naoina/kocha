@@ -1,27 +1,17 @@
 package kocha
 
-import (
-	"bytes"
-	"io"
-)
+// ResourceSet represents a set of pre-loaded resources.
+type ResourceSet map[string]interface{}
 
-var (
-	// All pre-loaded resources
-	includedResources = make(map[string]*resource)
-)
-
-// AddResource adds pre-loaded resource.
-func AddResource(name, data string) {
-	includedResources[name] = &resource{[]byte(data)}
+// Add adds pre-loaded resource.
+func (rs *ResourceSet) Add(name string, data interface{}) {
+	if *rs == nil {
+		*rs = ResourceSet{}
+	}
+	(*rs)[name] = data
 }
 
-// resource is represents a pre-loaded resource.
-type resource struct {
-	// Data of resource.
-	data []byte
-}
-
-// Open returns io.ReadSeeker of resource data.
-func (r *resource) Open() io.ReadSeeker {
-	return bytes.NewReader(r.data)
+// Get gets pre-loaded resource by name.
+func (rs ResourceSet) Get(name string) interface{} {
+	return rs[name]
 }

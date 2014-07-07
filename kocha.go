@@ -57,6 +57,9 @@ type Application struct {
 
 	// Template is template sets of an application.
 	Template *Template
+
+	// ResourceSet is set of resource of an application.
+	ResourceSet ResourceSet
 }
 
 // New returns a new Application that configured by config.
@@ -69,6 +72,9 @@ func New(config *Config) (*Application, error) {
 		config.MaxClientBodySize = DefaultMaxClientBodySize
 	}
 	if err := app.validateSessionConfig(); err != nil {
+		return nil, err
+	}
+	if err := app.buildResourceSet(); err != nil {
 		return nil, err
 	}
 	if err := app.buildTemplate(); err != nil {
@@ -101,6 +107,11 @@ func (app *Application) buildRouter() error {
 		return err
 	}
 	app.Router = router
+	return nil
+}
+
+func (app *Application) buildResourceSet() error {
+	app.ResourceSet = app.Config.ResourceSet
 	return nil
 }
 
@@ -203,6 +214,8 @@ type Config struct {
 	Middlewares       []Middleware
 	Session           *SessionConfig
 	MaxClientBodySize int64
+
+	ResourceSet ResourceSet
 }
 
 // SettingEnv is similar to os.Getenv.
