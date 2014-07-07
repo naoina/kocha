@@ -116,7 +116,7 @@ func (app *Application) buildResourceSet() error {
 }
 
 func (app *Application) buildTemplate() error {
-	t, err := newTemplate(app).build()
+	t, err := app.Config.Template.build(app)
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ type Config struct {
 	AppPath           string
 	AppName           string
 	DefaultLayout     string
-	TemplateSet       TemplateSet
+	Template          *Template
 	RouteTable        RouteTable
 	Logger            *Logger
 	Middlewares       []Middleware

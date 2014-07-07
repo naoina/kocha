@@ -14,8 +14,6 @@ import (
 	"github.com/naoina/kocha/util"
 )
 
-type TemplateSet []*TemplatePathInfo
-
 // TemplatePathInfo represents an information of template paths.
 type TemplatePathInfo struct {
 	// Name of application.
@@ -29,14 +27,12 @@ type TemplatePathInfo struct {
 }
 
 type Template struct {
-	FuncMap template.FuncMap
+	PathInfo TemplatePathInfo
+	FuncMap  TemplateFuncMap
 
-	m   templateMap
-	app *Application
-}
-
-func newTemplate(app *Application) *Template {
-	return &Template{app: app}
+	m       templateMap
+	funcMap template.FuncMap
+	app     *Application
 }
 
 // Get gets a parsed template.
@@ -48,7 +44,8 @@ func (t *Template) Ident(appName, layoutName, name, format string) string {
 	return fmt.Sprintf("%s:%s %s.%s", appName, layoutName, util.ToSnakeCase(name), format)
 }
 
-func (t *Template) build() (*Template, error) {
+func (t *Template) build(app *Application) (*Template, error) {
+	t.app = app
 	t, err := t.buildFuncMap()
 	if err != nil {
 		return nil, err
@@ -61,7 +58,7 @@ func (t *Template) build() (*Template, error) {
 }
 
 func (t *Template) buildFuncMap() (*Template, error) {
-	t.FuncMap = template.FuncMap{
+	m := template.FuncMap{
 		"in":              t.in,
 		"url":             t.url,
 		"nl2br":           t.nl2br,
@@ -69,6 +66,10 @@ func (t *Template) buildFuncMap() (*Template, error) {
 		"invoke_template": t.invokeTemplate,
 		"date":            t.date,
 	}
+	for name, fn := range t.FuncMap {
+		m[name] = fn
+	}
+	t.funcMap = m
 	return t, nil
 }
 
@@ -83,11 +84,10 @@ func (t *Template) buildTemplateMap() (*Template, error) {
 	layoutPaths := make(map[string]map[string]map[string]string)
 	templatePaths := make(map[string]map[string]map[string]string)
 	templateSet := templateMap{}
-	for _, info := range t.app.Config.TemplateSet {
-		if info.AppTemplateSet != nil {
-			templateSet[info.Name] = info.AppTemplateSet
-			continue
-		}
+	info := t.PathInfo
+	if info.AppTemplateSet != nil {
+		templateSet[info.Name] = info.AppTemplateSet
+	} else {
 		info.AppTemplateSet = appTemplateSet{}
 		templateSet[info.Name] = info.AppTemplateSet
 		layoutPaths[info.Name] = make(map[string]map[string]string)
@@ -115,6 +115,8 @@ func (t *Template) buildTemplateMap() (*Template, error) {
 	t.m = templateSet
 	return t, nil
 }
+
+type TemplateFuncMap template.FuncMap
 
 type templateMap map[string]appTemplateSet
 type appTemplateSet map[string]map[string]map[string]*template.Template
@@ -186,7 +188,7 @@ func (t *Template) buildSingleAppTemplateSet(appTemplateSet appTemplateSet, temp
 			if err != nil {
 				return err
 			}
-			t := template.Must(template.New(name).Funcs(t.FuncMap).Parse(string(templateBytes)))
+			t := template.Must(template.New(name).Funcs(t.funcMap).Parse(string(templateBytes)))
 			layoutTemplateSet[ext][name] = t
 		}
 	}
@@ -205,7 +207,7 @@ func (t *Template) buildLayoutAppTemplateSet(appTemplateSet appTemplateSet, layo
 			}
 			for name, path := range templates[ext] {
 				// do not use the layoutTemplate.Clone() in order to retrieve layout as string by `kocha build`
-				layout := template.Must(template.New("layout").Funcs(t.FuncMap).Parse(string(layoutBytes)))
+				layout := template.Must(template.New("layout").Funcs(t.funcMap).Parse(string(layoutBytes)))
 				t := template.Must(layout.ParseFiles(path))
 				layoutTemplateSet[ext][name] = t
 			}
