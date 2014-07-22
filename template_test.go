@@ -1,25 +1,30 @@
-package kocha
+package kocha_test
 
 import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/naoina/kocha"
 )
 
-func TestTemplateFuncs_in_with_invalid_type(t *testing.T) {
-	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{in 1 1}}`))
+func TestTemplate_FuncMap_in_withInvalidType(t *testing.T) {
+	app := kocha.NewTestApp()
+	funcMap := template.FuncMap(app.Template.FuncMap)
+	tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{in 1 1}}`))
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, nil); err == nil {
 		t.Errorf("Expect errors, but no errors")
 	}
 }
 
-func TestTemplateFuncs_in(t *testing.T) {
-	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{in . "a"}}`))
+func TestTemplate_FuncMap_in(t *testing.T) {
+	app := kocha.NewTestApp()
+	funcMap := template.FuncMap(app.Template.FuncMap)
+	tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{in . "a"}}`))
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, []string{"b", "a", "c"}); err != nil {
 		panic(err)
@@ -41,37 +46,41 @@ func TestTemplateFuncs_in(t *testing.T) {
 	}
 }
 
-func TestTemplateFuncs_url(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newTestAppConfig()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
-	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{url "root"}}`))
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, nil); err != nil {
-		panic(err)
-	}
-	actual := buf.String()
-	expected := "/"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %q, but %q", expected, actual)
-	}
+func TestTemplate_FuncMap_url(t *testing.T) {
+	app := kocha.NewTestApp()
+	funcMap := template.FuncMap(app.Template.FuncMap)
 
-	tmpl = template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{url "user" 713}}`))
-	buf.Reset()
-	if err := tmpl.Execute(&buf, nil); err != nil {
-		panic(err)
-	}
-	actual = buf.String()
-	expected = "/user/713"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
+	func() {
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{url "root"}}`))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, nil); err != nil {
+			panic(err)
+		}
+		actual := buf.String()
+		expected := "/"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %q, but %q", expected, actual)
+		}
+	}()
+
+	func() {
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{url "user" 713}}`))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, nil); err != nil {
+			panic(err)
+		}
+		actual := buf.String()
+		expected := "/user/713"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
 }
 
-func TestTemplateFuncs_nl2br(t *testing.T) {
-	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{nl2br "a\nb\nc\n"}}`))
+func TestTemplate_FuncMap_nl2br(t *testing.T) {
+	app := kocha.NewTestApp()
+	funcMap := template.FuncMap(app.Template.FuncMap)
+	tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{nl2br "a\nb\nc\n"}}`))
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, nil); err != nil {
 		panic(err)
@@ -83,8 +92,10 @@ func TestTemplateFuncs_nl2br(t *testing.T) {
 	}
 }
 
-func TestTemplateFuncs_raw(t *testing.T) {
-	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{raw "\n<br>"}}`))
+func TestTemplate_FuncMap_raw(t *testing.T) {
+	app := kocha.NewTestApp()
+	funcMap := template.FuncMap(app.Template.FuncMap)
+	tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{raw "\n<br>"}}`))
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, nil); err != nil {
 		panic(err)
@@ -96,119 +107,118 @@ func TestTemplateFuncs_raw(t *testing.T) {
 	}
 }
 
-func TestTemplateFuncs_invoke_template(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newTestAppConfig()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
-	appConfig.templateMap = templateMap{
-		appConfig.AppName: {
-			"": {
-				"html": {
-					"def_tmpl":   template.Must(template.New("def_tmpl").Parse(`<div>def_tmpl:{{.}}</div>`)),
-					"test_tmpl1": template.Must(template.New("test_tmpl1").Parse(`<div>test_tmpl1:{{.}}</div>`)),
-					"test_tmpl2": template.Must(template.New("test_tmpl2").Parse(`<div>test_tmpl2:{{.}}</div>`)),
-				},
-			},
-		},
-	}
-
+func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 	// test that if ActiveIf returns true.
-	testInvokeWrapper(func() {
+	func() {
+		app := kocha.NewTestApp()
+		funcMap := template.FuncMap(app.Template.FuncMap)
 		unit := &testUnit{"test1", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl"}}`))
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl"}}`))
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, unit); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		actual := buf.String()
-		expected := "<div>test_tmpl1:</div>"
+		expected := "test_tmpl1: \n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}
-	})
+	}()
 
 	// test that if ActiveIf returns false.
-	testInvokeWrapper(func() {
+	func() {
+		app := kocha.NewTestApp()
+		funcMap := template.FuncMap(app.Template.FuncMap)
 		unit := &testUnit{"test2", false, 0}
-		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl"}}`))
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl"}}`))
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, unit); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		actual := buf.String()
-		expected := "<div>def_tmpl:</div>"
+		expected := "def_tmpl: \n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}
-	})
+	}()
 
 	// test that unknown template.
-	testInvokeWrapper(func() {
+	func() {
+		app := kocha.NewTestApp()
+		funcMap := template.FuncMap(app.Template.FuncMap)
 		unit := &testUnit{"test3", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "unknown_tmpl" "def_tmpl"}}`))
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "unknown_tmpl" "def_tmpl"}}`))
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, unit); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		actual := buf.String()
-		expected := "<div>def_tmpl:</div>"
+		expected := "def_tmpl: \n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}
-	})
+	}()
 
 	// test that unknown templates.
-	testInvokeWrapper(func() {
+	func() {
+		app := kocha.NewTestApp()
+		funcMap := template.FuncMap(app.Template.FuncMap)
 		unit := &testUnit{"test4", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "unknown_tmpl" "unknown_def_tmpl"}}`))
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "unknown_tmpl" "unknown_def_tmpl"}}`))
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, unit); err == nil {
 			t.Errorf("no error returned by unknown template")
 		}
-	})
+	}()
 
 	// test that unknown default template.
-	testInvokeWrapper(func() {
+	func() {
+		app := kocha.NewTestApp()
+		funcMap := template.FuncMap(app.Template.FuncMap)
 		unit := &testUnit{"test5", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "test_tmpl1" "unknown"}}`))
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "test_tmpl1" "unknown"}}`))
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, unit); err != nil {
 			t.Errorf("no error returned by unknown default template")
 		}
-	})
+	}()
 
 	// test that single context.
-	testInvokeWrapper(func() {
+	func() {
+		app := kocha.NewTestApp()
+		funcMap := template.FuncMap(app.Template.FuncMap)
 		unit := &testUnit{"test6", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl" "ctx"}}`))
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl" "ctx"}}`))
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, unit); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		actual := buf.String()
-		expected := "<div>test_tmpl1:ctx</div>"
+		expected := "test_tmpl1: ctx\n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}
-	})
+	}()
 
 	// test that too many contexts.
-	testInvokeWrapper(func() {
+	func() {
+		app := kocha.NewTestApp()
+		funcMap := template.FuncMap(app.Template.FuncMap)
 		unit := &testUnit{"test7", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl" "ctx" "over"}}`))
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl" "ctx" "over"}}`))
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, unit); err == nil {
 			t.Errorf("no error returned by too many number of context")
 		}
-	})
+	}()
 }
 
-func TestTemplateFuncs_date(t *testing.T) {
+func TestTemplate_FuncMap_date(t *testing.T) {
+	app := kocha.NewTestApp()
+	funcMap := template.FuncMap(app.Template.FuncMap)
 	base := `{{date . "%v"}}`
 	now := time.Now()
-	tmpl := template.Must(template.New("test").Funcs(TemplateFuncs).Parse(fmt.Sprintf(base, "2006/01/02 15:04:05.999999999")))
+	tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(fmt.Sprintf(base, "2006/01/02 15:04:05.999999999")))
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, now); err != nil {
 		panic(err)
@@ -219,7 +229,7 @@ func TestTemplateFuncs_date(t *testing.T) {
 		t.Errorf("Expect %q, but %q", expected, actual)
 	}
 
-	tmpl = template.Must(template.New("test").Funcs(TemplateFuncs).Parse(fmt.Sprintf(base, "Jan 02 2006 03:04.999999999")))
+	tmpl = template.Must(template.New("test").Funcs(funcMap).Parse(fmt.Sprintf(base, "Jan 02 2006 03:04.999999999")))
 	buf.Reset()
 	if err := tmpl.Execute(&buf, now); err != nil {
 		panic(err)
@@ -231,60 +241,80 @@ func TestTemplateFuncs_date(t *testing.T) {
 	}
 }
 
-func TestTemplateMap_Get(t *testing.T) {
-	templateMap := templateMap{
-		"testAppName": {
-			"app": {
-				"html": {
-					"test_tmpl1": template.Must(template.New("test_tmpl1").Parse(``)),
-				},
-				"js": {
-					"test_tmpl1": template.Must(template.New("test_tmpl1").Parse(``)),
-				},
-			},
-			"anotherLayout": {
-				"html": {
-					"test_tmpl1": template.Must(template.New("test_tmpl1").Parse(``)),
-				},
-			},
-		},
-	}
-	actual := templateMap.Get("testAppName", "app", "test_tmpl1", "html")
-	expected := templateMap["testAppName"]["app"]["html"]["test_tmpl1"]
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
+func TestTemplate_Get(t *testing.T) {
+	app := kocha.NewTestApp()
+	func() {
+		appname, a, ctrl, typ := "appname", "application", "testctrlr", "html"
+		tmpl := app.Template.Get(appname, a, ctrl, typ)
+		if tmpl == nil {
+			t.Fatalf(`Template.Get(%#v, %#v, %#v, %#v) => nil, want *template.Template`, appname, a, ctrl, typ)
+		}
+		var actual []string
+		for _, v := range tmpl.Templates() {
+			actual = append(actual, v.Name())
+		}
+		expected := []string{"layout", "testctrlr.html"}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
 
-	actual = templateMap.Get("testAppName", "app", "test_tmpl1", "js")
-	expected = templateMap["testAppName"]["app"]["js"]["test_tmpl1"]
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
+	func() {
+		appname, a, ctrl, typ := "appname", "", "testctrlr", "js"
+		tmpl := app.Template.Get(appname, a, ctrl, typ)
+		if tmpl == nil {
+			t.Fatalf(`Template.Get(%#v, %#v, %#v, %#v) => nil, want *template.Template`, appname, a, ctrl, typ)
+		}
+		var actual []string
+		for _, v := range tmpl.Templates() {
+			actual = append(actual, v.Name())
+		}
+		expected := []string{"testctrlr"}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
 
-	actual = templateMap.Get("testAppName", "anotherLayout", "test_tmpl1", "html")
-	expected = templateMap["testAppName"]["anotherLayout"]["html"]["test_tmpl1"]
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
+	func() {
+		appname, a, ctrl, typ := "appname", "another_layout", "testctrlr", "html"
+		tmpl := app.Template.Get(appname, a, ctrl, typ)
+		if tmpl == nil {
+			t.Fatalf(`Template.Get(%#v, %#v, %#v, %#v) => nil, want *template.Template`, appname, a, ctrl, typ)
+		}
+		var actual []string
+		for _, v := range tmpl.Templates() {
+			actual = append(actual, v.Name())
+		}
+		expected := []string{"layout", "testctrlr.html"}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
 
-	actual = templateMap.Get("unknownAppName", "app", "test_tmpl1", "html")
-	if actual != nil {
-		t.Errorf("Expect %v, but %v", nil, actual)
-	}
+	func() {
+		actual := app.Template.Get("unknownAppName", "app", "test_tmpl1", "html")
+		if actual != nil {
+			t.Errorf("Expect %v, but %v", nil, actual)
+		}
+	}()
 
-	actual = templateMap.Get("testAppName", "app", "unknown_tmpl1", "html")
-	if actual != nil {
-		t.Errorf("Expect %v, but %v", nil, actual)
-	}
+	func() {
+		actual := app.Template.Get("testAppName", "app", "unknown_tmpl1", "html")
+		if actual != nil {
+			t.Errorf("Expect %v, but %v", nil, actual)
+		}
+	}()
 
-	actual = templateMap.Get("testAppName", "app", "test_tmpl1", "xml")
-	if actual != nil {
-		t.Errorf("Expect %v, but %v", nil, actual)
-	}
+	func() {
+		actual := app.Template.Get("testAppName", "app", "test_tmpl1", "xml")
+		if actual != nil {
+			t.Errorf("Expect %v, but %v", nil, actual)
+		}
+	}()
 }
 
-func TestTemplateMap_Ident(t *testing.T) {
-	templateMap := templateMap{}
+func TestTemplate_Ident(t *testing.T) {
+	app := kocha.NewTestApp()
 	for expected, args := range map[string][]string{
 		"a:b c.html":   []string{"a", "b", "c", "html"},
 		"b:a c.html":   []string{"b", "a", "c", "html"},
@@ -292,97 +322,9 @@ func TestTemplateMap_Ident(t *testing.T) {
 		"a:b c_d.html": []string{"a", "b", "cD", "html"},
 		"a:b c_d_e.js": []string{"a", "b", "CDE", "js"},
 	} {
-		actual := templateMap.Ident(args[0], args[1], args[2], args[3])
+		actual := app.Template.Ident(args[0], args[1], args[2], args[3])
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
-		}
-	}
-}
-
-func TestTemplateSet_buildTemplateMap(t *testing.T) {
-	ts := TemplateSet{
-		{
-			Name: "appName",
-			Paths: []string{
-				filepath.Join("testdata", "app", "views"),
-			},
-		},
-	}
-	actual, err := ts.buildTemplateMap()
-	if err != nil {
-		t.Fatal(err)
-	}
-	expected := map[string]map[string]map[string]map[string]string{
-		"appName": {
-			"": {
-				"html": {
-					"fixture_date_test_ctrl":   "\nsingle date\n",
-					"fixture_root_test_ctrl":   "\nsingle root\n",
-					"fixture_user_test_ctrl":   "\nsingle user\n",
-					"fixture_teapot_test_ctrl": "\nsingle tea pot\n",
-					"errors/500":               "\nsingle 500 error\n",
-				},
-				"json": {
-					"fixture_teapot_test_ctrl": "\n{\"single\":\"tea pot\"}\n",
-				},
-			},
-			"application": {
-				"html": {
-					"fixture_date_test_ctrl":   "This is layout\n\nThis is date\n\n",
-					"fixture_root_test_ctrl":   "This is layout\n\nThis is root\n\n",
-					"fixture_user_test_ctrl":   "This is layout\n\nThis is user\n\n",
-					"fixture_teapot_test_ctrl": "This is layout\n\nI'm a tea pot\n\n",
-					"errors/500":               "This is layout\n\n500 error\n\n",
-				},
-				"json": {
-					"fixture_teapot_test_ctrl": "{\n  \"layout\": \"application\",\n  \n{\"status\":418, \"text\":\"I'm a tea pot\"}\n\n}\n",
-				},
-			},
-			"sub": {
-				"html": {
-					"fixture_date_test_ctrl":   "This is sub\n\nThis is date\n\n",
-					"fixture_root_test_ctrl":   "This is sub\n\nThis is root\n\n",
-					"fixture_user_test_ctrl":   "This is sub\n\nThis is user\n\n",
-					"fixture_teapot_test_ctrl": "This is sub\n\nI'm a tea pot\n\n",
-					"errors/500":               "This is sub\n\n500 error\n\n",
-				},
-			},
-		},
-	}
-	for appName, actualAppTemplateSet := range actual {
-		appTemplateSet, ok := expected[appName]
-		if !ok {
-			t.Errorf("appName %v is unexpected", appName)
-			continue
-		}
-		for layoutName, actualLayoutTemplateSet := range actualAppTemplateSet {
-			layoutTemplates, ok := appTemplateSet[layoutName]
-			if !ok {
-				t.Errorf("layout %v is unexpected", layoutName)
-				continue
-			}
-			for ext, actualFileExtTemplateSet := range actualLayoutTemplateSet {
-				templates, ok := layoutTemplates[ext]
-				if !ok {
-					t.Errorf("ext %v is unexpected", ext)
-					continue
-				}
-				for name, actualTemplate := range actualFileExtTemplateSet {
-					expectedContent, ok := templates[name]
-					if !ok {
-						t.Errorf("name %v is unexpected", name)
-						continue
-					}
-					var actualContent bytes.Buffer
-					if err := actualTemplate.Execute(&actualContent, nil); err != nil {
-						t.Error(err)
-						continue
-					}
-					if !reflect.DeepEqual(actualContent.String(), expectedContent) {
-						t.Errorf("Expect %q, but %q", expectedContent, actualContent.String())
-					}
-				}
-			}
 		}
 	}
 }

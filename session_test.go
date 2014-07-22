@@ -1,4 +1,4 @@
-package kocha
+package kocha_test
 
 import (
 	"fmt"
@@ -6,10 +6,12 @@ import (
 	"strings"
 	"testing"
 	"testing/quick"
+
+	"github.com/naoina/kocha"
 )
 
 func Test_Constants(t *testing.T) {
-	actual := SessionExpiresKey
+	actual := kocha.SessionExpiresKey
 	expected := "_kocha._sess._expires"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
@@ -17,20 +19,20 @@ func Test_Constants(t *testing.T) {
 }
 
 func Test_SessionConfig_Validate(t *testing.T) {
-	newSessionConfig := func() *SessionConfig {
-		return &SessionConfig{
+	newSessionConfig := func() *kocha.SessionConfig {
+		return &kocha.SessionConfig{
 			Name: "testname",
 		}
 	}
 
-	var config *SessionConfig
+	var config *kocha.SessionConfig
 	if err := config.Validate(); err != nil {
-		t.Errorf("Expect valid, but returned error")
+		t.Errorf("Expect valid, but error returned: %v", err)
 	}
 
 	config = newSessionConfig()
 	if err := config.Validate(); err != nil {
-		t.Errorf("Expect valid, but returned error: ", err)
+		t.Errorf("Expect valid, but error returned: %v", err)
 	}
 
 	config = newSessionConfig()
@@ -39,17 +41,10 @@ func Test_SessionConfig_Validate(t *testing.T) {
 		t.Errorf("Expect invalid, but no error returned")
 	}
 
-	config = nil
-	oldMiddlewares := appConfig.Middlewares
-	appConfig.Middlewares = append(appConfig.Middlewares, &SessionMiddleware{})
-	if err := config.Validate(); err == nil {
-		t.Errorf("Expect invalid, but no error returned")
-	}
-
 	config = newSessionConfig()
 	config.Store = nil
-	if err := config.Validate(); err == nil {
-		t.Errorf("Expect invalid, but no error returned")
+	if err := config.Validate(); err != nil {
+		t.Errorf("Expect valid, but error returned: %v", err)
 	}
 
 	store := &ValidateTestSessionStore{}
@@ -60,20 +55,19 @@ func Test_SessionConfig_Validate(t *testing.T) {
 	if !store.validated {
 		t.Errorf("Expect Validate() is called, but wasn't called")
 	}
-	appConfig.Middlewares = oldMiddlewares
 }
 
 type ValidateTestSessionStore struct{ validated bool }
 
-func (s *ValidateTestSessionStore) Save(sess Session) string { return "" }
-func (s *ValidateTestSessionStore) Load(key string) Session  { return nil }
+func (s *ValidateTestSessionStore) Save(sess kocha.Session) string { return "" }
+func (s *ValidateTestSessionStore) Load(key string) kocha.Session  { return nil }
 func (s *ValidateTestSessionStore) Validate() error {
 	s.validated = true
 	return fmt.Errorf("")
 }
 
 func Test_Session_Clear(t *testing.T) {
-	sess := make(Session)
+	sess := make(kocha.Session)
 	sess["hoge"] = "foo"
 	sess["bar"] = "baz"
 	actual := len(sess)
@@ -90,15 +84,10 @@ func Test_Session_Clear(t *testing.T) {
 }
 
 func Test_SessionCookieStore(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newTestAppConfig()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
 	if err := quick.Check(func(k, v string) bool {
-		expected := make(Session)
+		expected := make(kocha.Session)
 		expected[k] = v
-		store := newTestSessionCookieStore()
+		store := kocha.NewTestSessionCookieStore()
 		r := store.Save(expected)
 		actual := store.Load(r)
 		return reflect.DeepEqual(actual, expected)
@@ -110,11 +99,11 @@ func Test_SessionCookieStore(t *testing.T) {
 		defer func() {
 			if err := recover(); err == nil {
 				t.Error("panic doesn't occurs")
-			} else if _, ok := err.(ErrSession); !ok {
-				t.Error("Expect %T, but %T", ErrSession{}, err)
+			} else if _, ok := err.(kocha.ErrSession); !ok {
+				t.Error("Expect %T, but %T", kocha.ErrSession{}, err)
 			}
 		}()
-		store := newTestSessionCookieStore()
+		store := kocha.NewTestSessionCookieStore()
 		store.Load("invalid")
 	}()
 }
@@ -122,7 +111,7 @@ func Test_SessionCookieStore(t *testing.T) {
 func Test_SessionCookieStore_Validate(t *testing.T) {
 	// tests for validate the key size.
 	for _, keySize := range []int{16, 24, 32} {
-		store := &SessionCookieStore{
+		store := &kocha.SessionCookieStore{
 			SecretKey:  strings.Repeat("a", keySize),
 			SigningKey: "a",
 		}
@@ -132,7 +121,7 @@ func Test_SessionCookieStore_Validate(t *testing.T) {
 	}
 	// boundary tests
 	for _, keySize := range []int{15, 17, 23, 25, 31, 33} {
-		store := &SessionCookieStore{
+		store := &kocha.SessionCookieStore{
 			SecretKey:  strings.Repeat("a", keySize),
 			SigningKey: "a",
 		}

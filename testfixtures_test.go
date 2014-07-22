@@ -2,145 +2,91 @@ package kocha
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
+	"path/filepath"
 	"sort"
 	"strings"
 )
 
-func newTestAppConfig() *AppConfig {
-	config := &AppConfig{
-		AppPath:       "apppath/appname",
+func NewTestApp() *Application {
+	config := &Config{
+		AppPath:       "testdata",
 		AppName:       "appname",
-		DefaultLayout: "app",
-		TemplateSet:   TemplateSet{},
+		DefaultLayout: "application",
+		Template: &Template{
+			PathInfo: TemplatePathInfo{
+				Name: "appname",
+				Paths: []string{
+					filepath.Join("testdata", "app", "views"),
+				},
+			},
+		},
 		RouteTable: RouteTable{
 			{
 				Name:       "root",
 				Path:       "/",
 				Controller: FixtureRootTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {},
-				},
 			},
 			{
 				Name:       "user",
 				Path:       "/user/:id",
 				Controller: FixtureUserTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {
-						"id": "int",
-					},
-				},
 			},
 			{
 				Name:       "date",
 				Path:       "/:year/:month/:day/user/:name",
 				Controller: FixtureDateTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {
-						"year":  "int",
-						"month": "int",
-						"day":   "int",
-						"name":  "string",
-					},
-				},
 			},
 			{
 				Name:       "error",
 				Path:       "/error",
 				Controller: FixtureErrorTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {},
-				},
 			},
 			{
 				Name:       "json",
 				Path:       "/json",
 				Controller: FixtureJsonTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {},
-				},
 			},
 			{
 				Name:       "teapot",
 				Path:       "/teapot",
 				Controller: FixtureTeapotTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {},
-				},
 			},
 			{
 				Name:       "panic_in_render",
 				Path:       "/panic_in_render",
 				Controller: FixturePanicInRenderTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {},
-				},
 			},
 			{
 				Name:       "static",
 				Path:       "/static/*path",
 				Controller: StaticServe{},
-				MethodTypes: map[string]map[string]string{
-					"Get": {
-						"path": "*url.URL",
-					},
-				},
 			},
 			{
 				Name:       "post_test",
 				Path:       "/post_test",
 				Controller: FixturePostTestCtrl{},
-				MethodTypes: map[string]map[string]string{
-					"Post": {},
-				},
 			},
 		},
 		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
 		Session: &SessionConfig{
 			Name:  "test_session",
-			Store: newTestSessionCookieStore(),
+			Store: NewTestSessionCookieStore(),
 		},
 		MaxClientBodySize: DefaultMaxClientBodySize,
 	}
-	config.templateMap = templateMap{
-		"appname": {
-			"app": {
-				"html": {
-					"fixture_root_test_ctrl":   template.Must(template.New("tmpl1").Parse(`tmpl1`)),
-					"fixture_user_test_ctrl":   template.Must(template.New("tmpl2").Parse(`tmpl2-{{.id}}`)),
-					"fixture_date_test_ctrl":   template.Must(template.New("tmpl3").Parse(`tmpl3-{{.name}}-{{.year}}-{{.month}}-{{.day}}`)),
-					"fixture_error_test_ctrl":  template.Must(template.New("tmpl4").Parse(`tmpl4`)),
-					"fixture_teapot_test_ctrl": template.Must(template.New("tmpl6").Parse(`teapot`)),
-					"fixture_post_test_ctrl":   template.Must(template.New("tmpl7").Parse(`tmpl7-{{.params}}`)),
-				},
-				"json": {
-					"fixture_json_test_ctrl": template.Must(template.New("tmpl5").Parse(`{"tmpl5":"json"}`)),
-				},
-			},
-		},
-	}
-	router, err := config.RouteTable.buildRouter()
+	app, err := New(config)
 	if err != nil {
 		panic(err)
 	}
-	config.router = router
-	return config
+	return app
 }
 
-func newTestSessionCookieStore() *SessionCookieStore {
+func NewTestSessionCookieStore() *SessionCookieStore {
 	return &SessionCookieStore{
 		SecretKey:  "abcdefghijklmnopqrstuvwxyzABCDEF",
 		SigningKey: "abcdefghijklmn",
 	}
-}
-
-func testInvokeWrapper(f func()) {
-	defer func() {
-		failedUnits = make(map[string]bool)
-	}()
-	f()
 }
 
 type orderedOutputMap map[string]interface{}
@@ -205,7 +151,6 @@ type FixtureErrorTestCtrl struct {
 
 func (c *FixtureErrorTestCtrl) Get() Result {
 	panic("panic test")
-	return c.Render()
 }
 
 type FixtureJsonTestCtrl struct {

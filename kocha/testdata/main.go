@@ -7,6 +7,5 @@ import (
 )
 
 func main() {
-	kocha.Init(config.AppConfig)
-	kocha.Run(config.Addr)
+	kocha.Run(config.AppConfig)
 }

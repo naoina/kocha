@@ -10,12 +10,13 @@ import (
 	db "{{.dbImportPath}}"
 	migrations "{{.migrationsImportPath}}"
 	{{end}}
-	"html/template"
 	"os"
 	"path/filepath"
 
 	"github.com/naoina/kocha"
+	{{if .resources}}
 	"github.com/naoina/kocha/util"
+	{{end}}
 )
 
 const Version = "{{.version}}"
@@ -33,25 +34,20 @@ func main() {
 		os.Exit(0)
 	}
 	migrate()
-	if len(config.AppConfig.TemplateSet) != {{.appConfig.TemplateSet|len}} {
-		fmt.Fprintf(os.Stderr, "abort: length of config.AppConfig.TemplateSet is mismatched between build-time and run-time")
-		os.Exit(1)
-	}
-	{{range $i, $info := .appConfig.TemplateSet}}
-	config.AppConfig.TemplateSet[{{$i}}].AppTemplateSet = {{$info.AppTemplateSet|goString}}
-	{{end}}
-	if len(config.AppConfig.RouteTable) != {{.appConfig.RouteTable|len}} {
+	config.AppConfig.ResourceSet = {{.app.ResourceSet|goString}}
+	if len(config.AppConfig.RouteTable) != {{.app.Config.RouteTable|len}} {
 		fmt.Fprintf(os.Stderr, "abort: length of config.AppConfig.RouteTable is mismatched between build-time and run-time")
 		os.Exit(1)
 	}
-	{{range $i, $route := .appConfig.RouteTable}}
+	{{range $i, $route := .app.Config.RouteTable}}
 	config.AppConfig.RouteTable[{{$i}}].MethodTypes = {{$route.MethodTypes|goString}}
 	{{end}}
-	kocha.Init(config.AppConfig)
 	{{range $name, $data := .resources}}
-	kocha.AddResource("{{$name}}", util.Gunzip({{$data|printf "%q"}}))
+	config.AppConfig.ResourceSet.Add("{{$name}}", util.Gunzip({{$data|printf "%q"}}))
 	{{end}}
-	kocha.Run(config.Addr)
+	if err := kocha.Run(config.AppConfig); err != nil {
+		panic(err)
+	}
 }
 
 func migrate() {

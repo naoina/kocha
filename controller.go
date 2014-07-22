@@ -224,8 +224,14 @@ func (c *Controller) SendFile(path string) Result {
 	var file io.ReadSeeker
 	path = filepath.FromSlash(path)
 	if rc := c.App.ResourceSet.Get(path); rc != nil {
-		file = bytes.NewReader(rc.([]byte))
-	} else {
+		switch b := rc.(type) {
+		case string:
+			file = strings.NewReader(b)
+		case []byte:
+			file = bytes.NewReader(b)
+		}
+	}
+	if file == nil {
 		if !filepath.IsAbs(path) {
 			path = filepath.Join(c.App.Config.AppPath, StaticDir, path)
 		}

@@ -1,28 +1,15 @@
-package kocha
+package kocha_test
 
 import (
-	"net/http"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/naoina/kocha"
 )
 
-func Test_newRequest(t *testing.T) {
-	req, err := http.NewRequest("testMethod", "testUrl", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	actual := newRequest(req)
-	expected := &Request{
-		Request: req,
-	}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-}
-
-func TestRequestScheme(t *testing.T) {
-	req := &Request{}
+func TestRequest_Scheme(t *testing.T) {
+	req := &kocha.Request{}
 	func() {
 		os.Setenv("HTTPS", "on")
 		defer os.Clearenv()
@@ -71,8 +58,8 @@ func TestRequestScheme(t *testing.T) {
 	}()
 }
 
-func TestRequestIsSSL(t *testing.T) {
-	req := &Request{}
+func TestRequest_IsSSL(t *testing.T) {
+	req := &kocha.Request{}
 	actual := req.IsSSL()
 	expected := false
 	if !reflect.DeepEqual(actual, expected) {

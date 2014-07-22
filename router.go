@@ -221,8 +221,9 @@ func (route *Route) buildMethodTypes() error {
 	if err != nil {
 		return err
 	}
-	astFiles := make([]*ast.File, len(pkgInfo.GoFiles))
-	for i, goFilePath := range pkgInfo.GoFiles {
+	files := append(pkgInfo.GoFiles, pkgInfo.TestGoFiles...)
+	astFiles := make([]*ast.File, len(files))
+	for i, goFilePath := range files {
 		if astFiles[i], err = parser.ParseFile(token.NewFileSet(), filepath.Join(pkgInfo.Dir, goFilePath), nil, 0); err != nil {
 			return err
 		}

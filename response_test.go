@@ -1,46 +1,35 @@
-package kocha
+package kocha_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/naoina/kocha"
 )
 
-func Test_newResponse(t *testing.T) {
-	rw := httptest.NewRecorder()
-	actual := newResponse(rw)
-	expected := &Response{
-		ResponseWriter: rw,
-		ContentType:    "",
-		StatusCode:     http.StatusOK,
-	}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-}
-
-func Test_Response_Cookies(t *testing.T) {
+func TestResponse_Cookies(t *testing.T) {
 	w := httptest.NewRecorder()
-	res := &Response{ResponseWriter: w}
+	res := &kocha.Response{ResponseWriter: w}
 	actual := res.Cookies()
-	expected := res.cookies
+	expected := []*http.Cookie(nil)
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+		t.Errorf(`Response.Cookies() => %#v; want %#v`, actual, expected)
 	}
 
 	cookie := &http.Cookie{Name: "fox", Value: "dog"}
-	res.cookies = append(res.cookies, cookie)
+	res.SetCookie(cookie)
 	actual = res.Cookies()
-	expected = res.cookies
+	expected = []*http.Cookie{cookie}
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+		t.Errorf(`Response.Cookies() => %#v; want %#v`, actual, expected)
 	}
 }
 
-func Test_Response_SetCookie(t *testing.T) {
+func TestResponse_SetCookie(t *testing.T) {
 	w := httptest.NewRecorder()
-	res := &Response{
+	res := &kocha.Response{
 		ResponseWriter: w,
 	}
 	cookie := &http.Cookie{
@@ -51,6 +40,6 @@ func Test_Response_SetCookie(t *testing.T) {
 	actual := w.Header().Get("Set-Cookie")
 	expected := cookie.String()
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+		t.Errorf(`Response.SetCookie(%#v) => %#v; want %#v`, cookie, actual, expected)
 	}
 }

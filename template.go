@@ -21,18 +21,14 @@ type TemplatePathInfo struct {
 
 	// Directory paths of the template files.
 	Paths []string
-
-	// For internal use.
-	AppTemplateSet appTemplateSet
 }
 
 type Template struct {
 	PathInfo TemplatePathInfo
 	FuncMap  TemplateFuncMap
 
-	m       templateMap
-	funcMap template.FuncMap
-	app     *Application
+	m   templateMap
+	app *Application
 }
 
 // Get gets a parsed template.
@@ -58,7 +54,7 @@ func (t *Template) build(app *Application) (*Template, error) {
 }
 
 func (t *Template) buildFuncMap() (*Template, error) {
-	m := template.FuncMap{
+	m := TemplateFuncMap{
 		"in":              t.in,
 		"url":             t.url,
 		"nl2br":           t.nl2br,
@@ -69,38 +65,51 @@ func (t *Template) buildFuncMap() (*Template, error) {
 	for name, fn := range t.FuncMap {
 		m[name] = fn
 	}
-	t.funcMap = m
+	t.FuncMap = m
 	return t, nil
 }
 
 // buildTemplateMap returns templateMap constructed from templateSet.
 func (t *Template) buildTemplateMap() (*Template, error) {
-	if data := t.app.ResourceSet.Get("_kocha_template_map"); data != nil {
-		if m, ok := data.(templateMap); ok {
-			t.m = templateMap(m)
-			return t, nil
+	info := t.PathInfo
+	var layoutPaths map[string]map[string]map[string]string
+	if data := t.app.ResourceSet.Get("_kocha_template_layout_paths"); data != nil {
+		if paths, ok := data.(map[string]map[string]map[string]string); ok {
+			layoutPaths = paths
 		}
 	}
-	layoutPaths := make(map[string]map[string]map[string]string)
-	templatePaths := make(map[string]map[string]map[string]string)
-	templateSet := templateMap{}
-	info := t.PathInfo
-	if info.AppTemplateSet != nil {
-		templateSet[info.Name] = info.AppTemplateSet
-	} else {
-		info.AppTemplateSet = appTemplateSet{}
-		templateSet[info.Name] = info.AppTemplateSet
-		layoutPaths[info.Name] = make(map[string]map[string]string)
-		templatePaths[info.Name] = make(map[string]map[string]string)
+	if layoutPaths == nil {
+		layoutPaths = map[string]map[string]map[string]string{
+			info.Name: make(map[string]map[string]string),
+		}
 		for _, rootPath := range info.Paths {
 			layoutDir := filepath.Join(rootPath, "layouts")
 			if err := t.collectLayoutPaths(layoutPaths[info.Name], layoutDir); err != nil {
 				return nil, err
 			}
+		}
+		t.app.ResourceSet.Add("_kocha_template_layout_paths", layoutPaths)
+	}
+	var templatePaths map[string]map[string]map[string]string
+	if data := t.app.ResourceSet.Get("_kocha_template_template_paths"); data != nil {
+		if paths, ok := data.(map[string]map[string]map[string]string); ok {
+			templatePaths = paths
+		}
+	}
+	if templatePaths == nil {
+		templatePaths = map[string]map[string]map[string]string{
+			info.Name: make(map[string]map[string]string),
+		}
+		for _, rootPath := range info.Paths {
+			layoutDir := filepath.Join(rootPath, "layouts")
 			if err := t.collectTemplatePaths(templatePaths[info.Name], rootPath, layoutDir); err != nil {
 				return nil, err
 			}
 		}
+		t.app.ResourceSet.Add("_kocha_template_template_paths", templatePaths)
+	}
+	templateSet := templateMap{
+		info.Name: appTemplateSet{},
 	}
 	for appName, templates := range templatePaths {
 		if err := t.buildSingleAppTemplateSet(templateSet[appName], templates); err != nil {
@@ -184,11 +193,21 @@ func (t *Template) buildSingleAppTemplateSet(appTemplateSet appTemplateSet, temp
 	for ext, templateInfos := range templates {
 		layoutTemplateSet[ext] = fileExtTemplateSet{}
 		for name, path := range templateInfos {
-			templateBytes, err := ioutil.ReadFile(path)
-			if err != nil {
-				return err
+			var templateBytes []byte
+			if data := t.app.ResourceSet.Get(fmt.Sprintf("_kocha_%s.%s", path, ext)); data != nil {
+				if b, ok := data.([]byte); ok {
+					templateBytes = b
+				}
 			}
-			t := template.Must(template.New(name).Funcs(t.funcMap).Parse(string(templateBytes)))
+			if templateBytes == nil {
+				b, err := ioutil.ReadFile(path)
+				if err != nil {
+					return err
+				}
+				templateBytes = b
+				t.app.ResourceSet.Add(fmt.Sprintf("_kocha_%s.%s", path, ext), b)
+			}
+			t := template.Must(template.New(name).Funcs(template.FuncMap(t.FuncMap)).Parse(string(templateBytes)))
 			layoutTemplateSet[ext][name] = t
 		}
 	}
@@ -201,15 +220,34 @@ func (t *Template) buildLayoutAppTemplateSet(appTemplateSet appTemplateSet, layo
 		layoutTemplateSet := layoutTemplateSet{}
 		for ext, layoutPath := range layoutInfos {
 			layoutTemplateSet[ext] = fileExtTemplateSet{}
-			layoutBytes, err := ioutil.ReadFile(layoutPath)
-			if err != nil {
-				return err
+			var layoutBytes []byte
+			if data := t.app.ResourceSet.Get(fmt.Sprintf("_kocha_template_layout_bytes_%s", layoutPath)); data != nil {
+				if b, ok := data.([]byte); ok {
+					layoutBytes = b
+				}
+			}
+			if layoutBytes == nil {
+				b, err := ioutil.ReadFile(layoutPath)
+				if err != nil {
+					return err
+				}
+				layoutBytes = b
+				t.app.ResourceSet.Add(fmt.Sprintf("_kocha_template_layout_bytes_%s", layoutPath), b)
 			}
 			for name, path := range templates[ext] {
 				// do not use the layoutTemplate.Clone() in order to retrieve layout as string by `kocha build`
-				layout := template.Must(template.New("layout").Funcs(t.funcMap).Parse(string(layoutBytes)))
-				t := template.Must(layout.ParseFiles(path))
-				layoutTemplateSet[ext][name] = t
+				layout := template.Must(template.New("layout").Funcs(template.FuncMap(t.FuncMap)).Parse(string(layoutBytes)))
+				var tmpl *template.Template
+				if data := t.app.ResourceSet.Get(fmt.Sprintf("_kocha_%s.%s", path, ext)); data != nil {
+					if b, ok := data.([]byte); ok {
+						template.Must(layout.New(filepath.Base(path)).Parse(string(b)))
+						tmpl = layout
+					}
+				}
+				if tmpl == nil {
+					tmpl = template.Must(layout.ParseFiles(path))
+				}
+				layoutTemplateSet[ext][name] = tmpl
 			}
 		}
 		appTemplateSet[layoutName] = layoutTemplateSet

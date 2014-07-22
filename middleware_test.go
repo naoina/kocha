@@ -1,51 +1,49 @@
-package kocha
+package kocha_test
 
 import (
-	"bytes"
-	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/naoina/kocha"
 	"github.com/naoina/kocha/util"
 )
 
 func TestDefaultMiddlewares(t *testing.T) {
-	actual := DefaultMiddlewares
-	expected := []Middleware{
-		&ResponseContentTypeMiddleware{},
+	actual := kocha.DefaultMiddlewares
+	expected := []kocha.Middleware{
+		&kocha.ResponseContentTypeMiddleware{},
 	}
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+		t.Errorf(`DefaultMiddlewares => %#v; want %#v`, actual, expected)
 	}
 }
 
-func TestResponseContentTypeMiddlewareBefore(t *testing.T) {
+func TestResponseContentTypeMiddleware_Before(t *testing.T) {
 	t.Skip("do nothing")
 }
 
-func TestResponseContentTypeMiddlewareAfter(t *testing.T) {
+func TestResponseContentTypeMiddleware_After(t *testing.T) {
 	r, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	req, res := newRequest(r), newResponse(w)
-	m := &ResponseContentTypeMiddleware{}
+	req, res := &kocha.Request{Request: r}, &kocha.Response{ResponseWriter: w}
+	m := &kocha.ResponseContentTypeMiddleware{}
 	actual := res.Header().Get("Content-Type")
 	expected := ""
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 	res.ContentType = "text/html"
-	c := &Controller{
+	c := &kocha.Controller{
 		Request:  req,
 		Response: res,
 	}
-	m.After(c)
+	m.After(nil, c)
 	actual = res.Header().Get("Content-Type")
 	expected = "text/html"
 	if !reflect.DeepEqual(actual, expected) {
@@ -53,50 +51,35 @@ func TestResponseContentTypeMiddlewareAfter(t *testing.T) {
 	}
 }
 
-func TestSessionMiddlewareBefore(t *testing.T) {
-	newRequestResponse := func(cookie *http.Cookie) (*Request, *Response) {
+func TestSessionMiddleware_Before(t *testing.T) {
+	newRequestResponse := func(cookie *http.Cookie) (*kocha.Request, *kocha.Response) {
 		r, err := http.NewRequest("GET", "/", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		req := newRequest(r)
+		req := &kocha.Request{Request: r}
 		if cookie != nil {
 			req.AddCookie(cookie)
 		}
-		res := newResponse(httptest.NewRecorder())
+		res := &kocha.Response{ResponseWriter: httptest.NewRecorder()}
 		return req, res
 	}
 
 	origNow := util.Now
 	util.Now = func() time.Time { return time.Unix(1383820443, 0) }
-	oldAppConfig := appConfig
-	appConfig = newTestAppConfig()
 	defer func() {
 		util.Now = origNow
-		appConfig = oldAppConfig
 	}()
 
 	// test new session
 	func() {
-		var buf bytes.Buffer
-		origLoggers := Log.INFO
-		Log.INFO = Loggers{newTestBufferLogger(&buf)}
-		defer func() {
-			Log.INFO = origLoggers
-		}()
+		app := kocha.NewTestApp()
 		req, res := newRequestResponse(nil)
-		c := &Controller{Request: req, Response: res}
-		m := &SessionMiddleware{}
-		m.Before(c)
-		var (
-			actual   interface{} = buf.String()
-			expected interface{} = "new session\n"
-		)
-		if actual != expected {
-			t.Errorf("Expect %q, but %q", expected, actual)
-		}
-		actual = c.Session
-		expected = make(Session)
+		c := &kocha.Controller{Request: req, Response: res}
+		m := &kocha.SessionMiddleware{}
+		m.Before(app, c)
+		actual := c.Session
+		expected := make(kocha.Session)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
@@ -104,31 +87,19 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 
 	// test expires not found
 	func() {
-		var buf bytes.Buffer
-		origLoggers := Log.ERROR
-		Log.ERROR = Loggers{newTestBufferLogger(&buf)}
-		defer func() {
-			Log.ERROR = origLoggers
-		}()
-		store := newTestSessionCookieStore()
-		sess := make(Session)
+		app := kocha.NewTestApp()
+		store := kocha.NewTestSessionCookieStore()
+		sess := make(kocha.Session)
 		cookie := &http.Cookie{
-			Name:  appConfig.Session.Name,
+			Name:  app.Config.Session.Name,
 			Value: store.Save(sess),
 		}
 		req, res := newRequestResponse(cookie)
-		c := &Controller{Request: req, Response: res}
-		m := &SessionMiddleware{}
-		m.Before(c)
-		var (
-			actual   interface{} = buf.String()
-			expected interface{} = "expires value not found\n"
-		)
-		if actual != expected {
-			t.Errorf("Expect %q, but %q", expected, actual)
-		}
-		actual = c.Session
-		expected = make(Session)
+		c := &kocha.Controller{Request: req, Response: res}
+		m := &kocha.SessionMiddleware{}
+		m.Before(app, c)
+		actual := c.Session
+		expected := make(kocha.Session)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
@@ -136,28 +107,20 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 
 	// test expires invalid time format
 	func() {
-		var buf bytes.Buffer
-		origLoggers := Log.ERROR
-		Log.ERROR = Loggers{newTestBufferLogger(&buf)}
-		defer func() {
-			Log.ERROR = origLoggers
-		}()
-		store := newTestSessionCookieStore()
-		sess := make(Session)
-		sess[SessionExpiresKey] = "invalid format"
+		app := kocha.NewTestApp()
+		store := kocha.NewTestSessionCookieStore()
+		sess := make(kocha.Session)
+		sess[kocha.SessionExpiresKey] = "invalid format"
 		cookie := &http.Cookie{
-			Name:  appConfig.Session.Name,
+			Name:  app.Config.Session.Name,
 			Value: store.Save(sess),
 		}
 		req, res := newRequestResponse(cookie)
-		c := &Controller{Request: req, Response: res}
-		m := &SessionMiddleware{}
-		m.Before(c)
-		if reflect.DeepEqual(buf.Len(), 0) {
-			t.Errorf("Expect %v, but %v", 0, buf.Len())
-		}
+		c := &kocha.Controller{Request: req, Response: res}
+		m := &kocha.SessionMiddleware{}
+		m.Before(app, c)
 		actual := c.Session
-		expected := make(Session)
+		expected := make(kocha.Session)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
@@ -165,109 +128,97 @@ func TestSessionMiddlewareBefore(t *testing.T) {
 
 	// test expired
 	func() {
-		var buf bytes.Buffer
-		origLoggers := Log.INFO
-		Log.INFO = Loggers{newTestBufferLogger(&buf)}
-		defer func() {
-			Log.INFO = origLoggers
-		}()
-		store := newTestSessionCookieStore()
-		sess := make(Session)
-		sess[SessionExpiresKey] = "1383820442"
+		app := kocha.NewTestApp()
+		store := kocha.NewTestSessionCookieStore()
+		sess := make(kocha.Session)
+		sess[kocha.SessionExpiresKey] = "1383820442"
 		cookie := &http.Cookie{
-			Name:  appConfig.Session.Name,
+			Name:  app.Config.Session.Name,
 			Value: store.Save(sess),
 		}
 		req, res := newRequestResponse(cookie)
-		c := &Controller{Request: req, Response: res}
-		m := &SessionMiddleware{}
-		m.Before(c)
-		var (
-			actual   interface{} = buf.String()
-			expected interface{} = "session has been expired\n"
-		)
-		if actual != expected {
-			t.Errorf("Expect %q, but %q", expected, actual)
-		}
-		actual = c.Session
-		expected = make(Session)
+		c := &kocha.Controller{Request: req, Response: res}
+		m := &kocha.SessionMiddleware{}
+		m.Before(app, c)
+		actual := c.Session
+		expected := make(kocha.Session)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
 	}()
 
-	// test
-	store := newTestSessionCookieStore()
-	sess := make(Session)
-	sess[SessionExpiresKey] = "1383820443"
-	sess["brown fox"] = "lazy dog"
-	cookie := &http.Cookie{
-		Name:  appConfig.Session.Name,
-		Value: store.Save(sess),
-	}
-	req, res := newRequestResponse(cookie)
-	c := &Controller{Request: req, Response: res}
-	m := &SessionMiddleware{}
-	m.Before(c)
-	actual := c.Session
-	expected := Session{
-		SessionExpiresKey: "1383820443",
-		"brown fox":       "lazy dog",
-	}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
+	func() {
+		app := kocha.NewTestApp()
+		store := kocha.NewTestSessionCookieStore()
+		sess := make(kocha.Session)
+		sess[kocha.SessionExpiresKey] = "1383820443"
+		sess["brown fox"] = "lazy dog"
+		cookie := &http.Cookie{
+			Name:  app.Config.Session.Name,
+			Value: store.Save(sess),
+		}
+		req, res := newRequestResponse(cookie)
+		c := &kocha.Controller{Request: req, Response: res}
+		m := &kocha.SessionMiddleware{}
+		m.Before(app, c)
+		actual := c.Session
+		expected := kocha.Session{
+			kocha.SessionExpiresKey: "1383820443",
+			"brown fox":             "lazy dog",
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %v, but %v", expected, actual)
+		}
+	}()
 }
 
-func TestSessionMiddlewareAfter(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newTestAppConfig()
+func TestSessionMiddleware_After(t *testing.T) {
+	app := kocha.NewTestApp()
 	origNow := util.Now
 	util.Now = func() time.Time { return time.Unix(1383820443, 0) }
 	defer func() {
 		util.Now = origNow
-		appConfig = oldAppConfig
 	}()
 	r, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	req, res := newRequest(r), newResponse(w)
-	c := &Controller{Request: req, Response: res}
-	c.Session = make(Session)
-	appConfig.Session.SessionExpires = time.Duration(1) * time.Second
-	appConfig.Session.CookieExpires = time.Duration(2) * time.Second
-	m := &SessionMiddleware{}
-	m.After(c)
+	req, res := &kocha.Request{Request: r}, &kocha.Response{ResponseWriter: w}
+	c := &kocha.Controller{Request: req, Response: res}
+	c.Session = make(kocha.Session)
+	app.Config.Session.SessionExpires = time.Duration(1) * time.Second
+	app.Config.Session.CookieExpires = time.Duration(2) * time.Second
+	m := &kocha.SessionMiddleware{}
+	m.After(app, c)
 	var (
 		actual   interface{} = c.Session
-		expected interface{} = Session{
-			SessionExpiresKey: "1383820444", // + time.Duration(1) * time.Second
+		expected interface{} = kocha.Session{
+			kocha.SessionExpiresKey: "1383820444", // + time.Duration(1) * time.Second
 		}
 	)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	c.Session[SessionExpiresKey] = "1383820444"
+	c.Session[kocha.SessionExpiresKey] = "1383820444"
 	c1 := res.Cookies()[0]
 	c2 := &http.Cookie{
-		Name:     appConfig.Session.Name,
-		Value:    appConfig.Session.Store.Save(c.Session),
+		Name:     app.Config.Session.Name,
+		Value:    app.Config.Session.Store.Save(c.Session),
 		Path:     "/",
-		Expires:  util.Now().UTC().Add(appConfig.Session.CookieExpires),
+		Expires:  util.Now().UTC().Add(app.Config.Session.CookieExpires),
 		MaxAge:   2,
 		Secure:   false,
-		HttpOnly: appConfig.Session.HttpOnly,
+		HttpOnly: app.Config.Session.HttpOnly,
 	}
 	actual = c1.Name
 	expected = c2.Name
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
-	actual = appConfig.Session.Store.Load(c1.Value)
-	expected = appConfig.Session.Store.Load(c2.Value)
+	actual = app.Config.Session.Store.Load(c1.Value)
+	expected = app.Config.Session.Store.Load(c2.Value)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -296,11 +247,4 @@ func TestSessionMiddlewareAfter(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
-}
-
-type testBufferLogger struct{ *log.Logger }
-
-func (l *testBufferLogger) GoString() string { return "" }
-func newTestBufferLogger(buf io.Writer) logger {
-	return &testBufferLogger{log.New(buf, "", 0)}
 }

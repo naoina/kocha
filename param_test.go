@@ -1,35 +1,17 @@
-package kocha
+package kocha_test
 
 import (
 	"net/url"
 	"reflect"
 	"testing"
-)
 
-func TestParams_From(t *testing.T) {
-	for _, v := range []struct {
-		name     string
-		children []string
-		expected string
-	}{
-		{"aaa", nil, "aaa"},
-		{"abc", []string{}, "abc"},
-		{"abc", []string{"def"}, "abc.def"},
-		{"abc", []string{"def", "ghi"}, "abc.def.ghi"},
-	} {
-		p := &Params{}
-		actual := p.From(v.name, v.children...).prefix
-		expected := v.expected
-		if actual != expected {
-			t.Errorf("Params.From(%q, %q) => %q, want %q", v.name, v.children, actual, expected)
-		}
-	}
-}
+	"github.com/naoina/kocha"
+)
 
 func TestFromParams_Bind(t *testing.T) {
 	func() {
 		type User struct{}
-		p := &Params{Values: url.Values{}}
+		p := &kocha.Params{Values: url.Values{}}
 		user := User{}
 		err := p.From("user").Bind(user)
 		if err == nil {
@@ -38,7 +20,7 @@ func TestFromParams_Bind(t *testing.T) {
 	}()
 
 	func() {
-		p := &Params{Values: url.Values{}}
+		p := &kocha.Params{Values: url.Values{}}
 		var s string
 		err := p.From("user").Bind(&s)
 		if err == nil {
@@ -51,7 +33,7 @@ func TestFromParams_Bind(t *testing.T) {
 			Name string
 			Age  int
 		}
-		p := &Params{Values: url.Values{}}
+		p := &kocha.Params{Values: url.Values{}}
 		user := &User{}
 		err := p.From("user").Bind(user)
 		if err != nil {
@@ -71,7 +53,7 @@ func TestFromParams_Bind(t *testing.T) {
 			Age     int
 			Address string
 		}
-		p := &Params{Values: url.Values{
+		p := &kocha.Params{Values: url.Values{
 			"user.name":  {"naoina"},
 			"user.age":   {"17"},
 			"admin.name": {"administrator"},
@@ -101,7 +83,7 @@ func TestFromParams_Bind(t *testing.T) {
 			User
 			Name string
 		}
-		p := &Params{Values: url.Values{
+		p := &kocha.Params{Values: url.Values{
 			"user.name": {"naoina"},
 		}}
 		admin := &Admin{}
