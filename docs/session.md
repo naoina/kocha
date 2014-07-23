@@ -23,7 +23,7 @@ Session is simple key-value storage for each user/client.
 
 ## Basics <a id="Basics"></a>
 
-For example, do the following in order to set the data in the session:
+For example, do the following in order to set the data into the session:
 
 ```go
 func (c *Root) Get() kocha.Result {

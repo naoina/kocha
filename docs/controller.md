@@ -22,7 +22,7 @@ subnav:
 
 # Controller <a id="Controller"></a>
 
-Controller is layer of handling request.
+Controller is the layer of handling request.
 
 ## Organization <a id="Organization"></a>
 
@@ -45,7 +45,7 @@ NOTE: The following command is same as above because `g` is aliased to `generate
 
     kocha generate controller NAME
 
-The above command also generates template file into `app/views/` directory and adds route into `config/routes.go` automatically.
+The above command also generates a template file into `app/views/` directory and adds route into `config/routes.go` automatically.
 
 ## Render <a id="Render"></a>
 
@@ -53,7 +53,7 @@ Kocha provides some renderer for various purpose.
 
 ### Render *([godoc]({{ site.godoc }}#Controller.Render))*
 
-Render template that collect from a template directory in boot time (Usually, *app/views*).
+Render a template that collect from a template directory in boot time (Usually, *app/views*).
 
 ```go
 func (c *Root) Get() kocha.Result {
@@ -157,15 +157,15 @@ func (c *Root) Get() kocha.Result {
 ```
 
 If passed path is absolute, render the content read from the path as it is.
-If passed path is relative, First, Try to get the content read from included resources and returns it if successful. Otherwise, static directory adds to the prefix of the path and then will render the content read from the path that.
+If passed path is relative, First, try to get the content from included resources and returns it if success. Otherwise, The static directory path adds to the prefix of the path and then will render the content read from the path that.
 
-e.g. The absolute path:
+For example, an absolute path:
 
     c.SendFile("/srv/favicon.ico")
 
 The above responds `/srv/favicon.ico`.
 
-The relative path:
+A relative path:
 
     c.SendFile("favicon.ico")
 
@@ -204,7 +204,7 @@ If route defined as following in `config/routes.go`:
 Path: "/:id"
 ```
 
-Controller can take the parameter as argument of **id** of type *int*:
+Controller can take the parameter as an argument of **id** of type *int*:
 
 ```go
 func (c *Root) Get(id int) kocha.Result {

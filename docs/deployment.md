@@ -13,8 +13,8 @@ subnav:
   name: Migration
   path: Migration
 -
-  name: True All-in-One binary
-  path: True-all-in-one-binary
+  name: True All-In-One binary
+  path: True-All-In-One-binary
 -
   name: Graceful restart
   path: Graceful-restart
@@ -40,7 +40,7 @@ You can use any file transfer tool such as `rsync` in order to deploy the your a
 
     rsync -avz appname public targethost:/path/to/appdir/
 
-## Migration
+## Migration <a id="Migration"></a>
 
 In development environment, use `kocha migrate` command for migration.
 You can do migration using the built your application in the same way.
@@ -54,12 +54,12 @@ For backward migration:
     appname migrate down
 
 Where **appname** is your application name.
-Please see [Migration]({{ page.root }}/docs/model.html#Migration) for more details for migration.
+Please see [Migration]({{ page.root }}/docs/model.html#Migration) for more details.
 
-## True All-in-One binary <a id="True-all-in-one-binary"></a>
+## True All-In-One binary <a id="True-All-In-One-binary"></a>
 
 A generated binary by `kocha build` (or `go build`) doesn't include static files. (Usually, static files are in `public` directory)
-If you want to generate binary which include static files, use the following command:
+If you want to generate a binary which include static files, use the following command:
 
     kocha build -a
 
@@ -68,7 +68,7 @@ You don't have to transfer other files to server.
 
 ## Graceful restart <a id="Graceful-restart"></a>
 
-Kocha app can also do the *Graceful restart*. (aka *Hot reload*)
+Kocha app can be *Graceful restart* (aka *Hot reload*) if you are using `kocha.Run`.
 Send *SIGHUP* signal to your Kocha app such as using `kill -HUP` command in order to do it.
 
 Sequence:
@@ -77,3 +77,6 @@ Sequence:
 1. Run a new app process and starts new requests acceptance
 1. Wait the end of accepted requests in old app process
 1. exit the old app process
+
+In fact, `kocha.Run` is using [github.com/naoina/miyabi](https://github.com/naoina/miyabi) in order to graceful stop/restart.
+If you want to change the signals to graceful stop/restart, please see document of [github.com/naoina/miyabi](https://github.com/naoina/miyabi).

@@ -25,8 +25,8 @@ Middleware interface definition is following:
 {% raw %}
 ```go
 type Middleware interface {
-	Before(c *Controller)
-	After(c *Controller)
+	Before(app *Application, c *Controller)
+	After(app *Application, c *Controller)
 }
 ```
 {% endraw %}
@@ -47,4 +47,4 @@ SessionMiddleware will autosave and autoload a session on around a request proce
 
 ### RequestLoggingMiddleware *([godoc]({{ site.godoc }}#RequestLoggingMiddleware))*
 
-RequestLoggingMiddleware will output the access log. This is for development purposes.
+RequestLoggingMiddleware will output an access log. This is for development purposes.

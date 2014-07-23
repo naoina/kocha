@@ -39,7 +39,7 @@ Kocha uses standard Go template format that provided by [html/template](http://g
 
 Template is highly related with [Controller]({{ page.root }}/docs/controller.html).
 
-When Controller name is `root`, template file name **MUST** be `app/views/root.[extension]`.
+When Controller name is `root`, a template file name **MUST** be `app/views/root.[extension]`.
 `[extension]` is `html` by default. (See [File types](#File-types))
 
 Use `html` extension in this example.
@@ -135,7 +135,7 @@ See also [Render]({{ page.root }}/docs/controller.html#Render).
 
 ## Built-in functions *([godoc]({{ site.godoc }}#TemplateFuncs))* <a id="Built-in-functions"></a>
 
-Kocha provides various additional template functions such as following.
+Kocha provides various additional template functions such as follows.
 
 ### in
 

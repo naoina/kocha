@@ -33,7 +33,7 @@ subnav:
 
 ## Requirements <a id="Requirements"></a>
 
-* Go 1.2 or later (http://golang.org)
+* Go 1.3 or later (http://golang.org)
 
 ## Installation <a id="Installation"></a>
 
@@ -72,7 +72,7 @@ Do you see the welcome page?
 ![fig1]({{ page.root }}/images/fig1.png)
 
 Congratulation!
-You've finished the first step in the development of Kocha app.
+You've finished the first step of the development of the Kocha app.
 
 
 
@@ -92,7 +92,7 @@ Also `generate` subcommand adds route into `config/routes.go` automatically.
 
 ## Edit a controller <a id="Edit-a-controller"></a>
 
-So let's edit as following and save.
+So let's edit as follows.
 
 In `app/controllers/myroom.go`, edit to:
 
@@ -105,7 +105,7 @@ import (
 )
 
 type Myroom struct {
-    kocha.Controller
+    *kocha.Controller
 }
 
 func (c *Myroom) Get() kocha.Result {
