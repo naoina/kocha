@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -254,6 +255,8 @@ func TestTemplate_Get(t *testing.T) {
 			actual = append(actual, v.Name())
 		}
 		expected := []string{"layout", "testctrlr.html"}
+		sort.Strings(actual)
+		sort.Strings(expected)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
@@ -286,6 +289,8 @@ func TestTemplate_Get(t *testing.T) {
 			actual = append(actual, v.Name())
 		}
 		expected := []string{"layout", "testctrlr.html"}
+		sort.Strings(actual)
+		sort.Strings(expected)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}
