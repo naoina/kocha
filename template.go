@@ -16,16 +16,14 @@ import (
 
 // TemplatePathInfo represents an information of template paths.
 type TemplatePathInfo struct {
-	// Name of application.
-	Name string
-
-	// Directory paths of the template files.
-	Paths []string
+	Name  string   // name of the application.
+	Paths []string // directory paths of the template files.
 }
 
+// Template represents the templates information.
 type Template struct {
-	PathInfo TemplatePathInfo
-	FuncMap  TemplateFuncMap
+	PathInfo TemplatePathInfo // information of location of template paths.
+	FuncMap  TemplateFuncMap  // same as template.FuncMap.
 
 	m   templateMap
 	app *Application
@@ -125,6 +123,7 @@ func (t *Template) buildTemplateMap() (*Template, error) {
 	return t, nil
 }
 
+// TemplateFuncMap is an alias of templete.FuncMap.
 type TemplateFuncMap template.FuncMap
 
 type templateMap map[string]appTemplateSet

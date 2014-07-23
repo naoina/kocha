@@ -36,6 +36,7 @@ var (
 	}
 )
 
+// The routing table.
 type RouteTable []*Route
 
 func (rt RouteTable) buildRouter() (*Router, error) {
@@ -194,6 +195,7 @@ func (route *Route) normalize() {
 	}
 }
 
+// ParamNames returns names of the path parameters.
 func (route *Route) ParamNames() (names []string) {
 	path := route.Path
 	for i := 0; i < len(route.Path); i++ {
