@@ -9,15 +9,9 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
-)
 
-func TestLogConstants(t *testing.T) {
-	actual := defaultLflag
-	expected := log.Ldate | log.Ltime
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-}
+	"github.com/naoina/kocha"
+)
 
 func TestNullLogger(t *testing.T) {
 	var err error
@@ -37,7 +31,7 @@ func TestNullLogger(t *testing.T) {
 		os.Remove(os.Stderr.Name())
 		os.Stdout, os.Stderr = origStdout, origStderr
 	}()
-	logger := NullLogger()
+	logger := kocha.NullLogger()
 	logger.Output(0, "testnulllogger")
 	buf, err := ioutil.ReadAll(io.MultiReader(os.Stdout, os.Stderr))
 	if err != nil {
@@ -51,7 +45,7 @@ func TestNullLogger(t *testing.T) {
 }
 
 func Test_nullLoggerGoString(t *testing.T) {
-	logger := NullLogger()
+	logger := kocha.NullLogger()
 	actual := fmt.Sprintf("%#v", logger)
 	expected := "kocha.NullLogger()"
 	if !reflect.DeepEqual(actual, expected) {
@@ -77,7 +71,7 @@ func TestConsoleLogger(t *testing.T) {
 		os.Remove(os.Stderr.Name())
 		os.Stdout, os.Stderr = origStdout, origStderr
 	}()
-	logger := ConsoleLogger(-1)
+	logger := kocha.ConsoleLogger(-1)
 	logger.Output(0, "testconsolelogger")
 	buf, err := ioutil.ReadAll(os.Stdout)
 	if err != nil {
@@ -99,7 +93,7 @@ func TestConsoleLogger(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	logger = ConsoleLogger(log.Ldate)
+	logger = kocha.ConsoleLogger(log.Ldate)
 	logger.Output(0, "testconsolelogger2")
 	buf, err = ioutil.ReadAll(os.Stdout)
 	if err != nil {
@@ -123,14 +117,14 @@ func TestConsoleLogger(t *testing.T) {
 }
 
 func Test_consoleLoggerGoString(t *testing.T) {
-	logger := ConsoleLogger(-1)
+	logger := kocha.ConsoleLogger(-1)
 	actual := fmt.Sprintf("%#v", logger)
-	expected := fmt.Sprintf("kocha.ConsoleLogger(%d)", defaultLflag)
+	expected := fmt.Sprintf("kocha.ConsoleLogger(%d)", log.Ldate|log.Ltime)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	logger = ConsoleLogger(log.Llongfile)
+	logger = kocha.ConsoleLogger(log.Llongfile)
 	actual = fmt.Sprintf("%#v", logger)
 	expected = fmt.Sprintf("kocha.ConsoleLogger(%d)", log.Llongfile)
 	if !reflect.DeepEqual(actual, expected) {
@@ -145,7 +139,7 @@ func TestFileLogger(t *testing.T) {
 	}
 	defer os.RemoveAll(logDir)
 	logPath := filepath.Join(logDir, "testlog.log")
-	logger := FileLogger(logPath, 0)
+	logger := kocha.FileLogger(logPath, 0)
 	logger.Output(0, "testlog")
 	buf, err := ioutil.ReadFile(logPath)
 	if err != nil {
@@ -165,15 +159,15 @@ func Test_fileLoggerGoString(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 	path1 := filepath.Join(dir, "testlog1")
-	logger := FileLogger(path1, -1)
+	logger := kocha.FileLogger(path1, -1)
 	actual := fmt.Sprintf("%#v", logger)
-	expected := fmt.Sprintf("kocha.FileLogger(%q, %d)", path1, defaultLflag)
+	expected := fmt.Sprintf("kocha.FileLogger(%q, %d)", path1, log.Ldate|log.Ltime)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
 	path2 := filepath.Join(dir, "testlog2")
-	logger = FileLogger(path2, log.Ltime)
+	logger = kocha.FileLogger(path2, log.Ltime)
 	actual = fmt.Sprintf("%#v", logger)
 	expected = fmt.Sprintf("kocha.FileLogger(%q, %d)", path2, log.Ltime)
 	if !reflect.DeepEqual(actual, expected) {

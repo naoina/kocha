@@ -10,19 +10,20 @@ import (
 
 var (
 	AppName   = "{{.appName}}"
-	Addr      = kocha.SettingEnv("KOCHA_ADDR", "127.0.0.1:9100")
 	Env       = kocha.SettingEnv("KOCHA_ENV", "dev") // NOTE: deprecated. will be removed in future.
-	AppConfig = &kocha.AppConfig{
+	AppConfig = &kocha.Config{
+		Addr:          kocha.SettingEnv("KOCHA_ADDR", "127.0.0.1:9100"),
 		AppPath:       rootPath,
 		AppName:       AppName,
 		DefaultLayout: "app",
-		TemplateSet: kocha.TemplateSet{
-			{
+		Template: &kocha.Template{
+			PathInfo: kocha.TemplatePathInfo {
 				Name: AppName,
 				Paths: []string{
 					filepath.Join(rootPath, "app", "views"),
 				},
 			},
+			FuncMap: kocha.TemplateFuncMap{},
 		},
 
 		// Session settings
@@ -75,7 +76,4 @@ func init() {
 			&kocha.SessionMiddleware{},
 		}...)
 	}
-	config := kocha.Config(AppName)
-	config.Set("AppName", AppName)
-	config.Set("Addr", Addr)
 }

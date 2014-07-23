@@ -13,17 +13,26 @@ import (
 )
 
 const (
-	DefaultHttpAddr          = "127.0.0.1:9100"
+	// DefaultHttpAddr is the default listen address.
+	DefaultHttpAddr = "127.0.0.1:9100"
+
+	// DefaultMaxClientBodySize is the maximum size of HTTP request body.
+	// This can be overridden by setting Config.MaxClientBodySize.
 	DefaultMaxClientBodySize = 1024 * 1024 * 10 // 10MB
-	StaticDir                = "public"
+
+	// StaticDir is the directory of the static files.
+	StaticDir = "public"
 )
 
 var (
-	// Global logger
+	// Global logger.
 	Log *Logger
 )
 
 // Run starts Kocha app.
+// This will launch the HTTP server by using github.com/naoina/miyabi.
+// If you want to use other HTTP server that compatible with net/http such as
+// http.ListenAndServe, you can use New.
 func Run(config *Config) error {
 	app, err := New(config)
 	if err != nil {
@@ -49,6 +58,7 @@ func Run(config *Config) error {
 }
 
 // Application represents a Kocha app.
+// This implements the http.Handler interface.
 type Application struct {
 	// Config is a configuration of an application.
 	Config *Config
@@ -94,7 +104,7 @@ func New(config *Config) (*Application, error) {
 	return app, nil
 }
 
-// ServeHTTP implements http.Handler.ServeHTTP.
+// ServeHTTP implements the http.Handler.ServeHTTP.
 func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	controller, method, args := app.Router.dispatch(r)
 	if controller == nil {
@@ -239,16 +249,16 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 
 // Config represents a application-scope configuration.
 type Config struct {
-	Addr              string
-	AppPath           string
-	AppName           string
-	DefaultLayout     string
-	Template          *Template
-	RouteTable        RouteTable
-	Logger            *Logger
-	Middlewares       []Middleware
-	Session           *SessionConfig
-	MaxClientBodySize int64
+	Addr              string         // listen address, DefaultHttpAddr if empty.
+	AppPath           string         // root path of the application.
+	AppName           string         // name of the application.
+	DefaultLayout     string         // name of the default layout.
+	Template          *Template      // template config.
+	RouteTable        RouteTable     // routing config.
+	Logger            *Logger        // logger config.
+	Middlewares       []Middleware   // middlewares.
+	Session           *SessionConfig // session config.
+	MaxClientBodySize int64          // maximum size of request body, DefaultMaxClientBodySize if 0
 
 	ResourceSet ResourceSet
 }

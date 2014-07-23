@@ -10,10 +10,11 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/naoina/genmai"
+	"github.com/naoina/kocha"
 )
 
 func TestGenmaiTransaction_ImportPath(t *testing.T) {
-	actual := (&GenmaiTransaction{}).ImportPath()
+	actual := (&kocha.GenmaiTransaction{}).ImportPath()
 	expected := "github.com/naoina/genmai"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("(&GenmaiTransaction{}).ImportPath() => %q, want %q", actual, expected)
@@ -21,7 +22,7 @@ func TestGenmaiTransaction_ImportPath(t *testing.T) {
 }
 
 func TestGenmaiTransaction_TransactionType(t *testing.T) {
-	actual := (&GenmaiTransaction{}).TransactionType()
+	actual := (&kocha.GenmaiTransaction{}).TransactionType()
 	expected := &genmai.DB{}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("(&GenmaiTransaction{}).TransactionType() => %q, want %q", actual, expected)
@@ -31,7 +32,7 @@ func TestGenmaiTransaction_TransactionType(t *testing.T) {
 func TestGenmaiTransaction_Begin(t *testing.T) {
 	// test for sqlite3.
 	func() {
-		tx, err := (&GenmaiTransaction{}).Begin("sqlite3", ":memory:")
+		tx, err := (&kocha.GenmaiTransaction{}).Begin("sqlite3", ":memory:")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -44,7 +45,7 @@ func TestGenmaiTransaction_Begin(t *testing.T) {
 
 	// test for unsupported driver name.
 	func() {
-		_, err := (&GenmaiTransaction{}).Begin("unknown", ":memory:")
+		_, err := (&kocha.GenmaiTransaction{}).Begin("unknown", ":memory:")
 		if err == nil {
 			t.Errorf("(&GenmaiTransaction{}).Begin(%q, %q) => nil, error, want nil, error(%q)", "invalid", ":memory:", err)
 		}
@@ -84,13 +85,13 @@ func (t *testTransaction) Rollback() error {
 }
 
 func TestRegisterTransactionType(t *testing.T) {
-	bakTxTypeMap := TxTypeMap
+	bakTxTypeMap := kocha.TxTypeMap
 	defer func() {
-		TxTypeMap = bakTxTypeMap
+		kocha.TxTypeMap = bakTxTypeMap
 	}()
 	tx := &testTransaction{}
-	RegisterTransactionType("testtx", tx)
-	actual := TxTypeMap["testtx"]
+	kocha.RegisterTransactionType("testtx", tx)
+	actual := kocha.TxTypeMap["testtx"]
 	expected := tx
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("RegisterTransactionType(%q, %q) => %q, want %q", "testtx", tx, actual, expected)
@@ -98,20 +99,10 @@ func TestRegisterTransactionType(t *testing.T) {
 }
 
 func TestConst_migrationTableName(t *testing.T) {
-	actual := MigrationTableName
+	actual := kocha.MigrationTableName
 	expected := "schema_migration"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("MigrationTableName => %q, want %q", actual, expected)
-	}
-}
-
-func TestMigrate(t *testing.T) {
-	config := DatabaseConfig{Driver: "testdrv", DSN: "testdsn"}
-	m := "testm"
-	actual := Migrate(config, m)
-	expected := &Migration{config: config, m: m}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Migrate(%q, %q) => %q, want %q", config, m, actual, expected)
 	}
 }
 
@@ -152,26 +143,26 @@ func TestMigration_Up(t *testing.T) {
 			t.Fatal(err)
 		}
 		os.Stdout, os.Stderr = devnull, devnull
-		TxTypeMap["genmai"] = &GenmaiTransaction{}
-		config := DatabaseConfig{Driver: "sqlite3", DSN: dbpath}
+		kocha.TxTypeMap["genmai"] = &kocha.GenmaiTransaction{}
+		config := kocha.DatabaseConfig{Driver: "sqlite3", DSN: dbpath}
 		m := &testMigration{}
-		if err := (&Migration{config: config, m: m}).Up(-1); err != nil {
+		if err := kocha.Migrate(config, m).Up(-1); err != nil {
 			t.Fatal(err)
 		}
 		actual := m.called
 		expected := []string{"Up_20140303012000_TestMig1", "Up_20140309121357_TestMig2"}
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("(&Migration{config: %#v, m: %#v}).Up(-1) => %#v, want %#v", config, m, actual, expected)
+			t.Errorf("Migrate(%#v, %#v).Up(-1) => %#v, want %#v", config, m, actual, expected)
 		}
 
 		m.called = nil
-		if err := (&Migration{config: config, m: m}).Up(-1); err != nil {
+		if err := kocha.Migrate(config, m).Up(-1); err != nil {
 			t.Fatal(err)
 		}
 		actual = m.called
 		expected = nil
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("(&Migration{config: %#v, m: %#v}).Up(-1) => %#v, want %#v", config, m, actual, expected)
+			t.Errorf("Migrate(%#v, %#v).Up(-1) => %#v, want %#v", config, m, actual, expected)
 		}
 	}()
 
@@ -191,36 +182,36 @@ func TestMigration_Up(t *testing.T) {
 			t.Fatal(err)
 		}
 		os.Stdout, os.Stderr = devnull, devnull
-		TxTypeMap["genmai"] = &GenmaiTransaction{}
-		config := DatabaseConfig{Driver: "sqlite3", DSN: dbpath}
+		kocha.TxTypeMap["genmai"] = &kocha.GenmaiTransaction{}
+		config := kocha.DatabaseConfig{Driver: "sqlite3", DSN: dbpath}
 		m := &testMigration{}
-		if err := (&Migration{config: config, m: m}).Up(1); err != nil {
+		if err := kocha.Migrate(config, m).Up(1); err != nil {
 			t.Fatal(err)
 		}
 		actual := m.called
 		expected := []string{"Up_20140303012000_TestMig1"}
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("(&Migration{config: %#v, m: %#v}).Up(1) => %#v, want %#v", config, m, actual, expected)
+			t.Errorf("Migrate(%#v, %#v).Up(1) => %#v, want %#v", config, m, actual, expected)
 		}
 
 		m.called = nil
-		if err := (&Migration{config: config, m: m}).Up(1); err != nil {
+		if err := kocha.Migrate(config, m).Up(1); err != nil {
 			t.Fatal(err)
 		}
 		actual = m.called
 		expected = []string{"Up_20140309121357_TestMig2"}
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("(&Migration{config: %#v, m: %#v}).Up(1) => %#v, want %#v", config, m, actual, expected)
+			t.Errorf("Migrate(%#v, %#v).Up(1) => %#v, want %#v", config, m, actual, expected)
 		}
 
 		m.called = nil
-		if err := (&Migration{config: config, m: m}).Up(1); err != nil {
+		if err := kocha.Migrate(config, m).Up(1); err != nil {
 			t.Fatal(err)
 		}
 		actual = m.called
 		expected = nil
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("(&Migration{config: %#v, m: %#v}).Up(1) => %#v, want %#v", config, m, actual, expected)
+			t.Errorf("Migrate(%#v, %#v).Up(1) => %#v, want %#v", config, m, actual, expected)
 		}
 	}()
 }
@@ -259,26 +250,26 @@ func TestMigration_Down(t *testing.T) {
 			t.Fatal(err)
 		}
 		os.Stdout, os.Stderr = devnull, devnull
-		TxTypeMap["genmai"] = &GenmaiTransaction{}
-		config := DatabaseConfig{Driver: "sqlite3", DSN: dbpath}
+		kocha.TxTypeMap["genmai"] = &kocha.GenmaiTransaction{}
+		config := kocha.DatabaseConfig{Driver: "sqlite3", DSN: dbpath}
 		m := &testMigration{}
-		if err := (&Migration{config: config, m: m}).Down(-1); err != nil {
+		if err := kocha.Migrate(config, m).Down(-1); err != nil {
 			t.Fatal(err)
 		}
 		actual := m.called
 		expected := []string{"Down_20140309121357_TestMig2"}
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("(&Migration{config: %#v, m: %#v}).Down(-1) => %#v, want %#v", config, m, actual, expected)
+			t.Errorf("Migrate(%#v, %#v).Down(-1) => %#v, want %#v", config, m, actual, expected)
 		}
 
 		m.called = nil
-		if err := (&Migration{config: config, m: m}).Down(-1); err != nil {
+		if err := kocha.Migrate(config, m).Down(-1); err != nil {
 			t.Fatal(err)
 		}
 		actual = m.called
 		expected = []string{"Down_20140303012000_TestMig1"}
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("(&Migration{config: %#v, m: %#v}).Down(-1) => %#v, want %#v", config, m, actual, expected)
+			t.Errorf("Migrate(%#v, %#v).Down(-1) => %#v, want %#v", config, m, actual, expected)
 		}
 	}()
 
@@ -299,36 +290,36 @@ func TestMigration_Down(t *testing.T) {
 			t.Fatal(err)
 		}
 		os.Stdout, os.Stderr = devnull, devnull
-		TxTypeMap["genmai"] = &GenmaiTransaction{}
-		config := DatabaseConfig{Driver: "sqlite3", DSN: dbpath}
+		kocha.TxTypeMap["genmai"] = &kocha.GenmaiTransaction{}
+		config := kocha.DatabaseConfig{Driver: "sqlite3", DSN: dbpath}
 		m := &testMigration{}
-		if err := (&Migration{config: config, m: m}).Down(3); err != nil {
+		if err := kocha.Migrate(config, m).Down(3); err != nil {
 			t.Fatal(err)
 		}
 		actual := m.called
 		expected := []string{"Down_20140309121357_TestMig2", "Down_20140303012000_TestMig1"}
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("(&Migration{config: %#v, m: %#v}).Down(3) => %#v, want %#v", config, m, actual, expected)
+			t.Errorf("Migrate(%#v, %#v).Down(3) => %#v, want %#v", config, m, actual, expected)
 		}
 
 		m.called = nil
-		if err := (&Migration{config: config, m: m}).Down(2); err != nil {
+		if err := kocha.Migrate(config, m).Down(2); err != nil {
 			t.Fatal(err)
 		}
 		actual = m.called
 		expected = nil
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("(&Migration{config: %#v, m: %#v}).Down(2) => %#v, want %#v", config, m, actual, expected)
+			t.Errorf("Migrate(%#v, %#v).Down(2) => %#v, want %#v", config, m, actual, expected)
 		}
 
 		m.called = nil
-		if err := (&Migration{config: config, m: m}).Down(1); err != nil {
+		if err := kocha.Migrate(config, m).Down(1); err != nil {
 			t.Fatal(err)
 		}
 		actual = m.called
 		expected = nil
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("(&Migration{config: %#v, m: %#v}).Down(1) => %#v, want %#v", config, m, actual, expected)
+			t.Errorf("Migrate(%#v, %#v).Down(1) => %#v, want %#v", config, m, actual, expected)
 		}
 	}()
 }

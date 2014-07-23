@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
-	kocha.Init(config.AppConfig)
-	kocha.Run(config.Addr)
+	if err := kocha.Run(config.AppConfig); err != nil {
+		panic(err)
+	}
 }

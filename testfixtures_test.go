@@ -1,4 +1,4 @@
-package kocha_test
+package kocha
 
 import (
 	"fmt"
@@ -6,24 +6,22 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"github.com/naoina/kocha"
 )
 
-func newTestApp() *kocha.Application {
-	config := &kocha.Config{
+func NewTestApp() *Application {
+	config := &Config{
 		AppPath:       "testdata",
 		AppName:       "appname",
-		DefaultLayout: "app",
-		Template: &kocha.Template{
-			PathInfo: kocha.TemplatePathInfo{
+		DefaultLayout: "application",
+		Template: &Template{
+			PathInfo: TemplatePathInfo{
 				Name: "appname",
 				Paths: []string{
 					filepath.Join("testdata", "app", "views"),
 				},
 			},
 		},
-		RouteTable: kocha.RouteTable{
+		RouteTable: RouteTable{
 			{
 				Name:       "root",
 				Path:       "/",
@@ -70,32 +68,25 @@ func newTestApp() *kocha.Application {
 				Controller: FixturePostTestCtrl{},
 			},
 		},
-		Middlewares: append(kocha.DefaultMiddlewares, []kocha.Middleware{}...),
-		Session: &kocha.SessionConfig{
+		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
+		Session: &SessionConfig{
 			Name:  "test_session",
-			Store: newTestSessionCookieStore(),
+			Store: NewTestSessionCookieStore(),
 		},
-		MaxClientBodySize: kocha.DefaultMaxClientBodySize,
+		MaxClientBodySize: DefaultMaxClientBodySize,
 	}
-	app, err := kocha.New(config)
+	app, err := New(config)
 	if err != nil {
 		panic(err)
 	}
 	return app
 }
 
-func newTestSessionCookieStore() *kocha.SessionCookieStore {
-	return &kocha.SessionCookieStore{
+func NewTestSessionCookieStore() *SessionCookieStore {
+	return &SessionCookieStore{
 		SecretKey:  "abcdefghijklmnopqrstuvwxyzABCDEF",
 		SigningKey: "abcdefghijklmn",
 	}
-}
-
-func testInvokeWrapper(f func()) {
-	defer func() {
-		failedUnits = make(map[string]bool)
-	}()
-	f()
 }
 
 type orderedOutputMap map[string]interface{}
@@ -125,28 +116,28 @@ func (m orderedOutputMap) GoString() string {
 	return fmt.Sprintf("map[string]interface{}{%v}", strings.Join(keys, ", "))
 }
 
-type FixturePanicInRenderTestCtrl struct{ *kocha.Controller }
+type FixturePanicInRenderTestCtrl struct{ *Controller }
 
-func (c *FixturePanicInRenderTestCtrl) Get() kocha.Result {
+func (c *FixturePanicInRenderTestCtrl) Get() Result {
 	return c.RenderXML(Context{}) // Context is unsupported type in XML.
 }
 
 type FixtureUserTestCtrl struct {
-	*kocha.Controller
+	*Controller
 }
 
-func (c *FixtureUserTestCtrl) Get(id int) kocha.Result {
-	return c.Render(kocha.Context{
+func (c *FixtureUserTestCtrl) Get(id int) Result {
+	return c.Render(Context{
 		"id": id,
 	})
 }
 
 type FixtureDateTestCtrl struct {
-	kocha.Controller
+	Controller
 }
 
-func (c *FixtureDateTestCtrl) Get(year, month int, day int, name string) kocha.Result {
-	return c.Render(kocha.Context{
+func (c *FixtureDateTestCtrl) Get(year, month int, day int, name string) Result {
+	return c.Render(Context{
 		"year":  year,
 		"month": month,
 		"day":   day,
@@ -155,67 +146,67 @@ func (c *FixtureDateTestCtrl) Get(year, month int, day int, name string) kocha.R
 }
 
 type FixtureErrorTestCtrl struct {
-	kocha.Controller
+	Controller
 }
 
-func (c *FixtureErrorTestCtrl) Get() kocha.Result {
+func (c *FixtureErrorTestCtrl) Get() Result {
 	panic("panic test")
 }
 
 type FixtureJsonTestCtrl struct {
-	kocha.Controller
+	Controller
 }
 
-func (c *FixtureJsonTestCtrl) Get() kocha.Result {
+func (c *FixtureJsonTestCtrl) Get() Result {
 	c.Response.ContentType = "application/json"
 	return c.Render()
 }
 
 type FixtureRootTestCtrl struct {
-	*kocha.Controller
+	*Controller
 }
 
-func (c *FixtureRootTestCtrl) Get() kocha.Result {
+func (c *FixtureRootTestCtrl) Get() Result {
 	return c.Render()
 }
 
 type FixtureTeapotTestCtrl struct {
-	kocha.Controller
+	Controller
 }
 
-func (c *FixtureTeapotTestCtrl) Get() kocha.Result {
+func (c *FixtureTeapotTestCtrl) Get() Result {
 	c.Response.StatusCode = http.StatusTeapot
 	return c.Render()
 }
 
 type FixtureInvalidReturnValueTypeTestCtrl struct {
-	*kocha.Controller
+	*Controller
 }
 
 func (c *FixtureInvalidReturnValueTypeTestCtrl) Get() string {
 	return ""
 }
 
-type FixtureInvalidNumberOfReturnValueTestCtrl struct{ *kocha.Controller }
+type FixtureInvalidNumberOfReturnValueTestCtrl struct{ *Controller }
 
-func (c *FixtureInvalidNumberOfReturnValueTestCtrl) Get() (kocha.Result, kocha.Result) {
+func (c *FixtureInvalidNumberOfReturnValueTestCtrl) Get() (Result, Result) {
 	return c.RenderText(""), c.RenderText("")
 }
 
-type FixtureTypeUndefinedCtrl struct{ *kocha.Controller }
+type FixtureTypeUndefinedCtrl struct{ *Controller }
 
-func (c *FixtureTypeUndefinedCtrl) Get(id int32) kocha.Result {
+func (c *FixtureTypeUndefinedCtrl) Get(id int32) Result {
 	return c.RenderText("")
 }
 
 type FixturePostTestCtrl struct {
-	*kocha.Controller
+	*Controller
 }
 
-func (c *FixturePostTestCtrl) Post() kocha.Result {
+func (c *FixturePostTestCtrl) Post() Result {
 	m := orderedOutputMap{}
 	for k, v := range c.Params.Values {
 		m[k] = v
 	}
-	return c.Render(kocha.Context{"params": m})
+	return c.Render(Context{"params": m})
 }

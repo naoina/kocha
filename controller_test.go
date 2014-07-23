@@ -17,135 +17,156 @@ import (
 )
 
 func newTestController(name, layout string) *kocha.Controller {
+	app, err := kocha.New(&kocha.Config{
+		AppPath:       "testdata",
+		AppName:       "appname",
+		DefaultLayout: "",
+		Template: &kocha.Template{
+			PathInfo: kocha.TemplatePathInfo{
+				Name: "appname",
+				Paths: []string{
+					filepath.Join("testdata", "app", "views"),
+				},
+			},
+		},
+		RouteTable: []*kocha.Route{
+			{
+				Name:       name,
+				Path:       "/",
+				Controller: kocha.FixtureRootTestCtrl{},
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		panic(err)
 	}
-	w := httptest.NewRecorder()
 	return &kocha.Controller{
 		Name:     name,
 		Layout:   layout,
-		Request:  newRequest(req),
-		Response: newResponse(w),
-		Params:   &Params{},
+		Request:  &kocha.Request{Request: req},
+		Response: &kocha.Response{ResponseWriter: httptest.NewRecorder()},
+		Params:   &kocha.Params{},
+		App:      app,
 	}
 }
 
 func TestMimeTypeFormats(t *testing.T) {
-	actual := kocha.MimeTypeFormats
-	expected := mimeTypeFormats{
+	var actual interface{} = len(kocha.MimeTypeFormats)
+	var expected interface{} = 4
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`len(TestMimeTypeFormats) => %#v; want %#v`, actual, expected)
+	}
+	for k, v := range map[string]string{
+
 		"application/json": "json",
 		"application/xml":  "xml",
 		"text/html":        "html",
 		"text/plain":       "txt",
-	}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+	} {
+		if _, found := kocha.MimeTypeFormats[k]; !found {
+			t.Errorf(`MimeTypeFormats["%#v"] => notfound; want %v`, k, v)
+		}
 	}
 }
 
-func TestMimeTypeFormatsGet(t *testing.T) {
-	actual := MimeTypeFormats.Get("application/json")
+func TestMimeTypeFormats_Get(t *testing.T) {
+	actual := kocha.MimeTypeFormats.Get("application/json")
 	expected := "json"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	actual = MimeTypeFormats.Get("text/plain")
+	actual = kocha.MimeTypeFormats.Get("text/plain")
 	expected = "txt"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 }
 
-func TestMimeTypeFormatsSet(t *testing.T) {
+func TestMimeTypeFormats_Set(t *testing.T) {
 	mimeType := "test/mime"
-	if MimeTypeFormats[mimeType] != "" {
-		t.Fatalf("Expect none, but %v", MimeTypeFormats[mimeType])
+	if kocha.MimeTypeFormats[mimeType] != "" {
+		t.Fatalf("Expect none, but %v", kocha.MimeTypeFormats[mimeType])
 	}
 	expected := "testmimetype"
-	MimeTypeFormats.Set(mimeType, expected)
-	defer delete(MimeTypeFormats, mimeType)
-	actual := MimeTypeFormats[mimeType]
+	kocha.MimeTypeFormats.Set(mimeType, expected)
+	defer delete(kocha.MimeTypeFormats, mimeType)
+	actual := kocha.MimeTypeFormats[mimeType]
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 }
 
-func TestMimeTypeFormatsDel(t *testing.T) {
-	if MimeTypeFormats["text/html"] == "" {
+func TestMimeTypeFormats_Del(t *testing.T) {
+	if kocha.MimeTypeFormats["text/html"] == "" {
 		t.Fatal("Expect exists, but not exists")
 	}
-	MimeTypeFormats.Del("text/html")
+	kocha.MimeTypeFormats.Del("text/html")
 	defer func() {
-		MimeTypeFormats["text/html"] = "html"
+		kocha.MimeTypeFormats["text/html"] = "html"
 	}()
-	actual := MimeTypeFormats["text/html"]
+	actual := kocha.MimeTypeFormats["text/html"]
 	expected := ""
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 }
 
-func TestControllerRender_with_too_many_contexts(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newControllerTestApp()
+func TestController_Render_withTooManyContexts(t *testing.T) {
 	defer func() {
-		appConfig = oldAppConfig
 		if err := recover(); err == nil {
 			t.Error("panic doesn't happened")
 		}
 	}()
-	c := newTestController("testctrlr", "app")
-	c.Render(Context{}, Context{})
+	c := newTestController("testctrlr", "")
+	c.Render(kocha.Context{}, kocha.Context{})
 }
 
-func TestControllerRender_without_Context(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newControllerTestApp()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
-	c := newTestController("testctrlr", "app")
-	buf, err := ioutil.ReadAll(c.Render().(*resultContent).Body)
+func TestController_Render_withoutContext(t *testing.T) {
+	c := newTestController("testctrlr", "")
+	w := httptest.NewRecorder()
+	res := &kocha.Response{ResponseWriter: w}
+	c.Render().Proc(res)
+	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
 	var actual interface{} = string(buf)
-	var expected interface{} = "tmpl1"
+	var expected interface{} = "tmpl\n"
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+		t.Errorf("Expect %q, but %q", expected, actual)
 	}
 
 	actual = c.Context
-	expected = Context{"errors": c.errors}
+	expected = kocha.Context{"errors": c.Errors()}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Controller.Context => %#v, want %#v", actual, expected)
 	}
 }
 
-func TestControllerRender_with_Context(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newControllerTestApp()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
-
+func TestController_Render_WithContext(t *testing.T) {
 	func() {
-		c := newTestController("testctrlr_ctx", "app")
-		ctx := Context{
+		c := newTestController("testctrlr_ctx", "")
+		ctx := kocha.Context{
 			"c1": "v1",
 			"c2": "v2",
 		}
-		buf, err := ioutil.ReadAll(c.Render(ctx).(*resultContent).Body)
+		w := httptest.NewRecorder()
+		res := &kocha.Response{ResponseWriter: w}
+		c.Render(ctx).Proc(res)
+		buf, err := ioutil.ReadAll(w.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
-		ctx["errors"] = c.errors
+		ctx["errors"] = c.Errors()
 		actual := string(buf)
-		expected := fmt.Sprintf("tmpl_ctx: %v", ctx)
+		expected := fmt.Sprintf("tmpl_ctx: %v\n", ctx)
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+			t.Errorf("Expect %q, but %q", expected, actual)
 		}
 		if !reflect.DeepEqual(c.Response.ContentType, "text/html") {
 			t.Errorf("Expect %v, but %v", "text/html", c.Response.ContentType)
@@ -153,42 +174,48 @@ func TestControllerRender_with_Context(t *testing.T) {
 	}()
 
 	func() {
-		c := newTestController("testctrlr_ctx", "app")
-		c.Context = Context{
+		c := newTestController("testctrlr_ctx", "")
+		c.Context = kocha.Context{
 			"c3": "v3",
 			"c4": "v4",
 		}
-		buf, err := ioutil.ReadAll(c.Render().(*resultContent).Body)
+		w := httptest.NewRecorder()
+		res := &kocha.Response{ResponseWriter: w}
+		c.Render().Proc(res)
+		buf, err := ioutil.ReadAll(w.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
 		actual := string(buf)
-		expected := fmt.Sprintf("tmpl_ctx: %v", c.Context)
+		expected := fmt.Sprintf("tmpl_ctx: %v\n", c.Context)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}
 	}()
 
 	func() {
-		c := newTestController("testctrlr_ctx", "app")
-		c.Context = Context{
+		c := newTestController("testctrlr_ctx", "")
+		c.Context = kocha.Context{
 			"c5": "v5",
 			"c6": "v6",
 		}
-		ctx := Context{
+		ctx := kocha.Context{
 			"c6": "test",
 			"c7": "v7",
 		}
-		buf, err := ioutil.ReadAll(c.Render(ctx).(*resultContent).Body)
+		w := httptest.NewRecorder()
+		res := &kocha.Response{ResponseWriter: w}
+		c.Render(ctx).Proc(res)
+		buf, err := ioutil.ReadAll(w.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
 		actual := string(buf)
-		expected := fmt.Sprintf("tmpl_ctx: %v", Context{
+		expected := fmt.Sprintf("tmpl_ctx: %v\n", kocha.Context{
 			"c5":     "v5",
 			"c6":     "test",
 			"c7":     "v7",
-			"errors": c.errors,
+			"errors": c.Errors(),
 		})
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
@@ -196,22 +223,25 @@ func TestControllerRender_with_Context(t *testing.T) {
 	}()
 
 	func() {
-		c := newTestController("testctrlr_ctx", "app")
+		c := newTestController("testctrlr_ctx", "")
 		ctx := "test_ctx"
-		buf, err := ioutil.ReadAll(c.Render(ctx).(*resultContent).Body)
+		w := httptest.NewRecorder()
+		res := &kocha.Response{ResponseWriter: w}
+		c.Render(ctx).Proc(res)
+		buf, err := ioutil.ReadAll(w.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
 		actual := string(buf)
-		expected := "tmpl_ctx: test_ctx"
+		expected := "tmpl_ctx: test_ctx\n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}
 	}()
 
 	func() {
-		c := newTestController("testctrlr_ctx", "app")
-		c.Context = Context{"c1": "v1"}
+		c := newTestController("testctrlr_ctx", "")
+		c.Context = kocha.Context{"c1": "v1"}
 		ctx := "test_ctx_override"
 		defer func() {
 			if err := recover(); err == nil {
@@ -222,13 +252,13 @@ func TestControllerRender_with_Context(t *testing.T) {
 	}()
 
 	func() {
-		c := newTestController("testctrlr_ctx", "app")
-		c.Context = Context{"c1": "v1"}
+		c := newTestController("testctrlr_ctx", "")
+		c.Context = kocha.Context{"c1": "v1"}
 		c.Render()
 		actual := c.Context
-		expected := Context{
+		expected := kocha.Context{
 			"c1":     "v1",
-			"errors": make(map[string][]*ParamError),
+			"errors": make(map[string][]*kocha.ParamError),
 		}
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Controller.Context => %#v, want %#v", actual, expected)
@@ -236,13 +266,13 @@ func TestControllerRender_with_Context(t *testing.T) {
 	}()
 
 	func() {
-		c := newTestController("testctrlr_ctx", "app")
-		ctx := Context{"c1": "v1"}
+		c := newTestController("testctrlr_ctx", "")
+		ctx := kocha.Context{"c1": "v1"}
 		c.Render(ctx)
 		actual := c.Context
-		expected := Context{
+		expected := kocha.Context{
 			"c1":     "v1",
-			"errors": make(map[string][]*ParamError),
+			"errors": make(map[string][]*kocha.ParamError),
 		}
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Controller.Context => %#v, want %#v", actual, expected)
@@ -250,16 +280,21 @@ func TestControllerRender_with_Context(t *testing.T) {
 	}()
 
 	func() {
-		origLog := Log
+		origLog := kocha.Log
 		defer func() {
-			Log = origLog
+			kocha.Log = origLog
 		}()
-		Log = initLogger(nil)
-		c := newTestController("testctrlr_ctx", "app")
-		c.Context = Context{"c1": "v1", "errors": "testerr"}
+		kocha.Log = &kocha.Logger{
+			DEBUG: kocha.Loggers{kocha.NullLogger()},
+			INFO:  kocha.Loggers{kocha.NullLogger()},
+			WARN:  kocha.Loggers{kocha.NullLogger()},
+			ERROR: kocha.Loggers{kocha.NullLogger()},
+		}
+		c := newTestController("testctrlr_ctx", "")
+		c.Context = kocha.Context{"c1": "v1", "errors": "testerr"}
 		c.Render()
 		actual := c.Context
-		expected := Context{
+		expected := kocha.Context{
 			"c1":     "v1",
 			"errors": "testerr",
 		}
@@ -269,74 +304,67 @@ func TestControllerRender_with_Context(t *testing.T) {
 	}()
 }
 
-func TestControllerRender_with_ContentType(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newControllerTestApp()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
-	c := newTestController("testctrlr", "app")
+func TestController_Render_withContentType(t *testing.T) {
+	c := newTestController("testctrlr", "")
 	c.Response.ContentType = "application/json"
-	buf, err := ioutil.ReadAll(c.Render().(*resultContent).Body)
+	w := httptest.NewRecorder()
+	res := &kocha.Response{ResponseWriter: w}
+	c.Render().Proc(res)
+	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
 	actual := string(buf)
-	expected := `{"tmpl2":"content"}`
+	expected := `{"tmpl2":"content"}` + "\n"
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+		t.Errorf("Expect %q, but %q", expected, actual)
 	}
 }
 
-func TestControllerRender_with_missing_Template_in_AppName(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newControllerTestApp()
+func TestController_Render_withMissingTemplateInAppName(t *testing.T) {
 	defer func() {
-		appConfig = oldAppConfig
 		if err := recover(); err == nil {
 			t.Error("panic doesn't happened")
 		}
 	}()
-	c := newTestController("testctrlr", "app")
-	appConfig.AppName = "unknownAppName"
+	c := newTestController("testctrlr", "")
+	c.App.Config.AppName = "unknownAppName"
 	c.Render()
 }
 
-func TestControllerRender_with_missing_Template(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newControllerTestApp()
+func TestController_Render_withMissingTemplate(t *testing.T) {
 	defer func() {
-		appConfig = oldAppConfig
 		if err := recover(); err == nil {
 			t.Error("panic doesn't happened")
 		}
 	}()
-	c := newTestController("testctrlr", "app")
+	c := newTestController("testctrlr", "")
 	c.Name = "unknownctrlr"
 	c.Render()
 }
 
-func TestControllerRender_with_another_layout(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newControllerTestApp()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
-	c := newTestController("testctrlr", "anotherLayout")
-	buf, err := ioutil.ReadAll(c.Render().(*resultContent).Body)
+func TestController_Render_withAnotherLayout(t *testing.T) {
+	c := newTestController("testctrlr", "another_layout")
+	w := httptest.NewRecorder()
+	res := &kocha.Response{ResponseWriter: w}
+	c.Render().Proc(res)
+	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
 	actual := string(buf)
-	expected := "<b>a_tmpl1</b>"
+	expected := "Another layout\n"
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+		t.Errorf("Expect %q, but %q", expected, actual)
 	}
 }
 
-func TestControllerRenderJSON(t *testing.T) {
-	c := newTestController("testctrlr", "app")
-	buf, err := ioutil.ReadAll(c.RenderJSON(struct{ A, B string }{"hoge", "foo"}).(*resultContent).Body)
+func TestController_RenderJSON(t *testing.T) {
+	c := newTestController("testctrlr", "")
+	w := httptest.NewRecorder()
+	res := &kocha.Response{ResponseWriter: w}
+	c.RenderJSON(struct{ A, B string }{"hoge", "foo"}).Proc(res)
+	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -350,14 +378,17 @@ func TestControllerRenderJSON(t *testing.T) {
 	}
 }
 
-func TestControllerRenderXML(t *testing.T) {
-	c := newTestController("testctrlr", "app")
+func TestController_RenderXML(t *testing.T) {
+	c := newTestController("testctrlr", "")
 	ctx := struct {
 		XMLName xml.Name `xml:"user"`
 		A       string   `xml:"id"`
 		B       string   `xml:"name"`
 	}{A: "hoge", B: "foo"}
-	buf, err := ioutil.ReadAll(c.RenderXML(ctx).(*resultContent).Body)
+	w := httptest.NewRecorder()
+	res := &kocha.Response{ResponseWriter: w}
+	c.RenderXML(ctx).Proc(res)
+	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -371,9 +402,12 @@ func TestControllerRenderXML(t *testing.T) {
 	}
 }
 
-func TestControllerRenderText(t *testing.T) {
-	c := newTestController("testctrlr", "app")
-	buf, err := ioutil.ReadAll(c.RenderText("test_content_data").(*resultContent).Body)
+func TestController_RenderText(t *testing.T) {
+	c := newTestController("testctrlr", "")
+	w := httptest.NewRecorder()
+	res := &kocha.Response{ResponseWriter: w}
+	c.RenderText("test_content_data").Proc(res)
+	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -387,21 +421,19 @@ func TestControllerRenderText(t *testing.T) {
 	}
 }
 
-func TestControllerRenderError(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newControllerTestApp()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
-	c := newTestController("testctrlr", "app")
-	buf, err := ioutil.ReadAll(c.RenderError(http.StatusInternalServerError).(*resultContent).Body)
+func TestController_RenderError(t *testing.T) {
+	c := newTestController("testctrlr", "")
+	w := httptest.NewRecorder()
+	res := &kocha.Response{ResponseWriter: w}
+	c.RenderError(http.StatusInternalServerError).Proc(res)
+	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
 	var actual interface{} = string(buf)
-	var expected interface{} = "500 error"
+	var expected interface{} = "\nsingle 500 error\n"
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+		t.Errorf("Expect %q, but %q", expected, actual)
 	}
 	actual = c.Response.StatusCode
 	expected = http.StatusInternalServerError
@@ -409,15 +441,18 @@ func TestControllerRenderError(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	c = newTestController("testctrlr", "app")
-	buf, err = ioutil.ReadAll(c.RenderError(http.StatusBadRequest).(*resultContent).Body)
+	c = newTestController("testctrlr", "")
+	w = httptest.NewRecorder()
+	res = &kocha.Response{ResponseWriter: w}
+	c.RenderError(http.StatusBadRequest).Proc(res)
+	buf, err = ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
 	actual = string(buf)
-	expected = "400 error"
+	expected = "400 error\n"
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+		t.Errorf("Expect %q, but %q", expected, actual)
 	}
 	actual = c.Response.StatusCode
 	expected = http.StatusBadRequest
@@ -425,16 +460,19 @@ func TestControllerRenderError(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	c = newTestController("testctrlr", "app")
+	c = newTestController("testctrlr", "")
 	c.Response.ContentType = "application/json"
-	buf, err = ioutil.ReadAll(c.RenderError(http.StatusInternalServerError).(*resultContent).Body)
+	w = httptest.NewRecorder()
+	res = &kocha.Response{ResponseWriter: w}
+	c.RenderError(http.StatusInternalServerError).Proc(res)
+	buf, err = ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
 	actual = string(buf)
-	expected = `{"error":500}`
+	expected = `{"error":500}` + "\n"
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+		t.Errorf("Expect %q, but %q", expected, actual)
 	}
 	actual = c.Response.StatusCode
 	expected = http.StatusInternalServerError
@@ -443,7 +481,7 @@ func TestControllerRenderError(t *testing.T) {
 	}
 
 	func() {
-		c = newTestController("testctrlr", "app")
+		c = newTestController("testctrlr", "")
 		defer func() {
 			if err := recover(); err == nil {
 				t.Errorf("panic doesn't happened")
@@ -454,7 +492,7 @@ func TestControllerRenderError(t *testing.T) {
 	}()
 
 	func() {
-		c = newTestController("testctrlr", "app")
+		c = newTestController("testctrlr", "")
 		defer func() {
 			if err := recover(); err == nil {
 				t.Errorf("panic doesn't happened")
@@ -463,8 +501,11 @@ func TestControllerRenderError(t *testing.T) {
 		c.RenderError(http.StatusInternalServerError, nil, nil)
 	}()
 
-	c = newTestController("testctrlr", "app")
-	buf, err = ioutil.ReadAll(c.RenderError(http.StatusTeapot).(*resultContent).Body)
+	c = newTestController("testctrlr", "")
+	w = httptest.NewRecorder()
+	res = &kocha.Response{ResponseWriter: w}
+	c.RenderError(http.StatusTeapot).Proc(res)
+	buf, err = ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -480,7 +521,7 @@ func TestControllerRenderError(t *testing.T) {
 	}
 }
 
-func TestControllerSendFile(t *testing.T) {
+func TestController_SendFile(t *testing.T) {
 	// general test
 	func() {
 		tmpFile, err := ioutil.TempFile("", "TestControllerSendFile")
@@ -492,13 +533,11 @@ func TestControllerSendFile(t *testing.T) {
 		if _, err := tmpFile.WriteString("foobarbaz"); err != nil {
 			t.Fatal(err)
 		}
-		c := newTestController("testctrlr", "app")
-		result, ok := c.SendFile(tmpFile.Name()).(*resultContent)
-		if !ok {
-			t.Errorf("Expect %T, but %T", &resultContent{}, result)
-		}
-
-		buf, err := ioutil.ReadAll(result.Body)
+		c := newTestController("testctrlr", "")
+		w := httptest.NewRecorder()
+		res := &kocha.Response{ResponseWriter: w}
+		c.SendFile(tmpFile.Name()).Proc(res)
+		buf, err := ioutil.ReadAll(w.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -511,7 +550,7 @@ func TestControllerSendFile(t *testing.T) {
 
 	// test default static path
 	func() {
-		tmpDir := filepath.Join(os.TempDir(), StaticDir)
+		tmpDir := filepath.Join(os.TempDir(), kocha.StaticDir)
 		if err := os.Mkdir(tmpDir, 0755); err != nil {
 			t.Fatal(err)
 		}
@@ -521,22 +560,15 @@ func TestControllerSendFile(t *testing.T) {
 		}
 		defer tmpFile.Close()
 		defer os.RemoveAll(tmpDir)
-		oldAppConfig := appConfig
-		appConfig = newControllerTestApp()
-		appConfig.AppPath = filepath.Dir(tmpDir)
-		defer func() {
-			appConfig = oldAppConfig
-		}()
+		c := newTestController("testctrlr", "")
+		c.App.Config.AppPath = filepath.Dir(tmpDir)
 		if _, err := tmpFile.WriteString("foobarbaz"); err != nil {
 			t.Fatal(err)
 		}
-		c := newTestController("testctrlr", "app")
-		result, ok := c.SendFile(filepath.Base(tmpFile.Name())).(*resultContent)
-		if !ok {
-			t.Errorf("Expect %T, but %T", &resultContent{}, result)
-		}
-
-		buf, err := ioutil.ReadAll(result.Body)
+		w := httptest.NewRecorder()
+		res := &kocha.Response{ResponseWriter: w}
+		c.SendFile(filepath.Base(tmpFile.Name())).Proc(res)
+		buf, err := ioutil.ReadAll(w.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -549,17 +581,11 @@ func TestControllerSendFile(t *testing.T) {
 
 	// test file not found
 	func() {
-		oldAppConfig := appConfig
-		appConfig = newControllerTestApp()
-		defer func() {
-			appConfig = oldAppConfig
-		}()
-		c := newTestController("testctrlr", "app")
-		result, ok := c.SendFile("unknown/path").(*resultContent)
-		if !ok {
-			t.Errorf("Expect %T, but %T", &resultContent{}, result)
-		}
-		buf, err := ioutil.ReadAll(result.Body)
+		c := newTestController("testctrlr", "")
+		w := httptest.NewRecorder()
+		res := &kocha.Response{ResponseWriter: w}
+		c.SendFile("unknown/path").Proc(res)
+		buf, err := ioutil.ReadAll(w.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -581,7 +607,7 @@ func TestControllerSendFile(t *testing.T) {
 		if _, err := tmpFile.WriteString("foobarbaz"); err != nil {
 			t.Fatal(err)
 		}
-		c := newTestController("testctrlr", "app")
+		c := newTestController("testctrlr", "")
 		c.SendFile(tmpFile.Name())
 		actual := c.Response.ContentType
 		expected := "text/plain; charset=utf-8"
@@ -616,7 +642,7 @@ func TestControllerSendFile(t *testing.T) {
 		}
 		defer tmpFile.Close()
 		mime.AddExtensionType(".js", "application/javascript") // To avoid differences between environments.
-		c := newTestController("testctrlr", "app")
+		c := newTestController("testctrlr", "")
 		c.SendFile(tmpFile.Name())
 		actual := c.Response.ContentType
 		expected := "application/javascript"
@@ -627,17 +653,12 @@ func TestControllerSendFile(t *testing.T) {
 
 	// test with included resources
 	func() {
-		defer func() {
-			includedResources = make(map[string]*resource)
-		}()
-		includedResources["testrcname"] = &resource{[]byte("foobarbaz")}
-		c := newTestController("testctrlr", "app")
-		result, ok := c.SendFile("testrcname").(*resultContent)
-		if !ok {
-			t.Errorf("Expect %T, but %T", &resultContent{}, result)
-		}
-
-		buf, err := ioutil.ReadAll(result.Body)
+		c := newTestController("testctrlr", "")
+		c.App.ResourceSet.Add("testrcname", "foobarbaz")
+		w := httptest.NewRecorder()
+		res := &kocha.Response{ResponseWriter: w}
+		c.SendFile("testrcname").Proc(res)
+		buf, err := ioutil.ReadAll(w.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -650,12 +671,9 @@ func TestControllerSendFile(t *testing.T) {
 
 	// test detect content type with included resources
 	func() {
-		defer func() {
-			includedResources = make(map[string]*resource)
-		}()
-		c := newTestController("testctrlr", "app")
+		c := newTestController("testctrlr", "")
 		c.Response.ContentType = ""
-		includedResources["testrcname"] = &resource{[]byte("\x89PNG\x0d\x0a\x1a\x0a")}
+		c.App.ResourceSet.Add("testrcname", "\x89PNG\x0d\x0a\x1a\x0a")
 		c.SendFile("testrcname")
 		actual := c.Response.ContentType
 		expected := "image/png"
@@ -665,49 +683,45 @@ func TestControllerSendFile(t *testing.T) {
 	}()
 }
 
-func TestControllerRedirect(t *testing.T) {
-	c := newTestController("testctrlr", "app")
-	actual := c.Redirect("/path/to/redirect/permanently", true)
-	expected := &resultRedirect{
-		Request:     c.Request,
-		URL:         "/path/to/redirect/permanently",
-		Permanently: true,
-	}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-
-	actual = c.Redirect("/path/to/redirect", false)
-	expected = &resultRedirect{
-		Request:     c.Request,
-		URL:         "/path/to/redirect",
-		Permanently: false,
-	}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+func TestController_Redirect(t *testing.T) {
+	c := newTestController("testctrlr", "")
+	for _, v := range []struct {
+		redirectURL string
+		permanent   bool
+		expected    int
+	}{
+		{"/path/to/redirect/permanently", true, 301},
+		{"/path/to/redirect", false, 302},
+	} {
+		w := httptest.NewRecorder()
+		res := &kocha.Response{ResponseWriter: w}
+		c.Redirect(v.redirectURL, v.permanent).Proc(res)
+		actual := []interface{}{w.Code, w.HeaderMap.Get("Location")}
+		expected := []interface{}{v.expected, v.redirectURL}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf(`Controller.Redirect("%#v", %#v) => %#v; want %#v`, v.redirectURL, v.permanent, actual, expected)
+		}
 	}
 }
 
-func TestControllerErrors(t *testing.T) {
+func TestController_Errors(t *testing.T) {
 	func() {
-		c := &Controller{}
+		c := &kocha.Controller{}
 		actual := c.Errors()
-		expected := make(map[string][]*ParamError)
+		expected := make(map[string][]*kocha.ParamError)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Controller.Errors() => %#v, want %#v", actual, expected)
 		}
 	}()
 
 	func() {
-		c := &Controller{}
-		c.errors = map[string][]*ParamError{
-			"e1": {&ParamError{}},
-			"e2": {&ParamError{}, &ParamError{}},
-		}
+		c := &kocha.Controller{}
+		c.Errors()["e1"] = []*kocha.ParamError{&kocha.ParamError{}}
+		c.Errors()["e2"] = []*kocha.ParamError{&kocha.ParamError{}, &kocha.ParamError{}}
 		actual := c.Errors()
-		expected := map[string][]*ParamError{
-			"e1": {&ParamError{}},
-			"e2": {&ParamError{}, &ParamError{}},
+		expected := map[string][]*kocha.ParamError{
+			"e1": {&kocha.ParamError{}},
+			"e2": {&kocha.ParamError{}, &kocha.ParamError{}},
 		}
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Controller.Errors() => %#v, want %#v", actual, expected)
@@ -715,9 +729,9 @@ func TestControllerErrors(t *testing.T) {
 	}()
 }
 
-func TestControllerHasError(t *testing.T) {
+func TestController_HasError(t *testing.T) {
 	func() {
-		c := &Controller{}
+		c := &kocha.Controller{}
 		actual := c.HasErrors()
 		expected := false
 		if !reflect.DeepEqual(actual, expected) {
@@ -726,10 +740,8 @@ func TestControllerHasError(t *testing.T) {
 	}()
 
 	func() {
-		c := &Controller{}
-		c.errors = map[string][]*ParamError{
-			"e1": {&ParamError{}},
-		}
+		c := &kocha.Controller{}
+		c.Errors()["e1"] = []*kocha.ParamError{&kocha.ParamError{}}
 		actual := c.HasErrors()
 		expected := true
 		if !reflect.DeepEqual(actual, expected) {
@@ -738,12 +750,7 @@ func TestControllerHasError(t *testing.T) {
 	}()
 }
 
-func TestStaticServeGet(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newControllerTestApp()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
+func TestStaticServe_Get(t *testing.T) {
 	tmpFile, err := ioutil.TempFile("", "TestStaticServeGet")
 	if err != nil {
 		t.Fatal(err)
@@ -754,17 +761,25 @@ func TestStaticServeGet(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	w := httptest.NewRecorder()
-	c := &StaticServe{Controller: &Controller{}}
-	c.Controller.Request = newRequest(req)
-	c.Controller.Response = newResponse(w)
+	app := kocha.NewTestApp()
+	c := &kocha.StaticServe{Controller: &kocha.Controller{App: app}}
+	c.Controller.Request = &kocha.Request{Request: req}
+	c.Controller.Response = &kocha.Response{ResponseWriter: httptest.NewRecorder()}
 	u, err := url.Parse(tmpFile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, ok := c.Get(u).(*resultContent)
-	if !ok {
-		t.Errorf("Expect %T, but %T", &resultContent{}, result)
+	w := httptest.NewRecorder()
+	res := &kocha.Response{ResponseWriter: w}
+	c.Get(u).Proc(res)
+	buf, err := ioutil.ReadAll(w.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := []interface{}{w.Code, string(buf)}
+	expected := []interface{}{200, ""}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`StaticServe.Get(%#v) => %#v; want %#v`, u, actual, expected)
 	}
 }
 
@@ -773,32 +788,30 @@ func TestNewErrorController(t *testing.T) {
 		http.StatusInternalServerError,
 		http.StatusTeapot,
 	} {
-		actual := NewErrorController(v)
-		expected := &ErrorController{StatusCode: v}
+		actual := kocha.NewErrorController(v)
+		expected := &kocha.ErrorController{StatusCode: v}
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Value %v, expect %v, but %v", v, expected, actual)
 		}
 	}
 }
 
-func TestErrorControllerGet(t *testing.T) {
-	oldAppConfig := appConfig
-	appConfig = newControllerTestApp()
-	defer func() {
-		appConfig = oldAppConfig
-	}()
+func TestErrorController_Get(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		panic(err)
 	}
-	w := httptest.NewRecorder()
-	c := &ErrorController{
-		Controller: &Controller{},
+	app := kocha.NewTestApp()
+	c := &kocha.ErrorController{
+		Controller: &kocha.Controller{App: app},
 		StatusCode: http.StatusTeapot,
 	}
-	c.Controller.Request = newRequest(req)
-	c.Controller.Response = newResponse(w)
-	buf, err := ioutil.ReadAll(c.Get().(*resultContent).Body)
+	c.Controller.Request = &kocha.Request{Request: req}
+	c.Controller.Response = &kocha.Response{ResponseWriter: httptest.NewRecorder()}
+	w := httptest.NewRecorder()
+	res := &kocha.Response{ResponseWriter: w}
+	c.Get().Proc(res)
+	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
