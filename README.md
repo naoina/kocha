@@ -2,6 +2,17 @@
 
 A convenient web application framework for [Go](http://golang.org/)
 
+## Features
+
+* Batteries included
+* All configurations are in Go's syntax
+* Generate an All-In-One binary
+* Compatible with `net/http`
+
+## Requirement <a id="Requirement"></a>
+
+* Go 1.3 or later
+
 ## Getting started
 
 1. install the framework:
