@@ -327,7 +327,7 @@ type StaticServe struct {
 	*Controller
 }
 
-func (c *StaticServe) Get(path *url.URL) Result {
+func (c *StaticServe) GET(path *url.URL) Result {
 	return c.SendFile(path.Path)
 }
 
@@ -344,6 +344,6 @@ func NewErrorController(statusCode int) *ErrorController {
 	}
 }
 
-func (c *ErrorController) Get() Result {
+func (c *ErrorController) GET() Result {
 	return c.RenderError(c.StatusCode)
 }

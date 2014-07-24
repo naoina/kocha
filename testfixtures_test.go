@@ -118,7 +118,7 @@ func (m orderedOutputMap) GoString() string {
 
 type FixturePanicInRenderTestCtrl struct{ *Controller }
 
-func (c *FixturePanicInRenderTestCtrl) Get() Result {
+func (c *FixturePanicInRenderTestCtrl) GET() Result {
 	return c.RenderXML(Context{}) // Context is unsupported type in XML.
 }
 
@@ -126,7 +126,7 @@ type FixtureUserTestCtrl struct {
 	*Controller
 }
 
-func (c *FixtureUserTestCtrl) Get(id int) Result {
+func (c *FixtureUserTestCtrl) GET(id int) Result {
 	return c.Render(Context{
 		"id": id,
 	})
@@ -136,7 +136,7 @@ type FixtureDateTestCtrl struct {
 	Controller
 }
 
-func (c *FixtureDateTestCtrl) Get(year, month int, day int, name string) Result {
+func (c *FixtureDateTestCtrl) GET(year, month int, day int, name string) Result {
 	return c.Render(Context{
 		"year":  year,
 		"month": month,
@@ -149,7 +149,7 @@ type FixtureErrorTestCtrl struct {
 	Controller
 }
 
-func (c *FixtureErrorTestCtrl) Get() Result {
+func (c *FixtureErrorTestCtrl) GET() Result {
 	panic("panic test")
 }
 
@@ -157,7 +157,7 @@ type FixtureJsonTestCtrl struct {
 	Controller
 }
 
-func (c *FixtureJsonTestCtrl) Get() Result {
+func (c *FixtureJsonTestCtrl) GET() Result {
 	c.Response.ContentType = "application/json"
 	return c.Render()
 }
@@ -166,7 +166,7 @@ type FixtureRootTestCtrl struct {
 	*Controller
 }
 
-func (c *FixtureRootTestCtrl) Get() Result {
+func (c *FixtureRootTestCtrl) GET() Result {
 	return c.Render()
 }
 
@@ -174,7 +174,7 @@ type FixtureTeapotTestCtrl struct {
 	Controller
 }
 
-func (c *FixtureTeapotTestCtrl) Get() Result {
+func (c *FixtureTeapotTestCtrl) GET() Result {
 	c.Response.StatusCode = http.StatusTeapot
 	return c.Render()
 }
@@ -183,19 +183,19 @@ type FixtureInvalidReturnValueTypeTestCtrl struct {
 	*Controller
 }
 
-func (c *FixtureInvalidReturnValueTypeTestCtrl) Get() string {
+func (c *FixtureInvalidReturnValueTypeTestCtrl) GET() string {
 	return ""
 }
 
 type FixtureInvalidNumberOfReturnValueTestCtrl struct{ *Controller }
 
-func (c *FixtureInvalidNumberOfReturnValueTestCtrl) Get() (Result, Result) {
+func (c *FixtureInvalidNumberOfReturnValueTestCtrl) GET() (Result, Result) {
 	return c.RenderText(""), c.RenderText("")
 }
 
 type FixtureTypeUndefinedCtrl struct{ *Controller }
 
-func (c *FixtureTypeUndefinedCtrl) Get(id int32) Result {
+func (c *FixtureTypeUndefinedCtrl) GET(id int32) Result {
 	return c.RenderText("")
 }
 
@@ -203,7 +203,7 @@ type FixturePostTestCtrl struct {
 	*Controller
 }
 
-func (c *FixturePostTestCtrl) Post() Result {
+func (c *FixturePostTestCtrl) POST() Result {
 	m := orderedOutputMap{}
 	for k, v := range c.Params.Values {
 		m[k] = v

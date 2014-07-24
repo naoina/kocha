@@ -110,7 +110,7 @@ func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if controller == nil {
 		c := NewErrorController(http.StatusNotFound)
 		cValue := reflect.ValueOf(c)
-		mValue := reflect.ValueOf(c.Get)
+		mValue := reflect.ValueOf(c.GET)
 		controller = &cValue
 		method = &mValue
 		args = []reflect.Value{}
@@ -208,7 +208,7 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 				cc.Response = response
 			}
 			c.Controller = cc
-			r := c.Get()
+			r := c.GET()
 			result = []reflect.Value{reflect.ValueOf(r)}
 		}
 		for _, m := range app.Config.Middlewares {

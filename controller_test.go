@@ -750,7 +750,7 @@ func TestController_HasError(t *testing.T) {
 	}()
 }
 
-func TestStaticServe_Get(t *testing.T) {
+func TestStaticServe_GET(t *testing.T) {
 	tmpFile, err := ioutil.TempFile("", "TestStaticServeGet")
 	if err != nil {
 		t.Fatal(err)
@@ -771,7 +771,7 @@ func TestStaticServe_Get(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 	res := &kocha.Response{ResponseWriter: w}
-	c.Get(u).Proc(res)
+	c.GET(u).Proc(res)
 	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -779,7 +779,7 @@ func TestStaticServe_Get(t *testing.T) {
 	actual := []interface{}{w.Code, string(buf)}
 	expected := []interface{}{200, ""}
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf(`StaticServe.Get(%#v) => %#v; want %#v`, u, actual, expected)
+		t.Errorf(`StaticServe.GET(%#v) => %#v; want %#v`, u, actual, expected)
 	}
 }
 
@@ -796,7 +796,7 @@ func TestNewErrorController(t *testing.T) {
 	}
 }
 
-func TestErrorController_Get(t *testing.T) {
+func TestErrorController_GET(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		panic(err)
@@ -810,7 +810,7 @@ func TestErrorController_Get(t *testing.T) {
 	c.Controller.Response = &kocha.Response{ResponseWriter: httptest.NewRecorder()}
 	w := httptest.NewRecorder()
 	res := &kocha.Response{ResponseWriter: w}
-	c.Get().Proc(res)
+	c.GET().Proc(res)
 	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)

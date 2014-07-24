@@ -8,6 +8,6 @@ type Root struct {
 	*kocha.Controller
 }
 
-func (c *Root) Get() kocha.Result {
+func (c *Root) GET() kocha.Result {
 	return c.Render()
 }

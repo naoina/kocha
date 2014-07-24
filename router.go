@@ -21,13 +21,13 @@ import (
 )
 
 var (
-	controllerMethods = map[string]bool{
-		"Get":    true,
-		"Post":   true,
-		"Put":    true,
-		"Delete": true,
-		"Head":   true,
-		"Patch":  true,
+	controllerMethods = map[string]struct{}{
+		"GET":    struct{}{},
+		"POST":   struct{}{},
+		"PUT":    struct{}{},
+		"DELETE": struct{}{},
+		"HEAD":   struct{}{},
+		"PATCH":  struct{}{},
 	}
 	typeValidateParsers = map[string]TypeValidateParser{
 		"string":   &StringTypeValidateParser{regexp.MustCompile(`\A[\w-]+\z`)},
@@ -97,7 +97,7 @@ func newRouter(rt RouteTable) (*Router, error) {
 }
 
 func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
-	methodName := strings.Title(strings.ToLower(req.Method))
+	methodName := strings.ToUpper(req.Method)
 	path := util.NormPath(req.URL.Path)
 	data, params, found := router.forward.Lookup(path)
 	if !found {
