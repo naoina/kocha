@@ -106,13 +106,11 @@ func New(config *Config) (*Application, error) {
 
 // ServeHTTP implements the http.Handler.ServeHTTP.
 func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	controller, method, args := app.Router.dispatch(r)
-	if controller == nil {
+	controller, method, args, found := app.Router.dispatch(r)
+	if !found {
 		c := NewErrorController(http.StatusNotFound)
-		cValue := reflect.ValueOf(c)
-		mValue := reflect.ValueOf(c.GET)
-		controller = &cValue
-		method = &mValue
+		controller = reflect.ValueOf(c)
+		method = reflect.ValueOf(c.GET)
 		args = []reflect.Value{}
 	}
 	app.render(w, r, controller, method, args)
@@ -184,7 +182,7 @@ func (app *Application) validateSessionConfig() error {
 	return app.Config.Session.Validate()
 }
 
-func (app *Application) render(w http.ResponseWriter, r *http.Request, controller, method *reflect.Value, args []reflect.Value) {
+func (app *Application) render(w http.ResponseWriter, r *http.Request, controller, method reflect.Value, args []reflect.Value) {
 	request := newRequest(r)
 	response := newResponse(w)
 	var (
@@ -219,7 +217,7 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 	}()
 	request.Body = http.MaxBytesReader(w, request.Body, app.Config.MaxClientBodySize)
 	ac := controller.Elem()
-	ccValue := ac.FieldByName("Controller")
+	ccValue := ac.FieldByName(reflect.TypeOf((*Controller)(nil)).Elem().Name())
 	switch c := ccValue.Interface().(type) {
 	case Controller:
 		cc = &c

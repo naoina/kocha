@@ -96,12 +96,12 @@ func newRouter(rt RouteTable) (*Router, error) {
 	return router, nil
 }
 
-func (router *Router) dispatch(req *http.Request) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
+func (router *Router) dispatch(req *http.Request) (controller reflect.Value, method reflect.Value, args []reflect.Value, found bool) {
 	methodName := strings.ToUpper(req.Method)
 	path := util.NormPath(req.URL.Path)
 	data, params, found := router.forward.Lookup(path)
 	if !found {
-		return nil, nil, nil
+		return controller, method, nil, false
 	}
 	route := data.(*Route)
 	return route.dispatch(methodName, params)
@@ -160,27 +160,27 @@ type Route struct {
 	paramNames  []string
 }
 
-func (route *Route) dispatch(methodName string, params []denco.Param) (controller *reflect.Value, method *reflect.Value, args []reflect.Value) {
-	methodArgs := route.MethodTypes[methodName]
-	if methodArgs == nil {
-		return nil, nil, nil
+func (route *Route) dispatch(methodName string, params []denco.Param) (controller reflect.Value, method reflect.Value, args []reflect.Value, found bool) {
+	methodArgs, exists := route.MethodTypes[methodName]
+	if !exists {
+		return controller, method, nil, false
 	}
 	for _, param := range params {
 		t := methodArgs[param.Name]
 		validateParser := typeValidateParsers[t]
 		arg, err := validateParser.Parse(param.Value)
 		if err != nil {
-			return nil, nil, nil
+			return controller, method, nil, false
 		}
 		if !validateParser.Validate(arg) {
-			return nil, nil, nil
+			return controller, method, nil, false
 		}
 		args = append(args, reflect.ValueOf(arg))
 	}
 	t := reflect.TypeOf(route.Controller)
 	c := reflect.New(t)
 	m := c.MethodByName(methodName)
-	return &c, &m, args
+	return c, m, args, true
 }
 
 func (route *Route) normalize() {

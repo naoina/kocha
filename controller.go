@@ -46,29 +46,14 @@ func (m mimeTypeFormats) Del(mimeType string) {
 
 // Controller is the base controller.
 type Controller struct {
-	// Name of controller.
-	Name string
-
-	// Layout name to use.
-	Layout string
-
-	// Context value for template.
-	Context Context
-
-	// Request.
-	Request *Request
-
-	// Response.
-	Response *Response
-
-	// Parameters of form values.
-	Params *Params
-
-	// Session.
-	Session Session
-
-	// An application.
-	App *Application
+	Name     string       // controller name.
+	Layout   string       // layout name.
+	Context  Context      // context value for template.
+	Request  *Request     // request.
+	Response *Response    // response.
+	Params   *Params      // parameters of form values.
+	Session  Session      // session.
+	App      *Application // an application.
 
 	errors map[string][]*ParamError
 }
