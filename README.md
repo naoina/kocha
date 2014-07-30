@@ -2,6 +2,8 @@
 
 A convenient web application framework for [Go](http://golang.org/)
 
+**NOTE: Kocha is still under development, so API might be changed in future. If you still want to use the current version of Kocha, use of a version control such as [gopkg.in](http://labix.org/gopkg.in) is highly recommended.**
+
 ## Features
 
 * Batteries included
