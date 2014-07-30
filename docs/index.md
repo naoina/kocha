@@ -35,10 +35,10 @@ In order to learn basic usage of Kocha, see [Getting started]({{ page.root }}/ge
 ```
 .
 |-- app
-|   |-- controllers
+|   |-- controller
 |   |   `-- root.go
-|   `-- views
-|       |-- layouts
+|   `-- view
+|       |-- layout
 |       |   `-- app.html
 |       `-- root.html
 |-- config

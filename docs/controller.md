@@ -29,7 +29,7 @@ Controller is the layer of handling request.
 ```
 .
 `-- app
-    `-- controllers
+    `-- controller
         `-- root.go`
 ```
 
@@ -45,7 +45,7 @@ NOTE: The following command is same as above because `g` is aliased to `generate
 
     kocha generate controller NAME
 
-The above command also generates a template file into `app/views/` directory and adds route into `config/routes.go` automatically.
+The above command also generates a template file into `app/view/` directory and adds route into `config/routes.go` automatically.
 
 ## Render <a id="Render"></a>
 
@@ -53,7 +53,7 @@ Kocha provides some renderer for various purpose.
 
 ### Render *([godoc]({{ site.godoc }}#Controller.Render))*
 
-Render a template that collect from a template directory in boot time (Usually, *app/views*).
+Render a template that collect from a template directory in boot time (Usually, *app/view*).
 
 ```go
 func (c *Root) Get() kocha.Result {
@@ -61,7 +61,7 @@ func (c *Root) Get() kocha.Result {
 }
 ```
 
-By default, template type is `text/html`. It responds `app/views/root.html`. (Where *root* in *root.html* is the Controller name mapped to snake case)
+By default, template type is `text/html`. It responds `app/view/root.html`. (Where *root* in *root.html* is the Controller name mapped to snake case)
 If ContentType isn't specified, render the file type specific template that it detects by ContentType.
 
 e.g.
@@ -73,7 +73,7 @@ func (c *Root) Get() kocha.Result {
 }
 ```
 
-The above responds `app/views/root.json` template.
+The above responds `app/view/root.json` template.
 
 Also *Render* can be passed context to [Template.Execute](http://golang.org/pkg/html/template/#Template.Execute):
 

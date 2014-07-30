@@ -94,11 +94,11 @@ Also `generate` subcommand adds route into `config/routes.go` automatically.
 
 So let's edit as follows.
 
-In `app/controllers/myroom.go`, edit to:
+In `app/controller/myroom.go`, edit to:
 
 {% raw %}
 ```go
-package controllers
+package controller
 
 import (
     "github.com/naoina/kocha"
@@ -116,7 +116,7 @@ func (c *Myroom) Get() kocha.Result {
 ```
 {% endraw %}
 
-In `app/views/myroom.html`, edit to:
+In `app/view/myroom.html`, edit to:
 
 {% raw %}
 ```html
@@ -159,7 +159,7 @@ Path:       "/myroom/:name",
 ```
 {% endraw %}
 
-Second, In `app/controllers/myroom.go`, edit:
+Second, In `app/controller/myroom.go`, edit:
 
 {% raw %}
 ```go

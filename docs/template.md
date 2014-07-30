@@ -29,8 +29,8 @@ Kocha uses standard Go template format that provided by [html/template](http://g
 ```
 .
 `-- app
-    `-- views
-        |-- layouts
+    `-- view
+        |-- layout
         |   `-- app.html    # A layout file for HTML file type
         `-- root.html       # HTML template file for Root controller
 ```
@@ -39,12 +39,12 @@ Kocha uses standard Go template format that provided by [html/template](http://g
 
 Template is highly related with [Controller]({{ page.root }}/docs/controller.html).
 
-When Controller name is `root`, a template file name **MUST** be `app/views/root.[extension]`.
+When Controller name is `root`, a template file name **MUST** be `app/view/root.[extension]`.
 `[extension]` is `html` by default. (See [File types](#File-types))
 
 Use `html` extension in this example.
 
-app/views/root.html:
+app/view/root.html:
 
 {% raw %}
 ```html
@@ -78,7 +78,7 @@ In fact, white-spaces in output are perhaps different from example above.
 ## Layout <a id="Layout"></a>
 
 Kocha supports template layout and also enabled by default.
-The default layout is `app`, it retrieves `app/views/layouts/app.[extension]`.
+The default layout is `app`, it retrieves `app/view/layout/app.[extension]`.
 You can change the default layout by `AppConfig.DefaultLayout` in `config/app.go`.
 
 Also multiple layout files are supported.
@@ -86,7 +86,7 @@ To use another layout instead of the default layout, set any layout name to `c.L
 
 For example, layout name set to `sub`, and when templates and Controller are following.
 
-app/views/layouts/sub.html:
+app/view/layout/sub.html:
 
 {% raw %}
 ```html
@@ -100,7 +100,7 @@ app/views/layouts/sub.html:
 ```
 {% endraw %}
 
-In app/controllers/root.go:
+In app/controller/root.go:
 
 {% raw %}
 ```go
@@ -111,7 +111,7 @@ func (c *Root) Get() kocha.Result {
 ```
 {% endraw %}
 
-app/views/root.html is same as previous.
+app/view/root.html is same as previous.
 
 Output:
 

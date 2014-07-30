@@ -28,7 +28,7 @@ package config
 
 import (
     "github.com/naoina/kocha"
-    "your/app/controllers"
+    "your/app/controller"
 )
 
 type RouteTable kocha.RouteTable
@@ -37,7 +37,7 @@ var routes = RouteTable{
     {
         Name:       "root",
         Path:       "/",
-        Controller: controllers.Root{},
+        Controller: controller.Root{},
     },
 }
 
@@ -58,7 +58,7 @@ format:
 {
     Name:       "root",
     Path:       "/",
-    Controller: controllers.Root{},
+    Controller: controller.Root{},
 }
 ```
 
@@ -70,12 +70,12 @@ For example, If route is defined the following:
 {
     Name:       "myroom"
     Path:       "/myroom"
-    Controller: controllers.Myroom{},
+    Controller: controller.Myroom{},
 }
 ```
 
-And when request is `GET /myroom`, it will be routed to *controllers.Myroom.Get* method.
-Also when request is `POST /myroom`, it will be routed to *controllers.Myroom.Post* method.
+And when request is `GET /myroom`, it will be routed to *controller.Myroom.Get* method.
+Also when request is `POST /myroom`, it will be routed to *controller.Myroom.Post* method.
 Similarly, for each request, `PUT` to *Put*, `DELETE` to *Delete*, `HEAD` to *Head* and `PATCH` to *Patch* are routed to those methods respectively.
 
 Finally, `Controller` field is instance of Controller. See [Controller]({{ page.root }}/docs/controller.html) document for more details.
@@ -227,7 +227,7 @@ Then route modifies to following:
 {
     Name:       "root",
     Path:       "/:b",
-    Controller: controllers.Root{},
+    Controller: controller.Root{},
 }
 ```
 

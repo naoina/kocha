@@ -37,17 +37,17 @@ The above command will generate the following files.
 ```
 .
 |-- app
-|   `-- models
+|   `-- model
 |       `-- user.go
 `-- db
     `-- config.go`  # if not generated yet.
 ```
 
-`app/models/user.go`:
+`app/model/user.go`:
 
 {% raw %}
 ```go
-package models
+package model
 
 import (
     "github.com/naoina/genmai"
@@ -121,7 +121,7 @@ The above command will generate the following files.
 ```
 .
 `-- db
-    `-- migrations
+    `-- migration
         |-- 20140312091159_create_user_table.go
         `-- init.go
 ```
@@ -129,11 +129,11 @@ The above command will generate the following files.
 Where *20140312091159* is the timestamp of when generated that.
 It is different each time it is generated.
 
-`db/migrations/20140312091159_create_user_table.go`:
+`db/migration/20140312091159_create_user_table.go`:
 
 {% raw %}
 ```go
-package migrations
+package migration
 
 import "github.com/naoina/genmai"
 
