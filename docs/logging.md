@@ -7,83 +7,115 @@ subnav:
   name: Basics
   path: Basics
 -
+  name: Configurations
+  path: Configurations
+-
   name: Log levels
   path: Log-levels
 -
-  name: Set loggers
-  path: Set-loggers
--
-  name: Built-in loggers
-  path: Built-in-loggers
+  name: Formatter
+  path: Formatter
 ---
 
 # Logging <a id="Logging"></a>
 
-**NOTE: Logging of Kocha is experimental features. Maybe they will be changed in future.**
+Kocha provides a level-based logger.
 
 ## Basics <a id="Basics"></a>
 
-Kocha provides global logger.
+Logging feature is provided by [Application.Logger]({{ site.godoc }}#Application.Logger).
 
 Usage:
 
+In controller:
+
 ```go
-kocha.Log.Info("this is a %s", variable)
+func (c *Root) GET() kocha.Result {
+    c.App.Logger.Info("This is a root")
+    return c.Render()
+}
 ```
 
-Above example, output is in the *Info* log level.
+## Configurations <a id="Configurations"></a>
+
+Logger configurations is in `config/app.go`.
+
+```go
+// Logger settings.
+Logger: &kocha.LoggerConfig{
+    Writer:    os.Stdout,
+    Formatter: &log.LTSVFormatter{},
+    Level:     log.INFO,
+}
+```
+
+The definition of [LoggerConfig]({{ site.godoc }}#LoggerConfig) is following.
+
+```go
+// LoggerConfig represents the configuration of the logger.
+type LoggerConfig struct {
+    Writer    io.Writer     // output destination for the logger.
+    Formatter log.Formatter // formatter for log entry.
+    Level     log.Level     // log level.
+}
+```
 
 ## Log levels <a id="Log-levels"></a>
 
-* `kocha.Log.Debug`
-* `kocha.Log.Info`
-* `kocha.Log.Warn`
-* `kocha.Log.Error`
+The log levels are following.
 
-To set the loggers for these log levels, set the `AppConfig.Logger` in `config/app.go`.
+* log.NONE *([godoc]({{ site.godoc }}/log#NONE))*
+* log.DEBUG *([godoc]({{ site.godoc }}/log#DEBUG))*
+* log.INFO *([godoc]({{ site.godoc }}/log#INFO))*
+* log.WARN *([godoc]({{ site.godoc }}/log#WARN))*
+* log.ERROR *([godoc]({{ site.godoc }}/log#ERROR))*
+* log.FATAL *([godoc]({{ site.godoc }}/log#FATAL))*
+* log.PANIC *([godoc]({{ site.godoc }}/log#PANIC))*
 
-## Set loggers <a id="Set-loggers"></a>
+You can set a log level to Logger by some ways below.
 
-For example:
+* Set log level to [LoggerConfig.Level]({{ site.godoc }}#LoggerConfig.Level) in `config/app.go` configuration file.
+* Use [log.Logger.SetLevel]({{ site.godoc }}/log#Logger.SetLevel) API
 
-```go
-AppConfig.Logger = &kocha.Logger{
-    DEBUG: kocha.Loggers{kocha.ConsoleLogger(-1)},
-    INFO:  kocha.Loggers{kocha.ConsoleLogger(-1)},
-    WARN:  kocha.Loggers{kocha.ConsoleLogger(-1)},
-    ERROR: kocha.Loggers{kocha.ConsoleLogger(-1)},
-}
-```
+### Suppress the output by log level
 
-Loggers set to `ConsoleLogger` in above example. Also loggers use the prefix flags of [log](http://golang.org/pkg/log/#pkg-constants) package.
-If you want to use the default flags, specify the `-1`.
-The default flag is `Ldate | Ltime`.
-
-### Set the multiple loggers
-
-You can register multiple loggers, such as the following:
+For example, when log level set to *log.INFO*.
 
 ```go
-kocha.Loggers{
-    kocha.ConsoleLogger(-1),
-    kocha.FileLogger("path/to/logfile", -1),
-}
+Logger.Debug("debug log")
 ```
 
-This is output to all registered loggers when use the logger of that log level.
+It won't be output because log level of [Logger.Debug()]({{ site.godoc }}/log#Logger.Debug) has a log.DEBUG, and lower than log.INFO.
 
-## Built-in loggers <a id="Built-in-loggers"></a>
+```go
+Logger.Info("info log")
+Logger.Error("error log")
+```
 
-Kocha provides some common loggers.
+It will be output because [Logger.Info()]({{ site.godoc }}/log#Logger.Info) and [Logger.Error]({{ site.godoc }}/log#Logger.Error) have a log level which equal or upper than log.INFO.
 
-### ConsoleLogger *([godoc]({{ site.godoc }}#ConsoleLogger))*
+## Formatter <a id="Formatter"></a>
 
-Output to `os.Stdout`.
+Logger has a formatter that format to specific log format.
 
-### FileLogger *([godoc]({{ site.godoc }}#FileLogger))*
+### Built-in formatter <a id="Built-in-formatter"></a>
 
-Output to specified file.
+Kocha provides formatter below.
 
-### NullLogger *([godoc]({{ site.godoc }}#NullLogger))*
+#### LTSVFormatter *([godoc]({{ site.godoc }}/log#LTSVFormatter))*
 
-This is dummy logger that it doesn't output.
+A formatter of *Labeled Tab-separated Values* (LTSV).
+This is the default formatter of Kocha if you haven't specified the formatter.
+See http://ltsv.org/ for more details of LTSV.
+
+```text
+level:INFO	time:2014-07-30T17:45:40.419347835+09:00	method:GET	protocol:HTTP/1.1	status:200	uri:/
+level:INFO	time:2014-07-30T17:45:48.238892704+09:00	method:GET	protocol:HTTP/1.1	status:404	uri:/user
+```
+
+### Custom formatter <a id="Custom-formatter"></a>
+
+You can define your own custom formatter.
+
+1. Implements the [log.Format]({{ site.godoc }}/log#Format) interface.
+1. It set to `AppConfig.Logger.Formatter` in `config/app.go`.
