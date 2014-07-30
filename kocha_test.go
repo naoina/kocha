@@ -2,8 +2,7 @@ package kocha_test
 
 import (
 	"bytes"
-	"io/ioutil"
-	"log"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -12,7 +11,37 @@ import (
 	"testing"
 
 	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/log"
 )
+
+type testLogFormatter struct {
+}
+
+func (f *testLogFormatter) Format(w io.Writer, entry *log.Entry) error {
+	return nil
+}
+
+func newConfig() *kocha.Config {
+	return &kocha.Config{
+		AppPath:       "testpath",
+		AppName:       "testappname",
+		DefaultLayout: "testapp",
+		Template:      &kocha.Template{},
+		RouteTable: kocha.RouteTable{
+			{
+				Name:       "route1",
+				Path:       "route_path1",
+				Controller: &kocha.FixtureRootTestCtrl{},
+			},
+			{
+				Name:       "route2",
+				Path:       "route_path2",
+				Controller: &kocha.FixtureRootTestCtrl{},
+			},
+		},
+		Logger: &kocha.LoggerConfig{},
+	}
+}
 
 func TestConst(t *testing.T) {
 	for _, v := range []struct {
@@ -32,27 +61,6 @@ func TestConst(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-	newConfig := func() *kocha.Config {
-		return &kocha.Config{
-			AppPath:       "testpath",
-			AppName:       "testappname",
-			DefaultLayout: "testapp",
-			Template:      &kocha.Template{},
-			RouteTable: kocha.RouteTable{
-				{
-					Name:       "route1",
-					Path:       "route_path1",
-					Controller: &kocha.FixtureRootTestCtrl{},
-				},
-				{
-					Name:       "route2",
-					Path:       "route_path2",
-					Controller: &kocha.FixtureRootTestCtrl{},
-				},
-			},
-			Logger: &kocha.Logger{},
-		}
-	}
 	func() {
 		config := newConfig()
 		app, err := kocha.New(config)
@@ -103,6 +111,49 @@ func TestNew(t *testing.T) {
 		}
 	}()
 }
+
+func TestNew_buildLogger(t *testing.T) {
+	func() {
+		config := newConfig()
+		config.Logger = nil
+		app, err := kocha.New(config)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual := app.Config.Logger
+		expected := &kocha.LoggerConfig{
+			Writer:    os.Stdout,
+			Formatter: &log.LTSVFormatter{},
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf(`New(...).Config.Logger => %#v; want %#v`, actual, expected)
+		}
+	}()
+
+	func() {
+		var buf bytes.Buffer
+		formatter := &testLogFormatter{}
+		level := log.PANIC
+		config := newConfig()
+		config.Logger.Writer = &buf
+		config.Logger.Formatter = formatter
+		config.Logger.Level = level
+		app, err := kocha.New(config)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual := app.Config.Logger
+		expected := &kocha.LoggerConfig{
+			Writer:    &buf,
+			Formatter: formatter,
+			Level:     level,
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf(`New(...).Config.Logger => %#v; want %#v`, actual, expected)
+		}
+	}()
+}
+
 func TestApplication_ServeHTTP(t *testing.T) {
 	func() {
 		w := httptest.NewRecorder()
@@ -181,8 +232,8 @@ func TestApplication_ServeHTTP(t *testing.T) {
 	}()
 
 	func() {
-		log.SetOutput(ioutil.Discard)
-		defer log.SetOutput(os.Stdout)
+		// log.SetOutput(ioutil.Discard)
+		// defer log.SetOutput(os.Stdout)
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest("GET", "/error", nil)
 		if err != nil {

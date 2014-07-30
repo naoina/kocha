@@ -280,7 +280,7 @@ func (c *Controller) buildContext(context []interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("too many arguments")
 	}
 	if _, exists := c.Context["errors"]; exists {
-		Log.Warn("kocha: Context: `errors' key has already been set, skipped")
+		c.App.Logger.Warn("kocha: Context: `errors' key has already been set, skipped")
 	} else {
 		c.Context["errors"] = c.Errors()
 	}

@@ -2,6 +2,7 @@ package kocha
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"sort"
@@ -67,6 +68,9 @@ func NewTestApp() *Application {
 				Path:       "/post_test",
 				Controller: FixturePostTestCtrl{},
 			},
+		},
+		Logger: &LoggerConfig{
+			Writer: ioutil.Discard,
 		},
 		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
 		Session: &SessionConfig{

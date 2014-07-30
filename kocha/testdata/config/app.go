@@ -1,11 +1,13 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
 	"runtime"
 	"time"
 
 	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/log"
 )
 
 var (
@@ -24,6 +26,13 @@ var (
 				},
 			},
 			FuncMap: kocha.TemplateFuncMap{},
+		},
+
+		// Logger settings.
+		Logger: &kocha.LoggerConfig{
+			Writer:    os.Stdout,
+			Formatter: &log.LTSVFormatter{},
+			Level:     log.INFO,
 		},
 
 		// Session settings
@@ -55,22 +64,10 @@ var (
 func init() {
 	switch Env {
 	case "prod":
-		AppConfig.Logger = &kocha.Logger{
-			DEBUG: kocha.Loggers{kocha.NullLogger()},
-			INFO:  kocha.Loggers{kocha.NullLogger()},
-			WARN:  kocha.Loggers{kocha.FileLogger("log/prod.log", -1)},
-			ERROR: kocha.Loggers{kocha.FileLogger("log/prod.log", -1)},
-		}
 		AppConfig.Middlewares = append(kocha.DefaultMiddlewares, []kocha.Middleware{
 			&kocha.SessionMiddleware{},
 		}...)
 	default:
-		AppConfig.Logger = &kocha.Logger{
-			DEBUG: kocha.Loggers{kocha.ConsoleLogger(-1)},
-			INFO:  kocha.Loggers{kocha.ConsoleLogger(-1)},
-			WARN:  kocha.Loggers{kocha.ConsoleLogger(-1)},
-			ERROR: kocha.Loggers{kocha.ConsoleLogger(-1)},
-		}
 		AppConfig.Middlewares = append(kocha.DefaultMiddlewares, []kocha.Middleware{
 			&kocha.RequestLoggingMiddleware{},
 			&kocha.SessionMiddleware{},

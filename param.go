@@ -92,7 +92,7 @@ func (params *Params) Bind(obj interface{}, fieldNames ...string) error {
 		index := params.findFieldIndex(rtype, name, nil)
 		if len(index) < 1 {
 			_, filename, line, _ := runtime.Caller(1)
-			Log.Warn(
+			params.c.App.Logger.Warnf(
 				"kocha: Bind: %s:%s: field name `%s' given, but %s.%s is undefined",
 				filepath.Base(filename), line, name, rtype.Name(), util.ToCamelCase(name))
 			continue
@@ -178,12 +178,12 @@ func (params *Params) parse(fv interface{}, vStr string) (value interface{}, err
 			value = reflect.ValueOf(value).Convert(reflect.TypeOf(t)).Interface()
 		}
 	default:
-		Log.Warn("kocha: Bind: unsupported field type: %T", t)
+		params.c.App.Logger.Warnf("kocha: Bind: unsupported field type: %T", t)
 		err = ErrUnsupportedFieldType
 	}
 	if err != nil {
 		if err != ErrUnsupportedFieldType {
-			Log.Warn("kocha: Bind: %v", err)
+			params.c.App.Logger.Warnf("kocha: Bind: %v", err)
 			err = ErrInvalidFormat
 		}
 		return nil, err

@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
+	"github.com/naoina/kocha/log"
 	"github.com/naoina/miyabi"
 )
 
@@ -22,11 +23,6 @@ const (
 
 	// StaticDir is the directory of the static files.
 	StaticDir = "public"
-)
-
-var (
-	// Global logger.
-	Log *Logger
 )
 
 // Run starts Kocha app.
@@ -45,9 +41,9 @@ func Run(config *Config) error {
 			fmt.Printf("Listening on %s\n", app.Config.Addr)
 			fmt.Printf("Server PID: %d\n", pid)
 		case miyabi.StateRestart:
-			Log.Warn("graceful restarted")
+			app.Logger.Warn("graceful restarted")
 		case miyabi.StateShutdown:
-			Log.Warn("graceful shutdown")
+			app.Logger.Warn("graceful shutdown")
 		}
 	}
 	server := &miyabi.Server{
@@ -68,6 +64,9 @@ type Application struct {
 
 	// Template is template sets of an application.
 	Template *Template
+
+	// Logger is an application logger.
+	Logger log.Logger
 
 	// ResourceSet is set of resource of an application.
 	ResourceSet ResourceSet
@@ -100,7 +99,9 @@ func New(config *Config) (*Application, error) {
 	if err := app.buildRouter(); err != nil {
 		return nil, err
 	}
-	Log = initLogger(config.Logger)
+	if err := app.buildLogger(); err != nil {
+		return nil, err
+	}
 	return app, nil
 }
 
@@ -125,7 +126,7 @@ func (app *Application) Invoke(unit Unit, newFunc func(), defaultFunc func()) {
 	defer func() {
 		if err := recover(); err != nil {
 			if err != ErrInvokeDefault {
-				logStackAndError(err)
+				app.logStackAndError(err)
 				app.mu.Lock()
 				app.failedUnits[name] = struct{}{}
 				app.mu.Unlock()
@@ -167,6 +168,20 @@ func (app *Application) buildTemplate() error {
 	return nil
 }
 
+func (app *Application) buildLogger() error {
+	if app.Config.Logger == nil {
+		app.Config.Logger = &LoggerConfig{}
+	}
+	if app.Config.Logger.Writer == nil {
+		app.Config.Logger.Writer = os.Stdout
+	}
+	if app.Config.Logger.Formatter == nil {
+		app.Config.Logger.Formatter = &log.LTSVFormatter{}
+	}
+	app.Logger = log.New(app.Config.Logger.Writer, app.Config.Logger.Formatter, app.Config.Logger.Level)
+	return nil
+}
+
 func (app *Application) validateSessionConfig() error {
 	for _, m := range app.Config.Middlewares {
 		if middleware, ok := m.(*SessionMiddleware); ok {
@@ -192,13 +207,13 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 	defer func() {
 		defer func() {
 			if err := recover(); err != nil {
-				logStackAndError(err)
+				app.logStackAndError(err)
 				response.StatusCode = http.StatusInternalServerError
 				http.Error(response, http.StatusText(response.StatusCode), response.StatusCode)
 			}
 		}()
 		if err := recover(); err != nil {
-			logStackAndError(err)
+			app.logStackAndError(err)
 			c := NewErrorController(http.StatusInternalServerError)
 			if cc == nil {
 				cc = &Controller{}
@@ -245,6 +260,12 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 	result = method.Call(args)
 }
 
+func (app *Application) logStackAndError(err interface{}) {
+	buf := make([]byte, 4096)
+	runtime.Stack(buf, false)
+	app.Logger.Errorf("%v\n%v", err, string(buf))
+}
+
 // Config represents a application-scope configuration.
 type Config struct {
 	Addr              string         // listen address, DefaultHttpAddr if empty.
@@ -253,9 +274,9 @@ type Config struct {
 	DefaultLayout     string         // name of the default layout.
 	Template          *Template      // template config.
 	RouteTable        RouteTable     // routing config.
-	Logger            *Logger        // logger config.
 	Middlewares       []Middleware   // middlewares.
 	Session           *SessionConfig // session config.
+	Logger            *LoggerConfig  // logger config.
 	MaxClientBodySize int64          // maximum size of request body, DefaultMaxClientBodySize if 0
 
 	ResourceSet ResourceSet
@@ -271,12 +292,6 @@ func SettingEnv(key, def string) string {
 	}
 	os.Setenv(key, def)
 	return def
-}
-
-func logStackAndError(err interface{}) {
-	buf := make([]byte, 4096)
-	runtime.Stack(buf, false)
-	Log.Error("%v\n%v", err, string(buf))
 }
 
 func init() {

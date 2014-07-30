@@ -2,6 +2,7 @@ package main
 
 import (
 	"{{.appPath}}/config"
+
 	"github.com/naoina/kocha"
 )
 

@@ -36,6 +36,9 @@ func newTestController(name, layout string) *kocha.Controller {
 				Controller: kocha.FixtureRootTestCtrl{},
 			},
 		},
+		Logger: &kocha.LoggerConfig{
+			Writer: ioutil.Discard,
+		},
 	})
 	if err != nil {
 		panic(err)
@@ -280,16 +283,6 @@ func TestController_Render_WithContext(t *testing.T) {
 	}()
 
 	func() {
-		origLog := kocha.Log
-		defer func() {
-			kocha.Log = origLog
-		}()
-		kocha.Log = &kocha.Logger{
-			DEBUG: kocha.Loggers{kocha.NullLogger()},
-			INFO:  kocha.Loggers{kocha.NullLogger()},
-			WARN:  kocha.Loggers{kocha.NullLogger()},
-			ERROR: kocha.Loggers{kocha.NullLogger()},
-		}
 		c := newTestController("testctrlr_ctx", "")
 		c.Context = kocha.Context{"c1": "v1", "errors": "testerr"}
 		c.Render()

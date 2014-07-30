@@ -3,6 +3,7 @@ package kocha
 import (
 	"strconv"
 
+	"github.com/naoina/kocha/log"
 	"github.com/naoina/kocha/util"
 )
 
@@ -39,9 +40,9 @@ func (m *SessionMiddleware) Before(app *Application, c *Controller) {
 		if err := recover(); err != nil {
 			switch err.(type) {
 			case ErrSession:
-				Log.Error("%v", err)
+				app.Logger.Error(err)
 			case ErrSessionExpected:
-				Log.Info("%v", err)
+				app.Logger.Info(err)
 			default:
 				panic(err)
 			}
@@ -83,5 +84,10 @@ func (m *RequestLoggingMiddleware) Before(app *Application, c *Controller) {
 }
 
 func (m *RequestLoggingMiddleware) After(app *Application, c *Controller) {
-	Log.Info(`"%v %v %v" %v`, c.Request.Method, c.Request.RequestURI, c.Request.Proto, c.Response.StatusCode)
+	app.Logger.With(log.Fields{
+		"method":   c.Request.Method,
+		"uri":      c.Request.RequestURI,
+		"protocol": c.Request.Proto,
+		"status":   c.Response.StatusCode,
+	}).Info()
 }
