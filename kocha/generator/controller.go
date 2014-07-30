@@ -49,10 +49,10 @@ func (g *controllerGenerator) Generate() {
 	}
 	util.CopyTemplate(g,
 		filepath.Join(SkeletonDir("controller"), "controller.go.template"),
-		filepath.Join("app", "controllers", snakeCaseName+".go"), data)
+		filepath.Join("app", "controller", snakeCaseName+".go"), data)
 	util.CopyTemplate(g,
 		filepath.Join(SkeletonDir("controller"), "view.html"),
-		filepath.Join("app", "views", snakeCaseName+".html"), data)
+		filepath.Join("app", "view", snakeCaseName+".html"), data)
 	g.addRouteToFile(name)
 }
 
@@ -90,7 +90,7 @@ func (g *controllerGenerator) addRouteToFile(name string) {
 	buf.WriteString(fmt.Sprintf(`, {
 	Name:       "%s",
 	Path:       "/%s",
-	Controller: controllers.%s{},
+	Controller: controller.%s{},
 }`, routeName, routeName, routeStructName))
 	if _, err := io.Copy(&buf, routeFile); err != nil {
 		util.PanicOnError(g, "abort: failed to read file: %v", err)
@@ -165,7 +165,7 @@ func isRouteDefined(routeASTs []*ast.CompositeLit, routeStructName string) bool 
 			if !ok {
 				continue
 			}
-			if selector.X.(*ast.Ident).Name == "controllers" && selector.Sel.Name == routeStructName {
+			if selector.X.(*ast.Ident).Name == "controller" && selector.Sel.Name == routeStructName {
 				return true
 			}
 		}

@@ -160,7 +160,7 @@ func Test_modelGenerator_Generate(t *testing.T) {
 			os.Stdout, os.Stderr = oldStdout, oldStderr
 		}()
 		g.Generate()
-		expected := filepath.Join("app", "models", "app_model.go")
+		expected := filepath.Join("app", "model", "app_model.go")
 		if _, err := os.Stat(expected); os.IsNotExist(err) {
 			t.Errorf("%v hasn't been exist", expected)
 		}

@@ -53,11 +53,11 @@ func Test_controllerGeneratorGenerate(t *testing.T) {
 	}
 	defer os.RemoveAll(tempdir)
 	os.Chdir(tempdir)
-	controllerPath := filepath.Join("app", "controllers")
+	controllerPath := filepath.Join("app", "controller")
 	if err := os.MkdirAll(controllerPath, 0755); err != nil {
 		panic(err)
 	}
-	viewPath := filepath.Join("app", "views")
+	viewPath := filepath.Join("app", "view")
 	if err := os.MkdirAll(viewPath, 0755); err != nil {
 		panic(err)
 	}
@@ -67,7 +67,7 @@ func Test_controllerGeneratorGenerate(t *testing.T) {
 	}
 	routeFileContent := `package config
 import (
-	"../app/controllers"
+	"../app/controller"
 	"github/naoina/kocha"
 )
 type RouteTable kocha.RouteTable
@@ -75,7 +75,7 @@ var routes = RouteTable{
 	{
 		Name: "root",
 		Path: "/",
-		Controller: controllers.Root{},
+		Controller: controller.Root{},
 	},
 }
 func Routes() RouteTable {
@@ -110,7 +110,7 @@ func Routes() RouteTable {
 	expected = `package config
 
 import (
-	"../app/controllers"
+	"../app/controller"
 	"github/naoina/kocha"
 )
 
@@ -120,11 +120,11 @@ var routes = RouteTable{
 	{
 		Name:       "root",
 		Path:       "/",
-		Controller: controllers.Root{},
+		Controller: controller.Root{},
 	}, {
 		Name:       "app_controller",
 		Path:       "/app_controller",
-		Controller: controllers.AppController{},
+		Controller: controller.AppController{},
 	},
 }
 

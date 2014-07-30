@@ -6,9 +6,9 @@ import (
 	"flag"
 	"fmt"
 	config "{{.configImportPath}}"
-	{{if and .dbImportPath .migrationsImportPath}}
+	{{if and .dbImportPath .migrationImportPath}}
 	db "{{.dbImportPath}}"
-	migrations "{{.migrationsImportPath}}"
+	migration "{{.migrationImportPath}}"
 	{{end}}
 	"os"
 	"path/filepath"
@@ -54,7 +54,7 @@ func migrate() {
 	if flag.NArg() > 0 {
 		switch flag.Arg(0) {
 		case "migrate":
-			{{if and .dbImportPath .migrationsImportPath}}
+			{{if and .dbImportPath .migrationImportPath}}
 			fs := flag.NewFlagSet("migrate", flag.ExitOnError)
 			dbconf := fs.String("db", "default", "name of a database config")
 			n := fs.Int("n", -1, "number of migrations to be run")
@@ -67,7 +67,7 @@ func migrate() {
 				flag.Usage()
 			}
 			var err error
-			mig := kocha.Migrate(config, &migrations.Migration{})
+			mig := kocha.Migrate(config, &migration.Migration{})
 			switch fs.Arg(0) {
 			case "up":
 				err = mig.Up(*n)

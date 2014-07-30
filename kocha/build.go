@@ -75,10 +75,10 @@ func (c *buildCommand) Run() {
 	if err == nil {
 		dbImportPath = dbPkg.ImportPath
 	}
-	var migrationsImportPath string
-	migrationsPkg, err := c.Package(path.Join(appDir, "db", "migrations"))
+	var migrationImportPath string
+	migrationPkg, err := c.Package(path.Join(appDir, "db", "migration"))
 	if err == nil {
-		migrationsImportPath = migrationsPkg.ImportPath
+		migrationImportPath = migrationPkg.ImportPath
 	}
 	tmpDir, err := filepath.Abs("tmp")
 	if err != nil {
@@ -108,13 +108,13 @@ func (c *buildCommand) Run() {
 		resources = c.collectResourcePaths(filepath.Join(dir, kocha.StaticDir))
 	}
 	data := map[string]interface{}{
-		"configImportPath":     configPkg.ImportPath,
-		"dbImportPath":         dbImportPath,
-		"migrationsImportPath": migrationsImportPath,
-		"mainTemplate":         string(mainTemplate),
-		"mainFilePath":         mainFilePath,
-		"resources":            resources,
-		"version":              c.detectVersionTag(),
+		"configImportPath":    configPkg.ImportPath,
+		"dbImportPath":        dbImportPath,
+		"migrationImportPath": migrationImportPath,
+		"mainTemplate":        string(mainTemplate),
+		"mainFilePath":        mainFilePath,
+		"resources":           resources,
+		"version":             c.detectVersionTag(),
 	}
 	if err := t.Execute(file, data); err != nil {
 		util.PanicOnError(c, "abort: failed to write file: %v", err)

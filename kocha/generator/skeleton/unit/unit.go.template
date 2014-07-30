@@ -1,4 +1,4 @@
-package units
+package unit
 
 type {{.Name}}Unit struct{}
 

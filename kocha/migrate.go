@@ -11,6 +11,7 @@ import (
 	"runtime"
 
 	"go/build"
+
 	"github.com/naoina/kocha/util"
 )
 
@@ -71,10 +72,10 @@ func (c *migrateCommand) Run() {
 		panic(err)
 	}
 	data := map[string]interface{}{
-		"dbImportPath":         c.Package(path.Join(appDir, "db")).ImportPath,
-		"migrationsImportPath": c.Package(path.Join(appDir, "db", "migrations")).ImportPath,
-		"dbconf":               c.dbconf,
-		"limit":                c.limit,
+		"dbImportPath":        c.Package(path.Join(appDir, "db")).ImportPath,
+		"migrationImportPath": c.Package(path.Join(appDir, "db", "migration")).ImportPath,
+		"dbconf":              c.dbconf,
+		"limit":               c.limit,
 	}
 	if err := t.Execute(file, data); err != nil {
 		util.PanicOnError(c, "abort: failed to write file: %v", err)

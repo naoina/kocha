@@ -18,7 +18,7 @@ func NewTestApp() *Application {
 			PathInfo: TemplatePathInfo{
 				Name: "appname",
 				Paths: []string{
-					filepath.Join("testdata", "app", "views"),
+					filepath.Join("testdata", "app", "view"),
 				},
 			},
 		},

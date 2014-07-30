@@ -121,9 +121,9 @@ func Test_newCommand_Run(t *testing.T) {
 	})
 	expects := []string{
 		filepath.Join("main.go"),
-		filepath.Join("app", "controllers", "root.go"),
-		filepath.Join("app", "views", "layouts", "app.html"),
-		filepath.Join("app", "views", "root.html"),
+		filepath.Join("app", "controller", "root.go"),
+		filepath.Join("app", "view", "layout", "app.html"),
+		filepath.Join("app", "view", "root.html"),
 		filepath.Join("config", "app.go"),
 		filepath.Join("config", "routes.go"),
 		filepath.Join("public", "robots.txt"),

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"testappname/app/controllers"
+	"testappname/app/controller"
 
 	"github.com/naoina/kocha"
 )
@@ -12,7 +12,7 @@ var routes = RouteTable{
 	{
 		Name:       "root",
 		Path:       "/",
-		Controller: controllers.Root{},
+		Controller: controller.Root{},
 	},
 }
 

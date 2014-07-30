@@ -81,7 +81,7 @@ func (t *Template) buildTemplateMap() (*Template, error) {
 			info.Name: make(map[string]map[string]string),
 		}
 		for _, rootPath := range info.Paths {
-			layoutDir := filepath.Join(rootPath, "layouts")
+			layoutDir := filepath.Join(rootPath, "layout")
 			if err := t.collectLayoutPaths(layoutPaths[info.Name], layoutDir); err != nil {
 				return nil, err
 			}
@@ -99,7 +99,7 @@ func (t *Template) buildTemplateMap() (*Template, error) {
 			info.Name: make(map[string]map[string]string),
 		}
 		for _, rootPath := range info.Paths {
-			layoutDir := filepath.Join(rootPath, "layouts")
+			layoutDir := filepath.Join(rootPath, "layout")
 			if err := t.collectTemplatePaths(templatePaths[info.Name], rootPath, layoutDir); err != nil {
 				return nil, err
 			}

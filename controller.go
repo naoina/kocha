@@ -180,7 +180,7 @@ func (c *Controller) RenderError(statusCode int, context ...interface{}) Result 
 		panic(fmt.Errorf("unknown Content-Type: %v", c.Response.ContentType))
 	}
 	c.Response.StatusCode = statusCode
-	name := filepath.Join("errors", strconv.Itoa(statusCode))
+	name := filepath.Join("error", strconv.Itoa(statusCode))
 	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, name, format)
 	if t == nil {
 		c.Response.ContentType = "text/plain"

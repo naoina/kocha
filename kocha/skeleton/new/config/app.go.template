@@ -22,7 +22,7 @@ var (
 			PathInfo: kocha.TemplatePathInfo {
 				Name: AppName,
 				Paths: []string{
-					filepath.Join(rootPath, "app", "views"),
+					filepath.Join(rootPath, "app", "view"),
 				},
 			},
 			FuncMap: kocha.TemplateFuncMap{},

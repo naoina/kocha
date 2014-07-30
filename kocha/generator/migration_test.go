@@ -94,7 +94,7 @@ func Test_migrationGenerator_Generate(t *testing.T) {
 			Now = time.Now
 		}()
 		g.Generate()
-		outpath := filepath.Join("db", "migrations", fmt.Sprintf("%s_test_create_table.go", fixedTime.Format("20060102150405")))
+		outpath := filepath.Join("db", "migration", fmt.Sprintf("%s_test_create_table.go", fixedTime.Format("20060102150405")))
 		if _, err := os.Stat(outpath); os.IsNotExist(err) {
 			t.Errorf("%v hasn't been exist", outpath)
 		}
@@ -104,7 +104,7 @@ func Test_migrationGenerator_Generate(t *testing.T) {
 			t.Fatal(err)
 		}
 		actual := string(body)
-		expected := `package migrations
+		expected := `package migration
 
 import "github.com/naoina/genmai"
 

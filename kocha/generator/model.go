@@ -134,7 +134,7 @@ func (g *modelGenerator) Generate() {
 		"Fields": fields,
 	}
 	templatePath, configTemplatePath := mt.TemplatePath()
-	util.CopyTemplate(g, templatePath, filepath.Join("app", "models", snakeCaseName+".go"), data)
+	util.CopyTemplate(g, templatePath, filepath.Join("app", "model", snakeCaseName+".go"), data)
 	initPath := filepath.Join("db", "config.go")
 	if _, err := os.Stat(initPath); os.IsNotExist(err) {
 		util.CopyTemplate(g, configTemplatePath, initPath, nil)

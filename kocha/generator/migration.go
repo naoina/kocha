@@ -50,8 +50,8 @@ func (g *migrationGenerator) Generate() {
 	}
 	util.CopyTemplate(g,
 		filepath.Join(SkeletonDir("migration"), "migration.go.template"),
-		filepath.Join("db", "migrations", fmt.Sprintf("%v_%v.go", now, util.ToSnakeCase(name))), data)
-	initPath := filepath.Join("db", "migrations", "init.go")
+		filepath.Join("db", "migration", fmt.Sprintf("%v_%v.go", now, util.ToSnakeCase(name))), data)
+	initPath := filepath.Join("db", "migration", "init.go")
 	if _, err := os.Stat(initPath); os.IsNotExist(err) {
 		appDir, err := util.FindAppDir()
 		if err != nil {

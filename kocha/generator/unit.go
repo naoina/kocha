@@ -33,7 +33,7 @@ func (g *unitGenerator) Generate() {
 	}
 	util.CopyTemplate(g,
 		filepath.Join(SkeletonDir("unit"), "unit.go.template"),
-		filepath.Join("app", "units", snakeCaseName+".go"), data)
+		filepath.Join("app", "unit", snakeCaseName+".go"), data)
 }
 
 func init() {

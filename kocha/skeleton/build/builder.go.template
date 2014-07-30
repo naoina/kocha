@@ -46,7 +46,7 @@ func main() {
 		"app":                   app,
 		"configImportPath":      "{{.configImportPath}}",
 		"dbImportPath":          "{{.dbImportPath}}",
-		"migrationsImportPath":  "{{.migrationsImportPath}}",
+		"migrationImportPath":  "{{.migrationImportPath}}",
 		"resources":             resources,
 		"version":               "{{.version}}",
 	}

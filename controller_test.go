@@ -25,7 +25,7 @@ func newTestController(name, layout string) *kocha.Controller {
 			PathInfo: kocha.TemplatePathInfo{
 				Name: "appname",
 				Paths: []string{
-					filepath.Join("testdata", "app", "views"),
+					filepath.Join("testdata", "app", "view"),
 				},
 			},
 		},

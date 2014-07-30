@@ -5,7 +5,7 @@ import (
 	"os"
 
 	db "{{.dbImportPath}}"
-	migrations "{{.migrationsImportPath}}"
+	migration "{{.migrationImportPath}}"
 )
 
 func main() {
@@ -14,7 +14,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "database config `{{.dbconf}}' is undefined\n")
 		os.Exit(1)
 	}
-	if err := migrations.Down(config, {{.limit}}); err != nil {
+	if err := migration.Down(config, {{.limit}}); err != nil {
 		fmt.Fprintf(os.Stderr, "abort: kocha: migrate: %v\n", err)
 		os.Exit(1)
 	}

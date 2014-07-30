@@ -68,7 +68,7 @@ func Test_unitGenerator_Generate(t *testing.T) {
 			os.Stdout, os.Stderr = oldStdout, oldStderr
 		}()
 		g.Generate()
-		expected := filepath.Join("app", "units", "app_unit.go")
+		expected := filepath.Join("app", "unit", "app_unit.go")
 		if _, err := os.Stat(expected); os.IsNotExist(err) {
 			t.Errorf("Expect %v file exists, but not exists", expected)
 		}
