@@ -23,6 +23,7 @@ func (r *resultContent) Proc(res *Response) {
 	if closer, ok := r.Body.(io.Closer); ok {
 		defer closer.Close()
 	}
+	res.WriteHeader(res.StatusCode)
 	if _, err := io.Copy(res, r.Body); err != nil {
 		panic(err)
 	}
@@ -41,9 +42,10 @@ type resultRedirect struct {
 
 // Proc writes redirect header to response.
 func (r *resultRedirect) Proc(res *Response) {
-	statusCode := http.StatusFound
 	if r.Permanently {
-		statusCode = http.StatusMovedPermanently
+		res.StatusCode = http.StatusMovedPermanently
+	} else {
+		res.StatusCode = http.StatusFound
 	}
-	http.Redirect(res, r.Request.Request, r.URL, statusCode)
+	http.Redirect(res, r.Request.Request, r.URL, res.StatusCode)
 }

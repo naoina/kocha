@@ -763,7 +763,7 @@ func TestStaticServe_GET(t *testing.T) {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	res := &kocha.Response{ResponseWriter: w}
+	res := &kocha.Response{ResponseWriter: w, StatusCode: http.StatusOK}
 	c.GET(u).Proc(res)
 	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
