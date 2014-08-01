@@ -7,7 +7,7 @@ import (
 
 // Result is the interface that result.
 type Result interface {
-	Proc(*Response)
+	Proc(res *Response) error
 }
 
 // resultContent represents a result of any content.
@@ -19,14 +19,13 @@ type resultContent struct {
 // Proc writes content to response.
 //
 // If Body implements io.Closer interface, call Body.Close() in end of Proc.
-func (r *resultContent) Proc(res *Response) {
+func (r *resultContent) Proc(res *Response) error {
 	if closer, ok := r.Body.(io.Closer); ok {
 		defer closer.Close()
 	}
 	res.WriteHeader(res.StatusCode)
-	if _, err := io.Copy(res, r.Body); err != nil {
-		panic(err)
-	}
+	_, err := io.Copy(res, r.Body)
+	return err
 }
 
 // resultRedirect represents a result of redirect.
@@ -41,11 +40,12 @@ type resultRedirect struct {
 }
 
 // Proc writes redirect header to response.
-func (r *resultRedirect) Proc(res *Response) {
+func (r *resultRedirect) Proc(res *Response) error {
 	if r.Permanently {
 		res.StatusCode = http.StatusMovedPermanently
 	} else {
 		res.StatusCode = http.StatusFound
 	}
 	http.Redirect(res, r.Request.Request, r.URL, res.StatusCode)
+	return nil
 }
