@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
+	"github.com/naoina/denco"
 	"github.com/naoina/kocha/log"
 	"github.com/naoina/miyabi"
 )
@@ -107,14 +108,12 @@ func New(config *Config) (*Application, error) {
 
 // ServeHTTP implements the http.Handler.ServeHTTP.
 func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	controller, method, args, found := app.Router.dispatch(r)
+	controller, handler, params, found := app.Router.dispatch(r)
 	if !found {
-		c := NewErrorController(http.StatusNotFound)
-		controller = reflect.ValueOf(c)
-		method = reflect.ValueOf(c.GET)
-		args = []reflect.Value{}
+		controller = NewErrorController(http.StatusNotFound)
+		handler = controller.GET
 	}
-	app.render(w, r, controller, method, args)
+	app.render(w, r, controller, handler, params)
 }
 
 // Invoke invokes newFunc.
@@ -197,12 +196,12 @@ func (app *Application) validateSessionConfig() error {
 	return app.Config.Session.Validate()
 }
 
-func (app *Application) render(w http.ResponseWriter, r *http.Request, controller, method reflect.Value, args []reflect.Value) {
+func (app *Application) render(w http.ResponseWriter, r *http.Request, controller Controller, handler requestHandler, params denco.Params) {
 	request := newRequest(r)
 	response := newResponse(w)
 	var (
-		cc     *Controller
-		result []reflect.Value
+		ctx    *Context
+		result Result
 	)
 	defer func() {
 		defer func() {
@@ -215,51 +214,42 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 		if err := recover(); err != nil {
 			app.logStackAndError(err)
 			c := NewErrorController(http.StatusInternalServerError)
-			if cc == nil {
-				cc = &Controller{}
-				cc.Request = request
-				cc.Response = response
+			if ctx == nil {
+				ctx = &Context{
+					Request:  request,
+					Response: response,
+				}
 			}
-			c.Controller = cc
-			r := c.GET()
-			result = []reflect.Value{reflect.ValueOf(r)}
+			result = c.GET(ctx)
 		}
 		for _, m := range app.Config.Middlewares {
-			m.After(app, cc)
+			m.After(app, ctx)
 		}
 		response.Header().Set("Content-Type", response.ContentType)
-		if err := result[0].Interface().(Result).Proc(response); err != nil {
+		if err := result.Proc(response); err != nil {
 			panic(err)
 		}
 	}()
 	request.Body = http.MaxBytesReader(w, request.Body, app.Config.MaxClientBodySize)
-	ac := controller.Elem()
-	ccValue := ac.FieldByName(reflect.TypeOf((*Controller)(nil)).Elem().Name())
-	switch c := ccValue.Interface().(type) {
-	case Controller:
-		cc = &c
-	case *Controller:
-		cc = &Controller{}
-		ccValue.Set(reflect.ValueOf(cc))
-		ccValue = ccValue.Elem()
-	default:
-		panic(fmt.Errorf("BUG: Controller field must be struct of %T or that pointer, but %T", cc, c))
-	}
 	if err := request.ParseMultipartForm(app.Config.MaxClientBodySize); err != nil && err != http.ErrNotMultipart {
 		panic(err)
 	}
-	cc.Name = ac.Type().Name()
-	cc.Layout = app.Config.DefaultLayout
-	cc.Context = Context{}
-	cc.Request = request
-	cc.Response = response
-	cc.Params = newParams(cc, request.Form, "")
-	cc.App = app
-	for _, m := range app.Config.Middlewares {
-		m.Before(app, cc)
+	for _, param := range params {
+		request.Form.Add(param.Name, param.Value)
 	}
-	ccValue.Set(reflect.ValueOf(*cc))
-	result = method.Call(args)
+	ctx = &Context{
+		Name:     reflect.TypeOf(controller).Elem().Name(),
+		Layout:   app.Config.DefaultLayout,
+		Data:     make(Data),
+		Request:  request,
+		Response: response,
+		App:      app,
+	}
+	ctx.Params = newParams(ctx, request.Form, "")
+	for _, m := range app.Config.Middlewares {
+		m.Before(app, ctx)
+	}
+	result = handler(ctx)
 }
 
 func (app *Application) logStackAndError(err interface{}) {

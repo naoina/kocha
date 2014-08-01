@@ -54,12 +54,12 @@ var formTimeFormats = []string{
 
 // Params represents a form values.
 type Params struct {
-	c *Controller
+	c *Context
 	url.Values
 	prefix string
 }
 
-func newParams(c *Controller, values url.Values, prefix string) *Params {
+func newParams(c *Context, values url.Values, prefix string) *Params {
 	return &Params{
 		c:      c,
 		Values: values,

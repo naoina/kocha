@@ -19,6 +19,84 @@ import (
 	"github.com/naoina/kocha/util"
 )
 
+// Controller is the interface that the request controller.
+type Controller interface {
+	Getter
+	Poster
+	Putter
+	Deleter
+	Header
+	Patcher
+}
+
+// Getter interface is an interface representing a handler for HTTP GET request.
+type Getter interface {
+	GET(c *Context) Result
+}
+
+// Poster interface is an interface representing a handler for HTTP POST request.
+type Poster interface {
+	POST(c *Context) Result
+}
+
+// Putter interface is an interface representing a handler for HTTP PUT request.
+type Putter interface {
+	PUT(c *Context) Result
+}
+
+// Deleter interface is an interface representing a handler for HTTP DELETE request.
+type Deleter interface {
+	DELETE(c *Context) Result
+}
+
+// Header interface is an interface representing a handler for HTTP HEAD request.
+type Header interface {
+	HEAD(c *Context) Result
+}
+
+// Patcher interface is an interface representing a handler for HTTP PATCH request.
+type Patcher interface {
+	PATCH(c *Context) Result
+}
+
+type requestHandler func(c *Context) Result
+
+// DefaultController implements Controller interface.
+// This can be used to save the trouble to implement all of the methods of
+// Controller interface.
+type DefaultController struct {
+}
+
+// GET implements Getter interface that renders the HTTP 405 Method Not Allowed.
+func (dc *DefaultController) GET(c *Context) Result {
+	return c.RenderError(http.StatusMethodNotAllowed)
+}
+
+// POST implements Poster interface that renders the HTTP 405 Method Not Allowed.
+func (dc *DefaultController) POST(c *Context) Result {
+	return c.RenderError(http.StatusMethodNotAllowed)
+}
+
+// PUT implements Putter interface that renders the HTTP 405 Method Not Allowed.
+func (dc *DefaultController) PUT(c *Context) Result {
+	return c.RenderError(http.StatusMethodNotAllowed)
+}
+
+// DELETE implements Deleter interface that renders the HTTP 405 Method Not Allowed.
+func (dc *DefaultController) DELETE(c *Context) Result {
+	return c.RenderError(http.StatusMethodNotAllowed)
+}
+
+// HEAD implements Header interface that renders the HTTP 405 Method Not Allowed.
+func (dc *DefaultController) HEAD(c *Context) Result {
+	return c.RenderError(http.StatusMethodNotAllowed)
+}
+
+// PATCH implements Patcher interface that renders the HTTP 405 Method Not Allowed.
+func (dc *DefaultController) PATCH(c *Context) Result {
+	return c.RenderError(http.StatusMethodNotAllowed)
+}
+
 type mimeTypeFormats map[string]string
 
 // MimeTypeFormats is relation between mime type and file extension.
@@ -44,11 +122,11 @@ func (m mimeTypeFormats) Del(mimeType string) {
 	delete(m, mimeType)
 }
 
-// Controller is the base controller.
-type Controller struct {
+// Context represents a context of each request.
+type Context struct {
 	Name     string       // controller name.
 	Layout   string       // layout name.
-	Context  Context      // context value for template.
+	Data     Data         // data for template.
 	Request  *Request     // request.
 	Response *Response    // response.
 	Params   *Params      // parameters of form values.
@@ -58,11 +136,11 @@ type Controller struct {
 	errors map[string][]*ParamError
 }
 
-// Context is shorthand type for map[string]interface{}
-type Context map[string]interface{}
+// Data is shorthand type for map[string]interface{}
+type Data map[string]interface{}
 
 // String returns string of a map that sorted by keys.
-func (c Context) String() string {
+func (c Data) String() string {
 	keys := make([]string, 0, len(c))
 	for key, _ := range c {
 		keys = append(keys, key)
@@ -76,22 +154,22 @@ func (c Context) String() string {
 
 // Render returns result of template.
 //
-// The context variadic argument must be without specified or only one.
-// A context to used will be determined the according to the following rules.
+// The data variadic argument must be without specified or only one.
+// A data to used will be determined the according to the following rules.
 //
-// 1. If context of the Context type is given, it will be merged with Controller.Context and it will be used.
+// 1. If data of the Data type is given, it will be merged with Context.Data and it will be used.
 //
-// 2. If context of an other type is given and Controller.Context hasn't been set, it will be used as it is.
-//    Or it panics if Controller.Context has been set.
+// 2. If data of an other type is given and Context.Data hasn't been set, it will be used as it is.
+//    Or it panics if Context.Data has been set.
 //
-// 3. If context isn't given, Controller.Context will be used.
+// 3. If data isn't given, Context.Data will be used.
 //
 // Render retrieve a template file from controller name and c.Response.ContentType.
 // e.g. If controller name is "root" and ContentType is "application/xml", Render will
 // try to retrieve the template file "root.xml".
 // Also ContentType set to "text/html" if not specified.
-func (c *Controller) Render(context ...interface{}) Result {
-	ctx, err := c.buildContext(context)
+func (c *Context) Render(data ...interface{}) Result {
+	ctx, err := c.buildData(data)
 	if err != nil {
 		panic(err)
 	}
@@ -115,10 +193,10 @@ func (c *Controller) Render(context ...interface{}) Result {
 
 // RenderJSON returns result of JSON.
 //
-// RenderJSON is similar to Render but context will be encoded to JSON.
+// RenderJSON is similar to Render but data will be encoded to JSON.
 // ContentType set to "application/json" if not specified.
-func (c *Controller) RenderJSON(context ...interface{}) Result {
-	ctx, err := c.buildContext(context)
+func (c *Context) RenderJSON(data ...interface{}) Result {
+	ctx, err := c.buildData(data)
 	if err != nil {
 		panic(err)
 	}
@@ -134,10 +212,10 @@ func (c *Controller) RenderJSON(context ...interface{}) Result {
 
 // RenderXML returns result of XML.
 //
-// RenderXML is similar to Render but context will be encoded to XML.
+// RenderXML is similar to Render but data will be encoded to XML.
 // ContentType set to "application/xml" if not specified.
-func (c *Controller) RenderXML(context ...interface{}) Result {
-	ctx, err := c.buildContext(context)
+func (c *Context) RenderXML(data ...interface{}) Result {
+	ctx, err := c.buildData(data)
 	if err != nil {
 		panic(err)
 	}
@@ -154,7 +232,7 @@ func (c *Controller) RenderXML(context ...interface{}) Result {
 // RenderText returns result of text.
 //
 // ContentType set to "text/plain" if not specified.
-func (c *Controller) RenderText(content string) Result {
+func (c *Context) RenderText(content string) Result {
 	c.setContentTypeIfNotExists("text/plain")
 	return &resultContent{
 		Body: strings.NewReader(content),
@@ -169,8 +247,8 @@ func (c *Controller) RenderText(content string) Result {
 // try to retrieve the template file "errors/500.xml".
 // If failed to retrieve the template file, it returns result of text with statusCode.
 // Also ContentType set to "text/html" if not specified.
-func (c *Controller) RenderError(statusCode int, context ...interface{}) Result {
-	ctx, err := c.buildContext(context)
+func (c *Context) RenderError(statusCode int, data ...interface{}) Result {
+	ctx, err := c.buildData(data)
 	if err != nil {
 		panic(err)
 	}
@@ -205,7 +283,7 @@ func (c *Controller) RenderError(statusCode int, context ...interface{}) Result 
 // returns it if successful. Otherwise, Add AppPath and StaticDir to the prefix
 // of the path and then will read the content from the path that.
 // Also, set ContentType detect from content if c.Response.ContentType is empty.
-func (c *Controller) SendFile(path string) Result {
+func (c *Context) SendFile(path string) Result {
 	var file io.ReadSeeker
 	path = filepath.FromSlash(path)
 	if rc := c.App.ResourceSet.Get(path); rc != nil {
@@ -237,7 +315,7 @@ func (c *Controller) SendFile(path string) Result {
 	}
 }
 
-func (c *Controller) setContentTypeIfNotExists(contentType string) {
+func (c *Context) setContentTypeIfNotExists(contentType string) {
 	if c.Response.ContentType == "" {
 		c.Response.ContentType = contentType
 	}
@@ -247,7 +325,7 @@ func (c *Controller) setContentTypeIfNotExists(contentType string) {
 //
 // If permanently is true, redirect to url with 301. (http.StatusMovedPermanently)
 // Otherwise redirect to url with 302. (http.StatusFound)
-func (c *Controller) Redirect(url string, permanently bool) Result {
+func (c *Context) Redirect(url string, permanently bool) Result {
 	return &resultRedirect{
 		Request:     c.Request,
 		URL:         url,
@@ -255,47 +333,47 @@ func (c *Controller) Redirect(url string, permanently bool) Result {
 	}
 }
 
-func (c *Controller) buildContext(context []interface{}) (interface{}, error) {
-	switch len(context) {
+func (c *Context) buildData(data []interface{}) (interface{}, error) {
+	switch len(data) {
 	case 1:
-		ctx, ok := context[0].(Context)
+		ctx, ok := data[0].(Data)
 		if !ok {
-			if len(c.Context) == 0 {
-				return context[0], nil
+			if len(c.Data) == 0 {
+				return data[0], nil
 			}
-			return nil, fmt.Errorf("contexts of multiple types has been set: Controller.Context has been set,"+
-				" but context of other type was given: %v", reflect.TypeOf(context))
+			return nil, fmt.Errorf("data of multiple types has been set: Context.Data has been set,"+
+				" but data of other type was given: %v", reflect.TypeOf(data))
 		}
-		if c.Context == nil {
-			c.Context = Context{}
+		if c.Data == nil {
+			c.Data = Data{}
 		}
 		for k, v := range ctx {
-			c.Context[k] = v
+			c.Data[k] = v
 		}
 	case 0:
-		if c.Context == nil {
-			c.Context = Context{}
+		if c.Data == nil {
+			c.Data = Data{}
 		}
 	default: // > 1
 		return nil, fmt.Errorf("too many arguments")
 	}
-	if _, exists := c.Context["errors"]; exists {
-		c.App.Logger.Warn("kocha: Context: `errors' key has already been set, skipped")
+	if _, exists := c.Data["errors"]; exists {
+		c.App.Logger.Warn("kocha: Data: `errors' key has already been set, skipped")
 	} else {
-		c.Context["errors"] = c.Errors()
+		c.Data["errors"] = c.Errors()
 	}
-	return c.Context, nil
+	return c.Data, nil
 }
 
 // Invoke is shorthand of c.App.Invoke.
-func (c *Controller) Invoke(unit Unit, newFunc func(), defaultFunc func()) {
+func (c *Context) Invoke(unit Unit, newFunc func(), defaultFunc func()) {
 	c.App.Invoke(unit, newFunc, defaultFunc)
 }
 
 // Errors returns map of errors that relate to the form values.
 // A map key is field name, and value is slice of errors.
-// The errors will be set by Controller.Params.Bind().
-func (c *Controller) Errors() map[string][]*ParamError {
+// The errors will be set by Context.Params.Bind().
+func (c *Context) Errors() map[string][]*ParamError {
 	if c.errors == nil {
 		c.errors = make(map[string][]*ParamError)
 	}
@@ -303,22 +381,27 @@ func (c *Controller) Errors() map[string][]*ParamError {
 }
 
 // HasErrors returns whether it has errors.
-func (c *Controller) HasErrors() bool {
+func (c *Context) HasErrors() bool {
 	return len(c.errors) > 0
 }
 
 // StaticServe is generic controller for serve a static file.
 type StaticServe struct {
-	*Controller
+	*DefaultController
 }
 
-func (c *StaticServe) GET(path *url.URL) Result {
+func (ss *StaticServe) GET(c *Context) Result {
+	path, err := url.Parse(c.Params.Get("path"))
+	if err != nil {
+		return c.RenderError(http.StatusBadRequest)
+	}
 	return c.SendFile(path.Path)
 }
 
 // ErrorController is generic controller for error response.
 type ErrorController struct {
-	*Controller
+	*DefaultController
+
 	StatusCode int
 }
 
@@ -329,6 +412,6 @@ func NewErrorController(statusCode int) *ErrorController {
 	}
 }
 
-func (c *ErrorController) GET() Result {
-	return c.RenderError(c.StatusCode)
+func (ec *ErrorController) GET(c *Context) Result {
+	return c.RenderError(ec.StatusCode)
 }

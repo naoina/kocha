@@ -39,7 +39,7 @@ func TestSessionMiddleware_Before(t *testing.T) {
 	func() {
 		app := kocha.NewTestApp()
 		req, res := newRequestResponse(nil)
-		c := &kocha.Controller{Request: req, Response: res}
+		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
 		m.Before(app, c)
 		actual := c.Session
@@ -59,7 +59,7 @@ func TestSessionMiddleware_Before(t *testing.T) {
 			Value: store.Save(sess),
 		}
 		req, res := newRequestResponse(cookie)
-		c := &kocha.Controller{Request: req, Response: res}
+		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
 		m.Before(app, c)
 		actual := c.Session
@@ -80,7 +80,7 @@ func TestSessionMiddleware_Before(t *testing.T) {
 			Value: store.Save(sess),
 		}
 		req, res := newRequestResponse(cookie)
-		c := &kocha.Controller{Request: req, Response: res}
+		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
 		m.Before(app, c)
 		actual := c.Session
@@ -101,7 +101,7 @@ func TestSessionMiddleware_Before(t *testing.T) {
 			Value: store.Save(sess),
 		}
 		req, res := newRequestResponse(cookie)
-		c := &kocha.Controller{Request: req, Response: res}
+		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
 		m.Before(app, c)
 		actual := c.Session
@@ -122,7 +122,7 @@ func TestSessionMiddleware_Before(t *testing.T) {
 			Value: store.Save(sess),
 		}
 		req, res := newRequestResponse(cookie)
-		c := &kocha.Controller{Request: req, Response: res}
+		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
 		m.Before(app, c)
 		actual := c.Session
@@ -149,7 +149,7 @@ func TestSessionMiddleware_After(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 	req, res := &kocha.Request{Request: r}, &kocha.Response{ResponseWriter: w}
-	c := &kocha.Controller{Request: req, Response: res}
+	c := &kocha.Context{Request: req, Response: res}
 	c.Session = make(kocha.Session)
 	app.Config.Session.SessionExpires = time.Duration(1) * time.Second
 	app.Config.Session.CookieExpires = time.Duration(2) * time.Second

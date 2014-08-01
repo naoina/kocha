@@ -4,55 +4,21 @@ import (
 	"fmt"
 	"go/ast"
 	"go/build"
-	"go/parser"
-	"go/token"
 	"net/http"
-	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"reflect"
-	"regexp"
-	"strconv"
+
 	"strings"
 
 	"github.com/naoina/denco"
 	"github.com/naoina/kocha/util"
 )
 
-var (
-	controllerMethods = map[string]struct{}{
-		"GET":    struct{}{},
-		"POST":   struct{}{},
-		"PUT":    struct{}{},
-		"DELETE": struct{}{},
-		"HEAD":   struct{}{},
-		"PATCH":  struct{}{},
-	}
-	typeValidateParsers = map[string]TypeValidateParser{
-		"string":   &StringTypeValidateParser{regexp.MustCompile(`\A[\w-]+\z`)},
-		"int":      &IntTypeValidateParser{regexp.MustCompile(`\A\d+\z`)},
-		"*url.URL": &URLTypeValidateParser{regexp.MustCompile(`\A[\w-/.]+\z`)},
-	}
-)
-
 // The routing table.
 type RouteTable []*Route
 
 func (rt RouteTable) buildRouter() (*Router, error) {
-	for _, route := range rt {
-		route.normalize()
-	}
-	for _, route := range rt {
-		if err := route.validateControllerType(); err != nil {
-			return nil, err
-		}
-		if route.MethodTypes == nil {
-			if err := route.buildMethodTypes(); err != nil {
-				return nil, err
-			}
-		}
-	}
 	router, err := newRouter(rt)
 	if err != nil {
 		return nil, err
@@ -60,18 +26,6 @@ func (rt RouteTable) buildRouter() (*Router, error) {
 	for _, route := range rt {
 		info := router.reverse[route.Name]
 		route.paramNames = info.paramNames
-	}
-	for _, route := range rt {
-		for _, validator := range []func() error{
-			route.validateTypeValidateParser,
-			route.validateControllerMethodSignature,
-			route.validateRouteParameters,
-			route.validateControllerArgumentParameters,
-		} {
-			if err := validator(); err != nil {
-				return nil, err
-			}
-		}
 	}
 	return router, nil
 }
@@ -96,15 +50,15 @@ func newRouter(rt RouteTable) (*Router, error) {
 	return router, nil
 }
 
-func (router *Router) dispatch(req *http.Request) (controller reflect.Value, method reflect.Value, args []reflect.Value, found bool) {
-	methodName := strings.ToUpper(req.Method)
+func (router *Router) dispatch(req *http.Request) (controller Controller, handler requestHandler, params denco.Params, found bool) {
 	path := util.NormPath(req.URL.Path)
 	data, params, found := router.forward.Lookup(path)
 	if !found {
-		return controller, method, nil, false
+		return nil, nil, nil, false
 	}
 	route := data.(*Route)
-	return route.dispatch(methodName, params)
+	controller, handler, found = route.dispatch(req.Method)
+	return controller, handler, params, found
 }
 
 // buildForward builds forward router.
@@ -153,46 +107,42 @@ func (router *Router) Reverse(name string, v ...interface{}) string {
 
 // Route represents a route.
 type Route struct {
-	Name        string
-	Path        string
-	Controller  interface{}
-	MethodTypes methodTypes
-	paramNames  []string
+	Name       string
+	Path       string
+	Controller Controller
+
+	paramNames []string
 }
 
-func (route *Route) dispatch(methodName string, params []denco.Param) (controller reflect.Value, method reflect.Value, args []reflect.Value, found bool) {
-	methodArgs, exists := route.MethodTypes[methodName]
-	if !exists {
-		return controller, method, nil, false
-	}
-	for _, param := range params {
-		t := methodArgs[param.Name]
-		validateParser := typeValidateParsers[t]
-		arg, err := validateParser.Parse(param.Value)
-		if err != nil {
-			return controller, method, nil, false
+func (route *Route) dispatch(method string) (c Controller, handler requestHandler, found bool) {
+	c = reflect.New(reflect.TypeOf(route.Controller).Elem()).Interface().(Controller)
+	switch strings.ToUpper(method) {
+	case "GET":
+		if h, ok := c.(Getter); ok {
+			return c, h.GET, true
 		}
-		if !validateParser.Validate(arg) {
-			return controller, method, nil, false
+	case "POST":
+		if h, ok := c.(Poster); ok {
+			return c, h.POST, true
 		}
-		args = append(args, reflect.ValueOf(arg))
+	case "PUT":
+		if h, ok := c.(Putter); ok {
+			return c, h.PUT, true
+		}
+	case "DELETE":
+		if h, ok := c.(Deleter); ok {
+			return c, h.DELETE, true
+		}
+	case "HEAD":
+		if h, ok := c.(Header); ok {
+			return c, h.HEAD, true
+		}
+	case "PATCH":
+		if h, ok := c.(Patcher); ok {
+			return c, h.PATCH, true
+		}
 	}
-	t := reflect.TypeOf(route.Controller)
-	c := reflect.New(t)
-	m := c.MethodByName(methodName)
-	return c, m, args, true
-}
-
-func (route *Route) normalize() {
-	v := reflect.ValueOf(route.Controller)
-	for v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	if v.IsValid() {
-		route.Controller = v.Interface()
-	} else {
-		route.Controller = nil
-	}
+	return nil, nil, false
 }
 
 // ParamNames returns names of the path parameters.
@@ -206,187 +156,6 @@ func (route *Route) ParamNames() (names []string) {
 		}
 	}
 	return names
-}
-
-func (route *Route) buildMethodTypes() error {
-	controller := reflect.TypeOf(route.Controller)
-	cname := controller.Name()
-	pkgPath := controller.PkgPath()
-	pkgDir, err := findPkgDir(pkgPath)
-	if err != nil {
-		return err
-	}
-	if pkgDir == "" {
-		return fmt.Errorf("%v: package not found", pkgPath)
-	}
-	pkgInfo, err := util.ImportDir(pkgDir, 0)
-	if err != nil {
-		return err
-	}
-	files := append(pkgInfo.GoFiles, pkgInfo.TestGoFiles...)
-	astFiles := make([]*ast.File, len(files))
-	for i, goFilePath := range files {
-		if astFiles[i], err = parser.ParseFile(token.NewFileSet(), filepath.Join(pkgInfo.Dir, goFilePath), nil, 0); err != nil {
-			return err
-		}
-	}
-	route.MethodTypes = make(map[string]map[string]string)
-	for _, file := range astFiles {
-		for _, d := range file.Decls {
-			ast.Inspect(d, func(node ast.Node) bool {
-				fdecl, ok := node.(*ast.FuncDecl)
-				if !ok || fdecl.Recv == nil {
-					return false
-				}
-				var recv string
-				switch t := fdecl.Recv.List[0].Type.(type) {
-				case *ast.StarExpr:
-					recv = t.X.(*ast.Ident).Name
-				case *ast.Ident:
-					recv = t.Name
-				}
-				if recv != cname {
-					return false
-				}
-				methodName := fdecl.Name.Name
-				if _, ok := controllerMethods[methodName]; !ok {
-					return false
-				}
-				route.MethodTypes[methodName] = make(map[string]string)
-				for _, v := range fdecl.Type.Params.List {
-					typeName := astTypeName(v.Type)
-					for _, name := range v.Names {
-						route.MethodTypes[methodName][name.Name] = typeName
-					}
-				}
-				return false
-			})
-		}
-	}
-	return nil
-}
-
-func (route *Route) validateRouteParameters() error {
-	var errors []string
-	paramNames := make(map[string]bool)
-	for _, name := range route.paramNames {
-		paramNames[name] = true
-	}
-	for methodName, args := range route.MethodTypes {
-		var defNames []string
-		for name := range args {
-			if !paramNames[name] {
-				defNames = append(defNames, name)
-			}
-		}
-		if length := len(defNames); length > 0 {
-			var format string
-			switch {
-			case length == 1:
-				format = "argument `%v` is defined in `%v.%v`, but route parameter is not defined"
-			case length > 1:
-				format = "arguments `%v` are defined in `%v.%v`, but route parameters are not defined"
-			}
-			controllerName := reflect.TypeOf(route.Controller).Name()
-			names := strings.Join(defNames, "`, `")
-			errors = append(errors, fmt.Sprintf(format, names, controllerName, methodName))
-		}
-	}
-	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, "\n"+strings.Repeat(" ", len("panic: "))))
-	}
-	return nil
-}
-
-func (route *Route) validateControllerArgumentParameters() error {
-	argNames := make(map[string]bool)
-	for _, args := range route.MethodTypes {
-		for name := range args {
-			argNames[name] = true
-		}
-	}
-	var defNames []string
-	for _, name := range route.paramNames {
-		if !argNames[name] {
-			defNames = append(defNames, name)
-		}
-	}
-	if len(defNames) > 0 {
-		var format string
-		switch {
-		case len(defNames) == 1:
-			format = "route parameter `%v` is defined in route `%v`, but argument is not defined in %v of `%v`"
-		case len(defNames) > 1:
-			format = "route parameters `%v` are defined in route `%v`, but arguments are not defined in %v of `%v`"
-		}
-		names := strings.Join(defNames, "`, `")
-		var methNames []string
-		for name := range route.MethodTypes {
-			methNames = append(methNames, name)
-		}
-		methName := strings.Join(methNames, "/")
-		controllerName := reflect.TypeOf(route.Controller).Name()
-		return fmt.Errorf(format, names, route.Name, methName, controllerName)
-	}
-	return nil
-}
-
-func (route *Route) validateTypeValidateParser() error {
-	var errors []string
-	for _, args := range route.MethodTypes {
-		for _, t := range args {
-			if typeValidateParsers[t] == nil {
-				errors = append(errors, fmt.Sprintf("TypeValidateParser of %#v is not set", t))
-			}
-		}
-	}
-	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, "\n"+strings.Repeat(" ", len("panic: "))))
-	}
-	return nil
-}
-
-func (route *Route) validateControllerMethodSignature() error {
-	var errors []string
-	controller := reflect.TypeOf(route.Controller)
-	for methodName, _ := range route.MethodTypes {
-		meth, found := reflect.PtrTo(controller).MethodByName(methodName)
-		if !found {
-			return fmt.Errorf("BUG: method `%v` is not found in `%v.%v`", methodName, path.Base(controller.PkgPath()), controller.Name())
-		}
-		if num := meth.Type.NumOut(); num != 1 {
-			errors = append(errors, fmt.Sprintf("by %v.%v.%v, number of return value must be 1, but %v", path.Base(controller.PkgPath()), controller.Name(), meth.Name, num))
-			continue
-		}
-		resultType := reflect.TypeOf((*Result)(nil)).Elem()
-		if rtype := meth.Type.Out(0); !rtype.Implements(resultType) {
-			errors = append(errors, fmt.Sprintf("by %v.%v.%v, type of return value must be `%v`, but `%v`", path.Base(controller.PkgPath()), controller.Name(), meth.Name, resultType, rtype))
-		}
-	}
-	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, "\n"+strings.Repeat(" ", len("panic: "))))
-	}
-	return nil
-}
-
-func (route *Route) validateControllerType() error {
-	c := reflect.ValueOf(route.Controller)
-	if c.Kind() != reflect.Struct || !c.FieldByName("Controller").IsValid() {
-		return fmt.Errorf(`Controller of route "%s" must be any type of embedded %T or that pointer, but %T`, route.Name, Controller{}, route.Controller)
-	}
-	switch cc := c.FieldByName("Controller").Interface().(type) {
-	case Controller:
-	case *Controller:
-	default:
-		return fmt.Errorf("Controller field must be struct of %T or that pointer, but %T", Controller{}, cc)
-	}
-	return nil
-}
-
-type methodTypes map[string]map[string]string
-
-func (mt methodTypes) GoString() string {
-	return util.GoString(map[string]map[string]string(mt))
 }
 
 type routeInfo struct {
@@ -405,17 +174,6 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	case vlen+nlen == 0:
 		return route.Path
 	}
-	var arg map[string]string
-	for _, arg = range route.MethodTypes {
-		break
-	}
-	for i := 0; i < len(v); i++ {
-		t := arg[ri.paramNames[i]]
-		validateParser := typeValidateParsers[t]
-		if !validateParser.Validate(v[i]) {
-			panic(fmt.Errorf("parameter type mismatch: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
-		}
-	}
 	var oldnew []string
 	for i := 0; i < len(v); i++ {
 		oldnew = append(oldnew, ri.rawParamNames[i], fmt.Sprint(v[i]))
@@ -423,85 +181,6 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	replacer := strings.NewReplacer(oldnew...)
 	path := replacer.Replace(route.Path)
 	return util.NormPath(path)
-}
-
-// TypeValidateParser is an interface of validator and parser for any type value.
-type TypeValidateParser interface {
-	// Validate returns whether the valid value as any type.
-	Validate(v interface{}) bool
-
-	// Parse returns value that parses v as any type.
-	Parse(v string) (value interface{}, err error)
-}
-
-// SetTypeValidateParser sets the TypeValidateParser by given type name.
-func SetTypeValidateParser(name string, validateParser TypeValidateParser) {
-	typeValidateParsers[name] = validateParser
-}
-
-// SetTypeValidateParserByValue sets the TypeValidateParser by type of v.
-func SetTypeValidateParserByValue(v interface{}, validateParser TypeValidateParser) {
-	SetTypeValidateParser(reflect.TypeOf(v).String(), validateParser)
-}
-
-// StringTypeValidateParser represents a TypeValidateParser for string.
-type StringTypeValidateParser struct {
-	stringRegexp *regexp.Regexp
-}
-
-// Validate returns whether the valid value as string of path parameter.
-func (validateParser *StringTypeValidateParser) Validate(v interface{}) bool {
-	if s, ok := v.(string); ok {
-		return validateParser.stringRegexp.MatchString(s)
-	}
-	return false
-}
-
-// Parse returns value that parses v as string type.
-func (validateParser *StringTypeValidateParser) Parse(v string) (value interface{}, err error) {
-	return v, nil
-}
-
-// IntTypeValidateParser represents a TypeValidateParser for int.
-type IntTypeValidateParser struct {
-	intRegexp *regexp.Regexp
-}
-
-// Validate returns whether the valid value as int of path parameter.
-func (validateParser *IntTypeValidateParser) Validate(v interface{}) bool {
-	if i, ok := v.(int); ok {
-		return validateParser.intRegexp.MatchString(fmt.Sprint(i))
-	}
-	return false
-}
-
-// Parse returns value that parses v as int type.
-func (validateParser *IntTypeValidateParser) Parse(v string) (value interface{}, err error) {
-	return strconv.Atoi(v)
-}
-
-// URLTypeValidateParser represents a TypeValidateParser for url.URL.
-type URLTypeValidateParser struct {
-	urlRegexp *regexp.Regexp
-}
-
-// Validate returns whether the valid value as url.URL of path parameter.
-func (validateParser *URLTypeValidateParser) Validate(v interface{}) bool {
-	var s string
-	switch t := v.(type) {
-	case string:
-		s = t
-	case *url.URL:
-		s = t.Path
-	default:
-		return false
-	}
-	return validateParser.urlRegexp.MatchString(s)
-}
-
-// Parse returns value that parses v as url.URL type.
-func (validateParser *URLTypeValidateParser) Parse(v string) (value interface{}, err error) {
-	return url.Parse(v)
 }
 
 func findPkgDir(pkgPath string) (string, error) {

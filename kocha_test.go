@@ -155,168 +155,55 @@ func TestNew_buildLogger(t *testing.T) {
 }
 
 func TestApplication_ServeHTTP(t *testing.T) {
-	func() {
-		w := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		app := kocha.NewTestApp()
-		app.ServeHTTP(w, req)
-		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusOK) {
-			t.Errorf("Expect %v, but %v", http.StatusOK, status)
-		}
-		body := w.Body.String()
-		expected := "This is layout\n\nThis is root\n\n"
-		if !reflect.DeepEqual(body, expected) {
-			t.Errorf("Expect %q, but %q", expected, body)
-		}
-		actual := w.Header().Get("Content-Type")
-		expected = "text/html"
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %q, but %q", expected, actual)
-		}
-	}()
+	for _, v := range []struct {
+		uri         string
+		status      int
+		body        string
+		contentType string
+	}{
+		{"/", http.StatusOK, "This is layout\n\nThis is root\n\n", "text/html"},
+		{"/user/7", http.StatusOK, "This is layout\n\nThis is user 7\n\n", "text/html"},
+		{"/2013/07/19/user/naoina", http.StatusOK, "This is layout\n\nThis is date naoina: 2013-07-19\n\n", "text/html"},
+		{"/missing", http.StatusNotFound, "Not Found", "text/plain"},
+		{"/error", http.StatusInternalServerError, "This is layout\n\n500 error\n\n", "text/html"},
+		{"/json", http.StatusOK, "{\n  \"layout\": \"application\",\n  \n{\"tmpl5\":\"json\"}\n\n}\n", "application/json"},
+		{"/teapot", http.StatusTeapot, "This is layout\n\nI'm a tea pot\n\n", "text/html"},
+		{"/panic_in_render", http.StatusInternalServerError, "Internal Server Error", "text/plain"},
+		{"/static/robots.txt", http.StatusOK, "# User-Agent: *\n# Disallow: /\n", "text/plain; charset=utf-8"},
+	} {
+		func() {
+			defer func() {
+				if err := recover(); err != nil {
+					t.Errorf(`GET %#v is panicked; want no panic`, v.uri)
+				}
+			}()
+			w := httptest.NewRecorder()
+			req, err := http.NewRequest("GET", v.uri, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			app := kocha.NewTestApp()
+			app.ServeHTTP(w, req)
 
-	func() {
-		w := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/user/7", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		app := kocha.NewTestApp()
-		app.ServeHTTP(w, req)
-		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusOK) {
-			t.Errorf("Expect %v, but %v", http.StatusOK, status)
-		}
-		body := w.Body.String()
-		expected := "This is layout\n\nThis is user 7\n\n"
-		if !reflect.DeepEqual(body, expected) {
-			t.Errorf("Expect %q, but %q", expected, body)
-		}
-	}()
+			var actual interface{} = w.Code
+			var expected interface{} = v.status
+			if !reflect.DeepEqual(actual, expected) {
+				t.Errorf(`GET %#v status => %#v; want %#v`, v.uri, actual, expected)
+			}
 
-	func() {
-		w := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/2013/07/19/user/naoina", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		app := kocha.NewTestApp()
-		app.ServeHTTP(w, req)
-		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusOK) {
-			t.Errorf("Expect %v, but %v", http.StatusOK, status)
-		}
-		body := w.Body.String()
-		expected := "This is layout\n\nThis is date naoina: 2013-7-19\n\n"
-		if !reflect.DeepEqual(body, expected) {
-			t.Errorf("Expect %q, but %q", expected, body)
-		}
-	}()
+			actual = w.Body.String()
+			expected = v.body
+			if !reflect.DeepEqual(actual, expected) {
+				t.Errorf(`GET %#v => %#v; want %#v`, v.uri, actual, expected)
+			}
 
-	func() {
-		w := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/missing", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		app := kocha.NewTestApp()
-		app.ServeHTTP(w, req)
-		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusNotFound) {
-			t.Errorf("Expect %v, but %v", http.StatusNotFound, status)
-		}
-	}()
-
-	func() {
-		// log.SetOutput(ioutil.Discard)
-		// defer log.SetOutput(os.Stdout)
-		w := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/error", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		app := kocha.NewTestApp()
-		app.ServeHTTP(w, req)
-		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusInternalServerError) {
-			t.Errorf("Expect %v, but %v", http.StatusInternalServerError, status)
-		}
-	}()
-
-	func() {
-		w := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/json", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		app := kocha.NewTestApp()
-		app.ServeHTTP(w, req)
-		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusOK) {
-			t.Errorf("Expect %v, but %v", http.StatusOK, status)
-		}
-		body := w.Body.String()
-		expected := `{
-  "layout": "application",
-  
-{"tmpl5":"json"}
-
-}
-`
-		if !reflect.DeepEqual(body, expected) {
-			t.Errorf("Expect %#v, but %#v", expected, body)
-		}
-		actual := w.Header().Get("Content-Type")
-		expected = "application/json"
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
-		}
-	}()
-
-	func() {
-		w := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/teapot", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		app := kocha.NewTestApp()
-		app.ServeHTTP(w, req)
-		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusTeapot) {
-			t.Errorf("Expect %v, but %v", http.StatusTeapot, status)
-		}
-		body := w.Body.String()
-		expected := "This is layout\n\nI'm a tea pot\n\n"
-		if !reflect.DeepEqual(body, expected) {
-			t.Errorf(`Expect %#v, but %#v`, expected, body)
-		}
-		if !reflect.DeepEqual(w.Code, http.StatusTeapot) {
-			t.Errorf("Expect %v, but %v", http.StatusTeapot, w.Code)
-		}
-	}()
-
-	func() {
-		defer func() {
-			if err := recover(); err != nil {
-				t.Errorf("Expect doesn't panic, but panic")
+			actual = w.Header().Get("Content-Type")
+			expected = v.contentType
+			if !reflect.DeepEqual(actual, expected) {
+				t.Errorf(`GET %#v Content-Type => %#v; want %#v`, v.uri, actual, expected)
 			}
 		}()
-		w := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/panic_in_render", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		app := kocha.NewTestApp()
-		app.ServeHTTP(w, req)
-		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusInternalServerError) {
-			t.Errorf("Expect %v, but %v", http.StatusInternalServerError)
-		}
-	}()
+	}
 
 	// middleware tests
 	func() {
@@ -423,25 +310,25 @@ type TestMiddleware struct {
 	called string
 }
 
-func (m *TestMiddleware) Before(app *kocha.Application, c *kocha.Controller) {
+func (m *TestMiddleware) Before(app *kocha.Application, c *kocha.Context) {
 	m.called += "before"
 }
 
-func (m *TestMiddleware) After(app *kocha.Application, c *kocha.Controller) {
+func (m *TestMiddleware) After(app *kocha.Application, c *kocha.Context) {
 	m.called += "after"
 }
 
 type TestPanicInBeforeMiddleware struct{}
 
-func (m *TestPanicInBeforeMiddleware) Before(app *kocha.Application, c *kocha.Controller) {
+func (m *TestPanicInBeforeMiddleware) Before(app *kocha.Application, c *kocha.Context) {
 	panic("before")
 }
-func (m *TestPanicInBeforeMiddleware) After(app *kocha.Application, c *kocha.Controller) {}
+func (m *TestPanicInBeforeMiddleware) After(app *kocha.Application, c *kocha.Context) {}
 
 type TestPanicInAfterMiddleware struct{}
 
-func (m *TestPanicInAfterMiddleware) Before(app *kocha.Application, c *kocha.Controller) {}
-func (m *TestPanicInAfterMiddleware) After(app *kocha.Application, c *kocha.Controller) {
+func (m *TestPanicInAfterMiddleware) Before(app *kocha.Application, c *kocha.Context) {}
+func (m *TestPanicInAfterMiddleware) After(app *kocha.Application, c *kocha.Context) {
 	panic("after")
 }
 

@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/naoina/kocha"
 	"github.com/naoina/kocha/util"
@@ -44,8 +45,15 @@ func (g *controllerGenerator) Generate() {
 	}
 	camelCaseName := util.ToCamelCase(name)
 	snakeCaseName := util.ToSnakeCase(name)
+	receiverName := strings.ToLower(name)
+	if len(receiverName) > 1 {
+		receiverName = receiverName[:2]
+	} else {
+		receiverName = receiverName[:1]
+	}
 	data := map[string]interface{}{
-		"Name": camelCaseName,
+		"Name":     camelCaseName,
+		"Receiver": receiverName,
 	}
 	util.CopyTemplate(g,
 		filepath.Join(SkeletonDir("controller"), "controller.go.template"),

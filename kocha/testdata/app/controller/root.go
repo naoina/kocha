@@ -5,9 +5,9 @@ import (
 )
 
 type Root struct {
-	*kocha.Controller
+	*kocha.DefaultController
 }
 
-func (c *Root) GET() kocha.Result {
+func (ro *Root) GET(c *kocha.Context) kocha.Result {
 	return c.Render()
 }

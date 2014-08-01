@@ -12,7 +12,7 @@ var routes = RouteTable{
 	{
 		Name:       "root",
 		Path:       "/",
-		Controller: controller.Root{},
+		Controller: &controller.Root{},
 	},
 }
 
@@ -21,7 +21,7 @@ func init() {
 		{
 			Name:       "static",
 			Path:       "/*path",
-			Controller: kocha.StaticServe{},
+			Controller: &kocha.StaticServe{},
 		},
 	}...))
 

@@ -39,9 +39,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "abort: length of config.AppConfig.RouteTable is mismatched between build-time and run-time")
 		os.Exit(1)
 	}
-	{{range $i, $route := .app.Config.RouteTable}}
-	config.AppConfig.RouteTable[{{$i}}].MethodTypes = {{$route.MethodTypes|goString}}
-	{{end}}
 	{{range $name, $data := .resources}}
 	config.AppConfig.ResourceSet.Add("{{$name}}", util.Gunzip({{$data|printf "%q"}}))
 	{{end}}

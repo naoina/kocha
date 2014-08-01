@@ -26,47 +26,47 @@ func NewTestApp() *Application {
 			{
 				Name:       "root",
 				Path:       "/",
-				Controller: FixtureRootTestCtrl{},
+				Controller: &FixtureRootTestCtrl{},
 			},
 			{
 				Name:       "user",
 				Path:       "/user/:id",
-				Controller: FixtureUserTestCtrl{},
+				Controller: &FixtureUserTestCtrl{},
 			},
 			{
 				Name:       "date",
 				Path:       "/:year/:month/:day/user/:name",
-				Controller: FixtureDateTestCtrl{},
+				Controller: &FixtureDateTestCtrl{},
 			},
 			{
 				Name:       "error",
 				Path:       "/error",
-				Controller: FixtureErrorTestCtrl{},
+				Controller: &FixtureErrorTestCtrl{},
 			},
 			{
 				Name:       "json",
 				Path:       "/json",
-				Controller: FixtureJsonTestCtrl{},
+				Controller: &FixtureJsonTestCtrl{},
 			},
 			{
 				Name:       "teapot",
 				Path:       "/teapot",
-				Controller: FixtureTeapotTestCtrl{},
+				Controller: &FixtureTeapotTestCtrl{},
 			},
 			{
 				Name:       "panic_in_render",
 				Path:       "/panic_in_render",
-				Controller: FixturePanicInRenderTestCtrl{},
+				Controller: &FixturePanicInRenderTestCtrl{},
 			},
 			{
 				Name:       "static",
 				Path:       "/static/*path",
-				Controller: StaticServe{},
+				Controller: &StaticServe{},
 			},
 			{
 				Name:       "post_test",
 				Path:       "/post_test",
-				Controller: FixturePostTestCtrl{},
+				Controller: &FixturePostTestCtrl{},
 			},
 		},
 		Logger: &LoggerConfig{
@@ -120,97 +120,87 @@ func (m orderedOutputMap) GoString() string {
 	return fmt.Sprintf("map[string]interface{}{%v}", strings.Join(keys, ", "))
 }
 
-type FixturePanicInRenderTestCtrl struct{ *Controller }
+type FixturePanicInRenderTestCtrl struct {
+	*DefaultController
+}
 
-func (c *FixturePanicInRenderTestCtrl) GET() Result {
+func (ctrl *FixturePanicInRenderTestCtrl) GET(c *Context) Result {
 	return c.RenderXML(Context{}) // Context is unsupported type in XML.
 }
 
 type FixtureUserTestCtrl struct {
-	*Controller
+	*DefaultController
 }
 
-func (c *FixtureUserTestCtrl) GET(id int) Result {
-	return c.Render(Context{
-		"id": id,
+func (ctrl *FixtureUserTestCtrl) GET(c *Context) Result {
+	return c.Render(Data{
+		"id": c.Params.Get("id"),
 	})
 }
 
 type FixtureDateTestCtrl struct {
-	Controller
+	DefaultController
 }
 
-func (c *FixtureDateTestCtrl) GET(year, month int, day int, name string) Result {
-	return c.Render(Context{
-		"year":  year,
-		"month": month,
-		"day":   day,
-		"name":  name,
+func (ctrl *FixtureDateTestCtrl) GET(c *Context) Result {
+	return c.Render(Data{
+		"year":  c.Params.Get("year"),
+		"month": c.Params.Get("month"),
+		"day":   c.Params.Get("day"),
+		"name":  c.Params.Get("name"),
 	})
 }
 
 type FixtureErrorTestCtrl struct {
-	Controller
+	DefaultController
 }
 
-func (c *FixtureErrorTestCtrl) GET() Result {
+func (ctrl *FixtureErrorTestCtrl) GET(c *Context) Result {
 	panic("panic test")
 }
 
 type FixtureJsonTestCtrl struct {
-	Controller
+	DefaultController
 }
 
-func (c *FixtureJsonTestCtrl) GET() Result {
+func (ctrl *FixtureJsonTestCtrl) GET(c *Context) Result {
 	c.Response.ContentType = "application/json"
 	return c.Render()
 }
 
 type FixtureRootTestCtrl struct {
-	*Controller
+	*DefaultController
 }
 
-func (c *FixtureRootTestCtrl) GET() Result {
+func (ctrl *FixtureRootTestCtrl) GET(c *Context) Result {
 	return c.Render()
 }
 
 type FixtureTeapotTestCtrl struct {
-	Controller
+	DefaultController
 }
 
-func (c *FixtureTeapotTestCtrl) GET() Result {
+func (ctrl *FixtureTeapotTestCtrl) GET(c *Context) Result {
 	c.Response.StatusCode = http.StatusTeapot
 	return c.Render()
 }
 
 type FixtureInvalidReturnValueTypeTestCtrl struct {
-	*Controller
+	*DefaultController
 }
 
-func (c *FixtureInvalidReturnValueTypeTestCtrl) GET() string {
+func (ctrl *FixtureInvalidReturnValueTypeTestCtrl) GET(c *Context) string {
 	return ""
 }
 
-type FixtureInvalidNumberOfReturnValueTestCtrl struct{ *Controller }
-
-func (c *FixtureInvalidNumberOfReturnValueTestCtrl) GET() (Result, Result) {
-	return c.RenderText(""), c.RenderText("")
-}
-
-type FixtureTypeUndefinedCtrl struct{ *Controller }
-
-func (c *FixtureTypeUndefinedCtrl) GET(id int32) Result {
-	return c.RenderText("")
-}
-
 type FixturePostTestCtrl struct {
-	*Controller
+	*DefaultController
 }
 
-func (c *FixturePostTestCtrl) POST() Result {
+func (ctrl *FixturePostTestCtrl) POST(c *Context) Result {
 	m := orderedOutputMap{}
 	for k, v := range c.Params.Values {
 		m[k] = v
 	}
-	return c.Render(Context{"params": m})
+	return c.Render(Data{"params": m})
 }

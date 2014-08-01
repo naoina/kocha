@@ -75,7 +75,7 @@ func (sess Session) Clear() {
 	}
 }
 
-func newSessionCookie(app *Application, c *Controller) *http.Cookie {
+func newSessionCookie(app *Application, c *Context) *http.Cookie {
 	expires, maxAge := expiresFromDuration(app.Config.Session.CookieExpires)
 	return &http.Cookie{
 		Name:     app.Config.Session.Name,
