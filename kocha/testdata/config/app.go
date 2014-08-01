@@ -12,7 +12,6 @@ import (
 
 var (
 	AppName   = "testappname"
-	Env       = kocha.SettingEnv("KOCHA_ENV", "dev") // NOTE: deprecated. will be removed in future.
 	AppConfig = &kocha.Config{
 		Addr:          kocha.SettingEnv("KOCHA_ADDR", "127.0.0.1:9100"),
 		AppPath:       rootPath,
@@ -33,6 +32,11 @@ var (
 			Writer:    os.Stdout,
 			Formatter: &log.LTSVFormatter{},
 			Level:     log.INFO,
+		},
+
+		Middlewares: []kocha.Middleware{
+			&kocha.RequestLoggingMiddleware{},
+			&kocha.SessionMiddleware{},
 		},
 
 		// Session settings
@@ -60,17 +64,3 @@ var (
 	_, configFileName, _, _ = runtime.Caller(0)
 	rootPath                = filepath.Dir(filepath.Join(configFileName, ".."))
 )
-
-func init() {
-	switch Env {
-	case "prod":
-		AppConfig.Middlewares = append(kocha.DefaultMiddlewares, []kocha.Middleware{
-			&kocha.SessionMiddleware{},
-		}...)
-	default:
-		AppConfig.Middlewares = append(kocha.DefaultMiddlewares, []kocha.Middleware{
-			&kocha.RequestLoggingMiddleware{},
-			&kocha.SessionMiddleware{},
-		}...)
-	}
-}
