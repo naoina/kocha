@@ -11,44 +11,8 @@ import (
 	"github.com/naoina/kocha/util"
 )
 
-func TestDefaultMiddlewares(t *testing.T) {
-	actual := kocha.DefaultMiddlewares
-	expected := []kocha.Middleware{
-		&kocha.ResponseContentTypeMiddleware{},
-	}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf(`DefaultMiddlewares => %#v; want %#v`, actual, expected)
-	}
-}
-
 func TestResponseContentTypeMiddleware_Before(t *testing.T) {
 	t.Skip("do nothing")
-}
-
-func TestResponseContentTypeMiddleware_After(t *testing.T) {
-	r, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	w := httptest.NewRecorder()
-	req, res := &kocha.Request{Request: r}, &kocha.Response{ResponseWriter: w}
-	m := &kocha.ResponseContentTypeMiddleware{}
-	actual := res.Header().Get("Content-Type")
-	expected := ""
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-	res.ContentType = "text/html"
-	c := &kocha.Controller{
-		Request:  req,
-		Response: res,
-	}
-	m.After(nil, c)
-	actual = res.Header().Get("Content-Type")
-	expected = "text/html"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
 }
 
 func TestSessionMiddleware_Before(t *testing.T) {

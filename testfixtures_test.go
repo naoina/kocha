@@ -72,7 +72,7 @@ func NewTestApp() *Application {
 		Logger: &LoggerConfig{
 			Writer: ioutil.Discard,
 		},
-		Middlewares: append(DefaultMiddlewares, []Middleware{}...),
+		Middlewares: []Middleware{},
 		Session: &SessionConfig{
 			Name:  "test_session",
 			Store: NewTestSessionCookieStore(),

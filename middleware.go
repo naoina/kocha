@@ -13,25 +13,6 @@ type Middleware interface {
 	After(app *Application, c *Controller)
 }
 
-var (
-	// Default middlewares.
-	DefaultMiddlewares = []Middleware{
-		&ResponseContentTypeMiddleware{},
-	}
-)
-
-// Middleware that set Content-Type header.
-type ResponseContentTypeMiddleware struct{}
-
-func (m *ResponseContentTypeMiddleware) Before(app *Application, c *Controller) {
-	// do nothing
-}
-
-func (m *ResponseContentTypeMiddleware) After(app *Application, c *Controller) {
-	res := c.Response
-	res.Header().Set("Content-Type", res.ContentType)
-}
-
 // Session processing middleware.
 type SessionMiddleware struct{}
 

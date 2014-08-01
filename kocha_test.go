@@ -342,7 +342,7 @@ func TestApplication_ServeHTTP(t *testing.T) {
 			t.Errorf("Expect %#v, but %#v", expected, body)
 		}
 		actual := w.Header().Get("Content-Type")
-		expected = ""
+		expected = "text/html"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %v, but %v", expected, actual)
 		}

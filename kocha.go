@@ -227,6 +227,7 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 		for _, m := range app.Config.Middlewares {
 			m.After(app, cc)
 		}
+		response.Header().Set("Content-Type", response.ContentType)
 		result[0].Interface().(Result).Proc(response)
 	}()
 	request.Body = http.MaxBytesReader(w, request.Body, app.Config.MaxClientBodySize)

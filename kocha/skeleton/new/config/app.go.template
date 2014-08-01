@@ -64,13 +64,13 @@ var (
 func init() {
 	switch Env {
 	case "prod":
-		AppConfig.Middlewares = append(kocha.DefaultMiddlewares, []kocha.Middleware{
+		AppConfig.Middlewares = []kocha.Middleware{
 			&kocha.SessionMiddleware{},
-		}...)
+		}
 	default:
-		AppConfig.Middlewares = append(kocha.DefaultMiddlewares, []kocha.Middleware{
+		AppConfig.Middlewares = []kocha.Middleware{
 			&kocha.RequestLoggingMiddleware{},
 			&kocha.SessionMiddleware{},
-		}...)
+		}
 	}
 }
