@@ -142,11 +142,13 @@ type SessionCookieStore struct {
 	SigningKey string
 }
 
+var codecHandler = &codec.MsgpackHandle{}
+
 // Save saves and returns the key of session cookie.
 // Actually, key is session cookie data itself.
 func (store *SessionCookieStore) Save(sess Session) (key string) {
 	var buf bytes.Buffer
-	if err := codec.NewEncoder(&buf, &codec.MsgpackHandle{}).Encode(sess); err != nil {
+	if err := codec.NewEncoder(&buf, codecHandler).Encode(sess); err != nil {
 		panic(err)
 	}
 	encrypted, err := store.encrypt(buf.Bytes())
@@ -179,7 +181,7 @@ func (store *SessionCookieStore) Load(key string) (sess Session) {
 	if err != nil {
 		panic(err)
 	}
-	if err := codec.NewDecoderBytes(decrypted, &codec.MsgpackHandle{}).Decode(&sess); err != nil {
+	if err := codec.NewDecoderBytes(decrypted, codecHandler).Decode(&sess); err != nil {
 		panic(err)
 	}
 	return sess
