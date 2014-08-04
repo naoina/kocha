@@ -754,30 +754,3 @@ func TestNewErrorController(t *testing.T) {
 		}
 	}
 }
-
-func TestErrorController_GET(t *testing.T) {
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		panic(err)
-	}
-	ctrl := &kocha.ErrorController{
-		StatusCode: http.StatusTeapot,
-	}
-	c := &kocha.Context{
-		Request:  &kocha.Request{Request: req},
-		Response: &kocha.Response{ResponseWriter: httptest.NewRecorder()},
-		App:      kocha.NewTestApp(),
-	}
-	w := httptest.NewRecorder()
-	res := &kocha.Response{ResponseWriter: w}
-	ctrl.GET(c).Proc(res)
-	buf, err := ioutil.ReadAll(w.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	actual := string(buf)
-	expected := http.StatusText(http.StatusTeapot)
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-}

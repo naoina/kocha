@@ -57,8 +57,8 @@ func (router *Router) dispatch(req *http.Request) (controller Controller, handle
 		return nil, nil, nil, false
 	}
 	route := data.(*Route)
-	controller, handler, found = route.dispatch(req.Method)
-	return controller, handler, params, found
+	handler, found = route.dispatch(req.Method)
+	return route.Controller, handler, params, found
 }
 
 // buildForward builds forward router.
@@ -114,35 +114,34 @@ type Route struct {
 	paramNames []string
 }
 
-func (route *Route) dispatch(method string) (c Controller, handler requestHandler, found bool) {
-	c = reflect.New(reflect.TypeOf(route.Controller).Elem()).Interface().(Controller)
+func (route *Route) dispatch(method string) (handler requestHandler, found bool) {
 	switch strings.ToUpper(method) {
 	case "GET":
-		if h, ok := c.(Getter); ok {
-			return c, h.GET, true
+		if h, ok := route.Controller.(Getter); ok {
+			return h.GET, true
 		}
 	case "POST":
-		if h, ok := c.(Poster); ok {
-			return c, h.POST, true
+		if h, ok := route.Controller.(Poster); ok {
+			return h.POST, true
 		}
 	case "PUT":
-		if h, ok := c.(Putter); ok {
-			return c, h.PUT, true
+		if h, ok := route.Controller.(Putter); ok {
+			return h.PUT, true
 		}
 	case "DELETE":
-		if h, ok := c.(Deleter); ok {
-			return c, h.DELETE, true
+		if h, ok := route.Controller.(Deleter); ok {
+			return h.DELETE, true
 		}
 	case "HEAD":
-		if h, ok := c.(Header); ok {
-			return c, h.HEAD, true
+		if h, ok := route.Controller.(Header); ok {
+			return h.HEAD, true
 		}
 	case "PATCH":
-		if h, ok := c.(Patcher); ok {
-			return c, h.PATCH, true
+		if h, ok := route.Controller.(Patcher); ok {
+			return h.PATCH, true
 		}
 	}
-	return nil, nil, false
+	return nil, false
 }
 
 // ParamNames returns names of the path parameters.

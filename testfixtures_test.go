@@ -68,6 +68,11 @@ func NewTestApp() *Application {
 				Path:       "/post_test",
 				Controller: &FixturePostTestCtrl{},
 			},
+			{
+				Name:       "error_controller_test",
+				Path:       "/error_controller_test",
+				Controller: NewErrorController(http.StatusBadGateway),
+			},
 		},
 		Logger: &LoggerConfig{
 			Writer: ioutil.Discard,

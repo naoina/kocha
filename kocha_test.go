@@ -170,6 +170,7 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		{"/teapot", http.StatusTeapot, "This is layout\n\nI'm a tea pot\n\n", "text/html"},
 		{"/panic_in_render", http.StatusInternalServerError, "Internal Server Error", "text/plain"},
 		{"/static/robots.txt", http.StatusOK, "# User-Agent: *\n# Disallow: /\n", "text/plain; charset=utf-8"},
+		{"/error_controller_test", http.StatusBadGateway, "Bad Gateway", "text/plain"},
 	} {
 		func() {
 			defer func() {
