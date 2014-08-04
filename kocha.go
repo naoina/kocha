@@ -199,61 +199,46 @@ func (app *Application) validateSessionConfig() error {
 }
 
 func (app *Application) render(w http.ResponseWriter, r *http.Request, controller Controller, handler requestHandler, params denco.Params) {
-	request := newRequest(r)
-	response := newResponse(w)
-	var (
-		ctx    *Context
-		result Result
-	)
+	ctx := &Context{
+		Name:     reflect.TypeOf(controller).Elem().Name(),
+		Layout:   app.Config.DefaultLayout,
+		Data:     make(Data),
+		Request:  newRequest(r),
+		Response: newResponse(w),
+		App:      app,
+	}
+	var result Result
 	defer func() {
-		defer func() {
-			if err := recover(); err != nil {
-				app.logStackAndError(err)
-				response.StatusCode = http.StatusInternalServerError
-				http.Error(response, http.StatusText(response.StatusCode), response.StatusCode)
-			}
-		}()
+		defer app.panicHandler(ctx.Response)
 		if err := recover(); err != nil {
 			app.logStackAndError(err)
-			c := &ErrorController{
-				StatusCode: http.StatusInternalServerError,
-			}
-			if ctx == nil {
-				ctx = &Context{
-					Request:  request,
-					Response: response,
-				}
-			}
-			result = c.GET(ctx)
+			result = internalServerErrorController.GET(ctx)
 		}
 		for _, m := range app.Config.Middlewares {
 			m.After(app, ctx)
 		}
-		response.Header().Set("Content-Type", response.ContentType)
-		if err := result.Proc(response); err != nil {
+		ctx.Response.Header().Set("Content-Type", ctx.Response.ContentType)
+		if err := result.Proc(ctx.Response); err != nil {
 			panic(err)
 		}
 	}()
-	request.Body = http.MaxBytesReader(w, request.Body, app.Config.MaxClientBodySize)
-	if err := request.ParseMultipartForm(app.Config.MaxClientBodySize); err != nil && err != http.ErrNotMultipart {
+	if err := ctx.prepareRequest(params); err != nil {
 		panic(err)
 	}
-	for _, param := range params {
-		request.Form.Add(param.Name, param.Value)
+	if err := ctx.prepareParams(); err != nil {
+		panic(err)
 	}
-	ctx = &Context{
-		Name:     reflect.TypeOf(controller).Elem().Name(),
-		Layout:   app.Config.DefaultLayout,
-		Data:     make(Data),
-		Request:  request,
-		Response: response,
-		App:      app,
-	}
-	ctx.Params = newParams(ctx, request.Form, "")
 	for _, m := range app.Config.Middlewares {
 		m.Before(app, ctx)
 	}
 	result = handler(ctx)
+}
+
+func (app *Application) panicHandler(w http.ResponseWriter) {
+	if err := recover(); err != nil {
+		app.logStackAndError(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
 }
 
 func (app *Application) logStackAndError(err interface{}) {

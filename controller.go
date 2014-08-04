@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/naoina/denco"
 	"github.com/naoina/kocha/util"
 )
 
@@ -385,6 +386,22 @@ func (c *Context) HasErrors() bool {
 	return len(c.errors) > 0
 }
 
+func (c *Context) prepareRequest(params denco.Params) error {
+	c.Request.Body = http.MaxBytesReader(c.Response, c.Request.Body, c.App.Config.MaxClientBodySize)
+	if err := c.Request.ParseMultipartForm(c.App.Config.MaxClientBodySize); err != nil && err != http.ErrNotMultipart {
+		return err
+	}
+	for _, param := range params {
+		c.Request.Form.Add(param.Name, param.Value)
+	}
+	return nil
+}
+
+func (c *Context) prepareParams() error {
+	c.Params = newParams(c, c.Request.Form, "")
+	return nil
+}
+
 // StaticServe is generic controller for serve a static file.
 type StaticServe struct {
 	*DefaultController
@@ -396,6 +413,10 @@ func (ss *StaticServe) GET(c *Context) Result {
 		return c.RenderError(http.StatusBadRequest)
 	}
 	return c.SendFile(path.Path)
+}
+
+var internalServerErrorController = &ErrorController{
+	StatusCode: http.StatusInternalServerError,
 }
 
 // ErrorController is generic controller for error response.
