@@ -38,6 +38,7 @@ var (
 		Middlewares: []kocha.Middleware{
 			&kocha.RequestLoggingMiddleware{},
 			&kocha.SessionMiddleware{},
+			&kocha.FlashMiddleware{},
 		},
 
 		// Session settings

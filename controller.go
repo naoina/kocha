@@ -132,6 +132,7 @@ type Context struct {
 	Response *Response    // response.
 	Params   *Params      // parameters of form values.
 	Session  Session      // session.
+	Flash    Flash        // flash messages.
 	App      *Application // an application.
 
 	errors map[string][]*ParamError

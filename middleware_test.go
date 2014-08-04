@@ -212,3 +212,56 @@ func TestSessionMiddleware_After(t *testing.T) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 }
+
+func TestFlashMiddleware_Before_withNilSession(t *testing.T) {
+	app := kocha.NewTestApp()
+	m := &kocha.FlashMiddleware{}
+	c := &kocha.Context{Session: nil}
+	m.Before(app, c)
+	var actual interface{} = c.Flash
+	var expected interface{} = kocha.Flash(nil)
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`FlashMiddleware.Before(app, c) => %#v; want %#v`, actual, expected)
+	}
+}
+
+func TestFlashMiddleware(t *testing.T) {
+	app := kocha.NewTestApp()
+	m := &kocha.FlashMiddleware{}
+	c := &kocha.Context{Session: make(kocha.Session)}
+	m.Before(app, c)
+	var actual interface{} = c.Flash.Len()
+	var expected interface{} = 0
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`FlashMiddleware.Before(app, c); c.Flash.Len() => %#v; want %#v`, actual, expected)
+	}
+
+	c.Flash.Set("test_param", "abc")
+	m.After(app, c)
+	c.Flash = nil
+	m.Before(app, c)
+	actual = c.Flash.Len()
+	expected = 1
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`FlashMiddleware.After(app, c) then Before(app, c); c.Flash.Len() => %#v; want %#v`, actual, expected)
+	}
+	actual = c.Flash.Get("test_param")
+	expected = "abc"
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`FlashMiddleware.After(app, c) then Before(app, c); c.Flash.Get("test_param") => %#v; want %#v`, actual, expected)
+	}
+
+	m.After(app, c)
+	c.Flash = nil
+	m.Before(app, c)
+	actual = c.Flash.Len()
+	expected = 0
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`FlashMiddleware.After(app, c) then Before(app, c); emulated redirect; c.Flash.Len() => %#v; want %#v`, actual, expected)
+	}
+	actual = c.Flash.Get("test_param")
+	expected = ""
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`FlashMiddleware.After(app, c) then Before(app, c); emulated redirect; c.Flash.Get("test_param") => %#v; want %#v`, actual, expected)
+	}
+}
