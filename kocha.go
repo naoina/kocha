@@ -110,7 +110,9 @@ func New(config *Config) (*Application, error) {
 func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	controller, handler, params, found := app.Router.dispatch(r)
 	if !found {
-		controller = NewErrorController(http.StatusNotFound)
+		controller = &ErrorController{
+			StatusCode: http.StatusNotFound,
+		}
 		handler = controller.GET
 	}
 	app.render(w, r, controller, handler, params)
@@ -213,7 +215,9 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 		}()
 		if err := recover(); err != nil {
 			app.logStackAndError(err)
-			c := NewErrorController(http.StatusInternalServerError)
+			c := &ErrorController{
+				StatusCode: http.StatusInternalServerError,
+			}
 			if ctx == nil {
 				ctx = &Context{
 					Request:  request,

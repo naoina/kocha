@@ -405,13 +405,6 @@ type ErrorController struct {
 	StatusCode int
 }
 
-// NewErrorController returns a new ErrorController from statusCode.
-func NewErrorController(statusCode int) *ErrorController {
-	return &ErrorController{
-		StatusCode: statusCode,
-	}
-}
-
 func (ec *ErrorController) GET(c *Context) Result {
 	return c.RenderError(ec.StatusCode)
 }

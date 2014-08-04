@@ -69,9 +69,11 @@ func NewTestApp() *Application {
 				Controller: &FixturePostTestCtrl{},
 			},
 			{
-				Name:       "error_controller_test",
-				Path:       "/error_controller_test",
-				Controller: NewErrorController(http.StatusBadGateway),
+				Name: "error_controller_test",
+				Path: "/error_controller_test",
+				Controller: &ErrorController{
+					StatusCode: http.StatusBadGateway,
+				},
 			},
 		},
 		Logger: &LoggerConfig{
