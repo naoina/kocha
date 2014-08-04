@@ -214,8 +214,8 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 			app.logStackAndError(err)
 			result = internalServerErrorController.GET(ctx)
 		}
-		for _, m := range app.Config.Middlewares {
-			m.After(app, ctx)
+		for i := len(app.Config.Middlewares) - 1; i >= 0; i-- {
+			app.Config.Middlewares[i].After(app, ctx)
 		}
 		ctx.Response.Header().Set("Content-Type", ctx.Response.ContentType)
 		if err := result.Proc(ctx.Response); err != nil {

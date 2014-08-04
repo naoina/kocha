@@ -213,26 +213,35 @@ func TestApplication_ServeHTTP(t *testing.T) {
 			t.Fatal(err)
 		}
 		app := kocha.NewTestApp()
-		m := &TestMiddleware{t: t}
-		app.Config.Middlewares = []kocha.Middleware{m} // all default middlewares are override
+		var called []string
+		m1 := &TestMiddleware{t: t, id: "A", called: &called}
+		m2 := &TestMiddleware{t: t, id: "B", called: &called}
+		app.Config.Middlewares = []kocha.Middleware{m1, m2} // all default middlewares are override
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, req)
-		if !reflect.DeepEqual(m.called, "beforeafter") {
-			t.Errorf("Expect %v, but %v", "beforeafter", m.called)
+
+		var actual interface{} = called
+		var expected interface{} = []string{"beforeA", "beforeB", "afterB", "afterA"}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf(`GET "/" with middlewares calls => %#v; want %#v`, actual, expected)
 		}
-		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusOK) {
-			t.Errorf("Expect %v, but %v", http.StatusOK, status)
+
+		actual = w.Code
+		expected = http.StatusOK
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf(`GET "/" with middlewares status => %#v; want %#v`, actual, expected)
 		}
-		body := w.Body.String()
-		expected := "This is layout\n\nThis is root\n\n"
-		if !reflect.DeepEqual(body, expected) {
-			t.Errorf("Expect %#v, but %#v", expected, body)
+
+		actual = w.Body.String()
+		expected = "This is layout\n\nThis is root\n\n"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf(`GET "/" with middlewares => %#v; want %#v`, actual, expected)
 		}
-		actual := w.Header().Get("Content-Type")
+
+		actual = w.Header().Get("Content-Type")
 		expected = "text/html"
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+			t.Errorf(`GET "/" with middlewares Context-Type => %#v; want %#v`, actual, expected)
 		}
 	}()
 
@@ -308,15 +317,16 @@ func TestApplication_ServeHTTP_withPOST(t *testing.T) {
 
 type TestMiddleware struct {
 	t      *testing.T
-	called string
+	id     string
+	called *[]string
 }
 
 func (m *TestMiddleware) Before(app *kocha.Application, c *kocha.Context) {
-	m.called += "before"
+	*m.called = append(*m.called, "before"+m.id)
 }
 
 func (m *TestMiddleware) After(app *kocha.Application, c *kocha.Context) {
-	m.called += "after"
+	*m.called = append(*m.called, "after"+m.id)
 }
 
 type TestPanicInBeforeMiddleware struct{}
