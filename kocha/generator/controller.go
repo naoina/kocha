@@ -98,7 +98,7 @@ func (g *controllerGenerator) addRouteToFile(name string) {
 	buf.WriteString(fmt.Sprintf(`, {
 	Name:       "%s",
 	Path:       "/%s",
-	Controller: controller.%s{},
+	Controller: &controller.%s{},
 }`, routeName, routeName, routeStructName))
 	if _, err := io.Copy(&buf, routeFile); err != nil {
 		util.PanicOnError(g, "abort: failed to read file: %v", err)
@@ -165,7 +165,11 @@ func isRouteDefined(routeASTs []*ast.CompositeLit, routeStructName string) bool 
 			if kv.Key.(*ast.Ident).Name != "Controller" {
 				continue
 			}
-			lit, ok := kv.Value.(*ast.CompositeLit)
+			unary, ok := kv.Value.(*ast.UnaryExpr)
+			if !ok {
+				continue
+			}
+			lit, ok := unary.X.(*ast.CompositeLit)
 			if !ok {
 				continue
 			}

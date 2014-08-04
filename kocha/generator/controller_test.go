@@ -75,7 +75,7 @@ var routes = RouteTable{
 	{
 		Name: "root",
 		Path: "/",
-		Controller: controller.Root{},
+		Controller: &controller.Root{},
 	},
 }
 func Routes() RouteTable {
@@ -120,11 +120,11 @@ var routes = RouteTable{
 	{
 		Name:       "root",
 		Path:       "/",
-		Controller: controller.Root{},
+		Controller: &controller.Root{},
 	}, {
 		Name:       "app_controller",
 		Path:       "/app_controller",
-		Controller: controller.AppController{},
+		Controller: &controller.AppController{},
 	},
 }
 
