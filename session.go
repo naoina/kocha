@@ -68,6 +68,23 @@ const (
 	SessionExpiresKey = "_kocha._sess._expires"
 )
 
+// Get gets a value associated with the given key.
+// If there is the no value associated with the given key, Get returns "".
+func (sess Session) Get(key string) string {
+	return sess[key]
+}
+
+// Set sets the value associated with the key.
+// If replaces the existing value associated with the key.
+func (sess Session) Set(key, value string) {
+	sess[key] = value
+}
+
+// Del deletes the value associated with the key.
+func (sess Session) Del(key string) {
+	delete(sess, key)
+}
+
 // Clear clear the all session data.
 func (sess Session) Clear() {
 	for k, _ := range sess {

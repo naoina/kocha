@@ -66,6 +66,145 @@ func (s *ValidateTestSessionStore) Validate() error {
 	return fmt.Errorf("")
 }
 
+func TestSession(t *testing.T) {
+	sess := make(kocha.Session)
+	key := "test_key"
+	var actual interface{} = sess.Get(key)
+	var expected interface{} = ""
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Get(%#v) => %#v; want %#v`, key, actual, expected)
+	}
+	actual = len(sess)
+	expected = 0
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`len(Session) => %#v; want %#v`, actual, expected)
+	}
+
+	value := "test_value"
+	sess.Set(key, value)
+	actual = sess.Get(key)
+	expected = value
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Set(%#v, %#v); Session.Get(%#v) => %#v; want %#v`, key, value, key, actual, expected)
+	}
+	actual = len(sess)
+	expected = 1
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Set(%#v, %#v); len(Session) => %#v; want %#v`, key, value, actual, expected)
+	}
+
+	key2 := "test_key2"
+	value2 := "test_value2"
+	sess.Set(key2, value2)
+	actual = sess.Get(key2)
+	expected = value2
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Set(%#v, %#v); Session.Get(%#v) => %#v; want %#v`, key2, value2, key2, actual, expected)
+	}
+	actual = len(sess)
+	expected = 2
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Set(%#v, %#v); len(Session) => %#v; want %#v`, key2, value2, actual, expected)
+	}
+
+	value3 := "test_value3"
+	sess.Set(key, value3)
+	actual = sess.Get(key)
+	expected = value3
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Set(%#v, %#v); Session.Get(%#v) => %#v; want %#v`, key, value3, key, actual, expected)
+	}
+	actual = len(sess)
+	expected = 2
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Set(%#v, %#v); len(Session) => %#v; want %#v`, key, value3, actual, expected)
+	}
+
+	sess.Clear()
+	for _, key := range []string{key, key2} {
+		actual = sess.Get(key)
+		expected = ""
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf(`Session.Clear(); Session.Get(%#v) => %#v; want %#v`, key, actual, expected)
+		}
+	}
+	actual = len(sess)
+	expected = 0
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Clear(); len(Session) => %#v; want %#v`, actual, expected)
+	}
+}
+
+func TestSession_Get(t *testing.T) {
+	sess := make(kocha.Session)
+	key := "test_key"
+	var actual interface{} = sess.Get(key)
+	var expected interface{} = ""
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Get(%#v) => %#v; want %#v`, key, actual, expected)
+	}
+
+	value := "test_value"
+	sess[key] = value
+	actual = sess.Get(key)
+	expected = value
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Get(%#v) => %#v; want %#v`, key, actual, expected)
+	}
+
+	delete(sess, key)
+	actual = sess.Get(key)
+	expected = ""
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Get(%#v) => %#v; want %#v`, key, actual, expected)
+	}
+}
+
+func TestSession_Set(t *testing.T) {
+	sess := make(kocha.Session)
+	key := "test_key"
+	var actual interface{} = sess[key]
+	var expected interface{} = ""
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session[%#v] => %#v; want %#v`, key, actual, expected)
+	}
+
+	value := "test_value"
+	sess.Set(key, value)
+	actual = sess[key]
+	expected = value
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Set(%#v, %#v); Session[%#v] => %#v; want %#v`, key, value, key, actual, expected)
+	}
+
+	value2 := "test_value2"
+	sess.Set(key, value2)
+	actual = sess[key]
+	expected = value2
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Set(%#v, %#v); Session[%#v] => %#v; want %#v`, key, value2, key, actual, expected)
+	}
+}
+
+func TestSession_Del(t *testing.T) {
+	sess := make(kocha.Session)
+	key := "test_key"
+	value := "test_value"
+	sess[key] = value
+	var actual interface{} = sess[key]
+	var expected interface{} = value
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session[%#v] => %#v; want %#v`, key, actual, expected)
+	}
+
+	sess.Del(key)
+	actual = sess[key]
+	expected = ""
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf(`Session.Del(%#v); Session[%#v] => %#v; want %#v`, key, key, actual, expected)
+	}
+}
+
 func Test_Session_Clear(t *testing.T) {
 	sess := make(kocha.Session)
 	sess["hoge"] = "foo"
