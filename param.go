@@ -108,7 +108,7 @@ func (params *Params) Bind(obj interface{}, fieldNames ...string) error {
 		}
 		value, err := params.parse(field.Interface(), values[0])
 		if err != nil {
-			params.c.Errors()[name] = append(params.c.Errors()[name], NewParamError(name, err))
+			params.c.Errors[name] = append(params.c.Errors[name], NewParamError(name, err))
 		}
 		field.Set(reflect.ValueOf(value))
 	}

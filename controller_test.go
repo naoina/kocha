@@ -144,7 +144,7 @@ func TestContext_Render_withoutData(t *testing.T) {
 	}
 
 	actual = c.Data
-	expected = kocha.Data{"errors": c.Errors()}
+	expected = kocha.Data{"errors": c.Errors}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Context.Data => %#v, want %#v", actual, expected)
 	}
@@ -164,7 +164,7 @@ func TestContext_Render_WithContext(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		data["errors"] = c.Errors()
+		data["errors"] = c.Errors
 		actual := string(buf)
 		expected := fmt.Sprintf("tmpl_ctx: %v\n", data)
 		if !reflect.DeepEqual(actual, expected) {
@@ -217,7 +217,7 @@ func TestContext_Render_WithContext(t *testing.T) {
 			"c5":     "v5",
 			"c6":     "test",
 			"c7":     "v7",
-			"errors": c.Errors(),
+			"errors": c.Errors,
 		})
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
@@ -260,7 +260,7 @@ func TestContext_Render_WithContext(t *testing.T) {
 		actual := c.Data
 		expected := kocha.Data{
 			"c1":     "v1",
-			"errors": make(map[string][]*kocha.ParamError),
+			"errors": map[string][]*kocha.ParamError(nil),
 		}
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Context.Data => %#v, want %#v", actual, expected)
@@ -274,7 +274,7 @@ func TestContext_Render_WithContext(t *testing.T) {
 		actual := c.Data
 		expected := kocha.Data{
 			"c1":     "v1",
-			"errors": make(map[string][]*kocha.ParamError),
+			"errors": map[string][]*kocha.ParamError(nil),
 		}
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Context.Data => %#v, want %#v", actual, expected)
@@ -694,50 +694,4 @@ func TestContext_Redirect(t *testing.T) {
 			t.Errorf(`Controller.Redirect("%#v", %#v) => %#v; want %#v`, v.redirectURL, v.permanent, actual, expected)
 		}
 	}
-}
-
-func TestContext_Errors(t *testing.T) {
-	func() {
-		c := &kocha.Context{}
-		actual := c.Errors()
-		expected := make(map[string][]*kocha.ParamError)
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Controller.Errors() => %#v, want %#v", actual, expected)
-		}
-	}()
-
-	func() {
-		c := &kocha.Context{}
-		c.Errors()["e1"] = []*kocha.ParamError{&kocha.ParamError{}}
-		c.Errors()["e2"] = []*kocha.ParamError{&kocha.ParamError{}, &kocha.ParamError{}}
-		actual := c.Errors()
-		expected := map[string][]*kocha.ParamError{
-			"e1": {&kocha.ParamError{}},
-			"e2": {&kocha.ParamError{}, &kocha.ParamError{}},
-		}
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Controller.Errors() => %#v, want %#v", actual, expected)
-		}
-	}()
-}
-
-func TestContext_HasError(t *testing.T) {
-	func() {
-		c := &kocha.Context{}
-		actual := c.HasErrors()
-		expected := false
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Controller.HasErrors() => %#v, want %#v", actual, expected)
-		}
-	}()
-
-	func() {
-		c := &kocha.Context{}
-		c.Errors()["e1"] = []*kocha.ParamError{&kocha.ParamError{}}
-		actual := c.HasErrors()
-		expected := true
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Controller.HasErrors() => %#v, want %#v", actual, expected)
-		}
-	}()
 }

@@ -135,7 +135,10 @@ type Context struct {
 	Flash    Flash        // flash messages.
 	App      *Application // an application.
 
-	errors map[string][]*ParamError
+	// Errors represents the map of errors that related to the form values.
+	// A map key is field name, and value is slice of errors.
+	// Errors will be set by Context.Params.Bind().
+	Errors map[string][]*ParamError
 }
 
 // Data is shorthand type for map[string]interface{}
@@ -362,7 +365,7 @@ func (c *Context) buildData(data []interface{}) (interface{}, error) {
 	if _, exists := c.Data["errors"]; exists {
 		c.App.Logger.Warn("kocha: Data: `errors' key has already been set, skipped")
 	} else {
-		c.Data["errors"] = c.Errors()
+		c.Data["errors"] = c.Errors
 	}
 	return c.Data, nil
 }
@@ -370,21 +373,6 @@ func (c *Context) buildData(data []interface{}) (interface{}, error) {
 // Invoke is shorthand of c.App.Invoke.
 func (c *Context) Invoke(unit Unit, newFunc func(), defaultFunc func()) {
 	c.App.Invoke(unit, newFunc, defaultFunc)
-}
-
-// Errors returns map of errors that relate to the form values.
-// A map key is field name, and value is slice of errors.
-// The errors will be set by Context.Params.Bind().
-func (c *Context) Errors() map[string][]*ParamError {
-	if c.errors == nil {
-		c.errors = make(map[string][]*ParamError)
-	}
-	return c.errors
-}
-
-// HasErrors returns whether it has errors.
-func (c *Context) HasErrors() bool {
-	return len(c.errors) > 0
 }
 
 func (c *Context) prepareRequest(params denco.Params) error {

@@ -206,6 +206,7 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 		Request:  newRequest(r),
 		Response: newResponse(w),
 		App:      app,
+		Errors:   make(map[string][]*ParamError),
 	}
 	var result Result
 	defer func() {
