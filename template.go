@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/naoina/kocha/util"
 )
@@ -58,7 +57,6 @@ func (t *Template) buildFuncMap() (*Template, error) {
 		"nl2br":           t.nl2br,
 		"raw":             t.raw,
 		"invoke_template": t.invokeTemplate,
-		"date":            t.date,
 	}
 	for name, fn := range t.FuncMap {
 		m[name] = fn
@@ -307,11 +305,6 @@ func (t *Template) invokeTemplate(unit Unit, tmplName, defTmplName string, conte
 		html, err = t.readPartialTemplate(defTmplName, ctx)
 	})
 	return html, err
-}
-
-// date is for "date" template function.
-func (t *Template) date(date time.Time, layout string) string {
-	return date.Format(layout)
 }
 
 func (t *Template) readPartialTemplate(name string, ctx interface{}) (template.HTML, error) {

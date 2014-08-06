@@ -2,12 +2,10 @@ package kocha_test
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
 	"reflect"
 	"sort"
 	"testing"
-	"time"
 
 	"github.com/naoina/kocha"
 )
@@ -212,34 +210,6 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 			t.Errorf("no error returned by too many number of context")
 		}
 	}()
-}
-
-func TestTemplate_FuncMap_date(t *testing.T) {
-	app := kocha.NewTestApp()
-	funcMap := template.FuncMap(app.Template.FuncMap)
-	base := `{{date . "%v"}}`
-	now := time.Now()
-	tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(fmt.Sprintf(base, "2006/01/02 15:04:05.999999999")))
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, now); err != nil {
-		panic(err)
-	}
-	actual := buf.String()
-	expected := now.Format("2006/01/02 15:04:05.999999999")
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %q, but %q", expected, actual)
-	}
-
-	tmpl = template.Must(template.New("test").Funcs(funcMap).Parse(fmt.Sprintf(base, "Jan 02 2006 03:04.999999999")))
-	buf.Reset()
-	if err := tmpl.Execute(&buf, now); err != nil {
-		panic(err)
-	}
-	actual = buf.String()
-	expected = now.Format("Jan 02 2006 03:04.999999999")
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %q, but %q", expected, actual)
-	}
 }
 
 func TestTemplate_Get(t *testing.T) {
