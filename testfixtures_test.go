@@ -132,7 +132,7 @@ type FixturePanicInRenderTestCtrl struct {
 }
 
 func (ctrl *FixturePanicInRenderTestCtrl) GET(c *Context) Result {
-	return c.RenderXML(Context{}) // Context is unsupported type in XML.
+	return RenderXML(c, Data{}) // Context is unsupported type in XML.
 }
 
 type FixtureUserTestCtrl struct {
@@ -140,7 +140,7 @@ type FixtureUserTestCtrl struct {
 }
 
 func (ctrl *FixtureUserTestCtrl) GET(c *Context) Result {
-	return c.Render(Data{
+	return Render(c, Data{
 		"id": c.Params.Get("id"),
 	})
 }
@@ -150,7 +150,7 @@ type FixtureDateTestCtrl struct {
 }
 
 func (ctrl *FixtureDateTestCtrl) GET(c *Context) Result {
-	return c.Render(Data{
+	return Render(c, Data{
 		"year":  c.Params.Get("year"),
 		"month": c.Params.Get("month"),
 		"day":   c.Params.Get("day"),
@@ -172,7 +172,7 @@ type FixtureJsonTestCtrl struct {
 
 func (ctrl *FixtureJsonTestCtrl) GET(c *Context) Result {
 	c.Response.ContentType = "application/json"
-	return c.Render()
+	return Render(c)
 }
 
 type FixtureRootTestCtrl struct {
@@ -180,7 +180,7 @@ type FixtureRootTestCtrl struct {
 }
 
 func (ctrl *FixtureRootTestCtrl) GET(c *Context) Result {
-	return c.Render()
+	return Render(c)
 }
 
 type FixtureTeapotTestCtrl struct {
@@ -189,7 +189,7 @@ type FixtureTeapotTestCtrl struct {
 
 func (ctrl *FixtureTeapotTestCtrl) GET(c *Context) Result {
 	c.Response.StatusCode = http.StatusTeapot
-	return c.Render()
+	return Render(c)
 }
 
 type FixtureInvalidReturnValueTypeTestCtrl struct {
@@ -209,5 +209,5 @@ func (ctrl *FixturePostTestCtrl) POST(c *Context) Result {
 	for k, v := range c.Params.Values {
 		m[k] = v
 	}
-	return c.Render(Data{"params": m})
+	return Render(c, Data{"params": m})
 }
