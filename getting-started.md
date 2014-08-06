@@ -66,7 +66,7 @@ And run the application:
 
     kocha run
 
-Then, open http://0.0.0.0:9100/ in your Browser.
+Then, open http://127.0.0.1:9100/ in your Browser.
 Do you see the welcome page?
 
 ![fig1]({{ page.root }}/images/fig1.png)
@@ -105,11 +105,11 @@ import (
 )
 
 type Myroom struct {
-    *kocha.Controller
+    *kocha.DefaultController
 }
 
-func (c *Myroom) Get() kocha.Result {
-    return c.Render(kocha.Context{
+func (c *Myroom) Get(c *kocha.Context) kocha.Result {
+    return c.Render(kocha.Data{
         "name": "Alice",
     })
 }
@@ -128,7 +128,7 @@ In `app/view/myroom.html`, edit to:
 
 `kocha run` watch the files and reload when changed.
 
-Please open http://0.0.0.0:9100/myroom in your Browser.
+Please open http://127.0.0.1:9100/myroom in your Browser.
 
 ![fig2]({{ page.root }}/images/fig2.png)
 
@@ -163,8 +163,8 @@ Second, In `app/controller/myroom.go`, edit:
 
 {% raw %}
 ```go
-func (c *Myroom) Get() kocha.Result {
-    return c.Render(kocha.Context{
+func (c *Myroom) Get(c *kocha.Context) kocha.Result {
+    return c.Render(kocha.Data{
         "name": "Alice",
     })
 }
@@ -175,15 +175,15 @@ to
 
 {% raw %}
 ```go
-func (c *Myroom) Get(name string) kocha.Result {
-    return c.Render(kocha.Context{
-        "name": name,
+func (c *Myroom) Get(c *kocha.Context) kocha.Result {
+    return c.Render(kocha.Data{
+        "name": c.Params.Get("name"),
     })
 }
 ```
 {% endraw %}
 
-Finally, Let's see http://0.0.0.0:9100/myroom/bob in your Browser as usual.
+Finally, Let's see http://127.0.0.1:9100/myroom/bob in your Browser as usual.
 
 ![fig3]({{ page.root }}/images/fig3.png)
 

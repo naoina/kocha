@@ -20,14 +20,15 @@ subnav:
 # Session <a id="Session"></a>
 
 Session is simple key-value storage for each user/client.
+This feature is provided by [SessionMiddleware]({{ page.root }}/docs/middleware.html#SessionMiddleware)
 
 ## Basics <a id="Basics"></a>
 
 For example, do the following in order to set the data into the session:
 
 ```go
-func (c *Root) Get() kocha.Result {
-    c.Session["name"] = "alice"
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    c.Session.Set("name", "alice")
     ......
 }
 ```
@@ -35,8 +36,8 @@ func (c *Root) Get() kocha.Result {
 And load the data from session:
 
 ```go
-func (c *Root) Get() kocha.Result {
-    name := c.Session["name"]
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    name := c.Session.Get("name")
     ......
 }
 ```
@@ -44,11 +45,11 @@ func (c *Root) Get() kocha.Result {
 To delete the data from session, use the `delete` built-in function:
 
 ```go
-func (c *Root) Get() kocha.Result {
-    c.Session["name"] = "alice"
-    name := c.Session["name"] // returns "alice"
-    delete(c.Session, "name")
-    name = c.Session["name"] // returns ""
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    c.Session.Set("name", "alice")
+    name := c.Session.Get("name") // returns "alice".
+    c.Session.Del("name")
+    name = c.Session.Get("name") // returns "".
     ......
 }
 ```
@@ -56,9 +57,9 @@ func (c *Root) Get() kocha.Result {
 Also Session has `Clear` method that clear all data from the session.
 
 ```go
-func (c *Root) Get() kocha.Result {
-    c.Session["name"] = "alice"
-    c.Session["id"] = "1"
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    c.Session.Set("name", "alice")
+    c.Session.Set("id", "1")
     l := len(c.Session) // returns 2
     c.Session.Clear()
     l = len(c.Session) // returns 0

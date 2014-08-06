@@ -25,8 +25,8 @@ Middleware interface definition is following:
 {% raw %}
 ```go
 type Middleware interface {
-	Before(app *Application, c *Controller)
-	After(app *Application, c *Controller)
+	Before(app *Application, c *Context)
+	After(app *Application, c *Context)
 }
 ```
 {% endraw %}
@@ -37,14 +37,15 @@ type Middleware interface {
 
 Kocha provides some middlewares.
 
-### ResponseContentTypeMiddleware *([godoc]({{ site.godoc }}#ResponseContentTypeMiddleware))*
-
-ResponseContentTypeMiddleware adds *Content-Type* header to response header.
-
 ### SessionMiddleware *([godoc]({{ site.godoc }}#SessionMiddleware))*
 
 SessionMiddleware will autosave and autoload a session on around a request processing.
 
+### FlashMiddleware *([godoc]({{ site.godoc }}#FlashMiddleware))* <a id="FlashMiddleware"></a>
+
+FlashMiddleware will provided one-time messaging between the requests (aka flash messages).
+This middleware depends on SessionMiddleware.
+
 ### RequestLoggingMiddleware *([godoc]({{ site.godoc }}#RequestLoggingMiddleware))*
 
-RequestLoggingMiddleware will output an access log. This is for development purposes.
+RequestLoggingMiddleware will output an access log.

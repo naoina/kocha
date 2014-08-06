@@ -82,7 +82,7 @@ The default layout is `app`, it retrieves `app/view/layout/app.[extension]`.
 You can change the default layout by `AppConfig.DefaultLayout` in `config/app.go`.
 
 Also multiple layout files are supported.
-To use another layout instead of the default layout, set any layout name to `c.Layout` of Controller.
+To use another layout instead of the default layout, set any layout name to `c.Layout` of Context.
 
 For example, layout name set to `sub`, and when templates and Controller are following.
 
@@ -104,9 +104,9 @@ In app/controller/root.go:
 
 {% raw %}
 ```go
-func (c *Root) Get() kocha.Result {
+func (r *Root) GET(c *kocha.Context) kocha.Result {
     c.Layout = "sub"
-    return c.Render()
+    return kocha.Render(c)
 }
 ```
 {% endraw %}

@@ -9,9 +9,6 @@ subnav:
 -
   name: Route parameter
   path: Route-parameter
--
-  name: Type validator and parser
-  path: Type-validator-and-parser
 ---
 
 # Routing <a id="Routing"></a>
@@ -37,7 +34,7 @@ var routes = RouteTable{
     {
         Name:       "root",
         Path:       "/",
-        Controller: controller.Root{},
+        Controller: &controller.Root{},
     },
 }
 
@@ -46,7 +43,7 @@ func Routes() RouteTable {
         {
             Name:       "static",
             Path:       "/*path",
-            Controller: kocha.StaticServe{},
+            Controller: &kocha.StaticServe{},
         },
     }...)
 }
@@ -58,7 +55,7 @@ format:
 {
     Name:       "root",
     Path:       "/",
-    Controller: controller.Root{},
+    Controller: &controller.Root{},
 }
 ```
 
@@ -70,15 +67,12 @@ For example, If route is defined the following:
 {
     Name:       "myroom"
     Path:       "/myroom"
-    Controller: controller.Myroom{},
+    Controller: &controller.Myroom{},
 }
 ```
 
-And when request is `GET /myroom`, it will be routed to *controller.Myroom.Get* method.
-Also when request is `POST /myroom`, it will be routed to *controller.Myroom.Post* method.
-Similarly, for each request, `PUT` to *Put*, `DELETE` to *Delete*, `HEAD` to *Head* and `PATCH` to *Patch* are routed to those methods respectively.
-
-Finally, `Controller` field is instance of Controller. See [Controller]({{ page.root }}/docs/controller.html) document for more details.
+And when request is `GET /myroom`, it will be routed to *controller.Myroom.GET* method.
+Also when request is `POST /myroom`, it will be routed to *controller.Myroom.POST* method.
 
 ## Route parameter <a id="Route-parameter"></a>
 
@@ -94,17 +88,18 @@ Path: "/:name"
 ```
 
 This is routing definition that it includes `:name` route parameter.
-If *Controller.Get* of that route is defined as follows:
+If *Controller.GET* of that route is defined as follows:
 
 ```go
-func (c *Root) Get(name string) kocha.Result {
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    c.Params.Get("name")
     ......
 }
 ```
 
 `:name` route parameter matches any string. (but "**/**" is not included)
 For example, it will match `/alice`, but won't match `/alice/1`.
-Then matched value (`alice` in this example) will be passed to method of Controller as **name** argument.
+Then matched value (`alice` in this example) will be stored to [Context]({{ site.godoc }}#Context).[Params]({{ site.godoc }}#Params) as **name** key.
 
 Also multiple parameters can be specified.
 For example,
@@ -118,25 +113,18 @@ Path: "/:id/:name"
 Controller:
 
 ```go
-func (c *Root) Get(id int, name string) kocha.Result {
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    c.Params.Get("id")
+    c.Params.Get("name")
     ......
 }
 ```
 
-Above example matches all of `/1/alice`, `/10/alice`, `/2/bob` and etc.
-However, it won't match `/str/alice` because `:id` route parameter is defined as type *int* in arguments of method of Controller.
-
-Pre-defined parameter types:
-
-* string
-* int
-* \*url.URL
-
-You can also override and/or define any types, See [Type validator and parser](#Type-validator-and-parser).
+Above example matches all of `/1/alice`, `/10/alice`, `/2/bob`, `/str/alice` and etc.
 
 ### Path parameter <a id="Path-parameter"></a>
 
-When route parameter starts with "__*__", it will match word characters, "**.**", "**-**" and "**/**". In regular expression, it is `[\w-/.]+`.
+When route parameter starts with "__*__", it will match all word characters.
 
 For example,
 
@@ -149,95 +137,10 @@ Path: "/*path"
 Controller:
 
 ```go
-import "net/url"
-
-func (c *Root) Get(path *url.URL) kocha.Result {
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    c.Params.Get("path")
     ......
 }
 ```
 
-If `GET /path/to/static.png` requests to the above example, `path.Path` of *Controller.Get* will be `path/to/static.png`.
-
-## Type validator and parser <a id="Type-validator-and-parser"></a>
-
-Type validator is validator of a path parameter for any format. It is used in dispatcher and reverse router.
-Type parser that string of path parameter parses to value of type of Golang. It is used in dispatcher.
-
-### Define the TypeValidateParser <a id="Define-the-TypeValidateParser"></a>
-
-Some validator and parser of type parameters (`string`, `int` and `*url.URL`) are pre-defined by Kocha.
-If you want validator and parser for any types, you can define them.
-
-1\. You must implement the [TypeValidateParser]({{ site.godoc }}#TypeValidateParser) interface.
-
-```go
-type TypeValidateParser interface {
-    // Validate returns whether the valid value as any type.
-    Validate(v interface{}) bool
-
-    // Parse returns value that parses v as any type.
-    Parse(v string) (value interface{}, err error)
-}
-```
-
-2\. Set the your own `TypeValidateParser` for any type.
-
-```go
-SetTypeValidateParser("bool", &YourOwnTypeValidateParser{})
-```
-
-#### Example <a id="Example"></a>
-
-In this example, define the own `TypeValidateParser` for `bool` type.
-
-Define the `BoolTypeValidateParser` as follows in `config/routes.go`:
-
-```go
-type BoolTypeValidateParser struct{}
-
-func (validateParser *BoolTypeValidateParser) Validate(v interface{}) bool {
-    switch t := v.(type) {
-    case bool:
-        return true
-    case int:
-        return t == 1 || t == 0
-    }
-    return false
-}
-
-func (validateParser *BoolTypeValidateParser) Parse(s string) (data interface{}, err error) {
-    switch s {
-    case "true", "1":
-        return true, nil
-    case "false", "0":
-        return false, nil
-    }
-    return false, fmt.Errorf("invalid")
-}
-
-func init() {
-    SetTypeValidateParser("bool", &BoolTypeValidateParser{})
-    AppConfig.Router = kocha.InitRouter(kocha.RouteTable(Routes()))
-}
-```
-
-Then route modifies to following:
-
-```go
-{
-    Name:       "root",
-    Path:       "/:b",
-    Controller: controller.Root{},
-}
-```
-
-And also modifies argument of the `Root` controller:
-
-```go
-func (c *Root) Get(b bool) kocha.Result {
-    // do something.
-}
-```
-
-It's completed that definition of the TypeValidateParser for bool type.
-You can now access to either `/true`, `/false`, `/1` and `/0`.
+If `GET /path/to/static.png` requests to the above example, *Context.Params.Get* will return `"path/to/static.png"`.

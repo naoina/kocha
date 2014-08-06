@@ -51,13 +51,13 @@ The above command also generates a template file into `app/view/` directory and 
 
 Kocha provides some renderer for various purpose.
 
-### Render *([godoc]({{ site.godoc }}#Controller.Render))*
+### Render *([godoc]({{ site.godoc }}#Render))*
 
 Render a template that collect from a template directory in boot time (Usually, *app/view*).
 
 ```go
-func (c *Root) Get() kocha.Result {
-    return c.Render()
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    return kocha.Render(c)
 }
 ```
 
@@ -67,31 +67,31 @@ If ContentType isn't specified, render the file type specific template that it d
 e.g.
 
 ```go
-func (c *Root) Get() kocha.Result {
+func (r *Root) GET(c *kocha.Context) kocha.Result {
     c.Response.ContentType = "application/json"
-    return c.Render()
+    return kocha.Render(c)
 }
 ```
 
 The above responds `app/view/root.json` template.
 
-Also *Render* can be passed context to [Template.Execute](http://golang.org/pkg/html/template/#Template.Execute):
+Also *Render* can be passed data to [Template.Execute](http://golang.org/pkg/html/template/#Template.Execute):
 
 ```go
-func (c *Root) Get() kocha.Result {
-    return c.Render(kocha.Context{
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    return kocha.Render(c, kocha.Data{
         "name": "alice",
     })
 }
 ```
 
-### RenderJSON *([godoc]({{ site.godoc }}#Controller.RenderJSON))*
+### RenderJSON *([godoc]({{ site.godoc }}#RenderJSON))*
 
 Render context as JSON. See [json.Marshal](http://golang.org/pkg/encoding/json/#Marshal) for encode details.
 
 ```go
-func (c *Root) Get() kocha.Result {
-    return c.RenderJSON(kocha.Context{
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    return kocha.RenderJSON(c, kocha.Data{
         "name": "alice",
         "id": 1,
     })
@@ -100,15 +100,15 @@ func (c *Root) Get() kocha.Result {
 
 If you want to render your own JSON format, please use [Render](#Render) with ContentType specified to *application/json*.
 
-### RenderXML *([godoc]({{ site.godoc }}#Controller.RenderXML))*
+### RenderXML *([godoc]({{ site.godoc }}#RenderXML))*
 
 Render context as XML. See [xml.Marshal](http://golang.org/pkg/encoding/xml/#Marshal) for encode details.
 
 ```go
 import "encoding/xml"
 
-func (c *Root) Get() kocha.Result {
-    return c.RenderXML(struct {
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    return kocha.RenderXML(c, struct {
         XMLName xml.Name `xml:"person"`
         Id      int      `xml:"id"`
         Name    string   `xml:"name"`
@@ -121,38 +121,38 @@ func (c *Root) Get() kocha.Result {
 
 If you want to render your own XML format, please use [Render](#Render) with ContentType specified to *application/xml*.
 
-### RenderText *([godoc]({{ site.godoc }}#Controller.RenderText))*
+### RenderText *([godoc]({{ site.godoc }}#RenderText))*
 
 Render plain text.
 
 ```go
-func (c *Root) Get() kocha.Result {
-    return c.RenderText("something")
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    return kocha.RenderText(c, "something")
 }
 ```
 
 If you want to templating text, please use [Render](#Render) with ContentType specified to *text/plain*.
 
-### RenderError *([godoc]({{ site.godoc }}#Controller.RenderError))*
+### RenderError *([godoc]({{ site.godoc }}#RenderError))*
 
 Render template (or returns status text) with status code.
 
 ```go
-func (c *Root) Get() kocha.Result {
-    return c.RenderError(http.StatusBadRequest)
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    return kocha.RenderError(c, http.StatusBadRequest)
 }
 ```
 
-See *([Controller.RenderError]({{ site.godoc }}#Controller.RenderError))* for more details.
+See *([RenderError]({{ site.godoc }}#RenderError))* for more details.
 
-### SendFile *([godoc]({{ site.godoc }}#Controller.SendFile))*
+### SendFile *([godoc]({{ site.godoc }}#SendFile))*
 
 Render a static file that gets from the static file directory (Usually, *public*).
 Or gets from binary included resources (See [True All-in-One binary]({{ page.root }}/docs/deployment.html#True-all-in-one-binary)).
 
 ```go
-func (c *Root) Get() kocha.Result {
-    return c.SendFile("/path/to/file")
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    return kocha.SendFile(c, "/path/to/file")
 }
 ```
 
@@ -161,42 +161,42 @@ If passed path is relative, First, try to get the content from included resource
 
 For example, an absolute path:
 
-    c.SendFile("/srv/favicon.ico")
+    kocha.SendFile(c, "/srv/favicon.ico")
 
 The above responds `/srv/favicon.ico`.
 
 A relative path:
 
-    c.SendFile("favicon.ico")
+    kocha.SendFile(c, "favicon.ico")
 
 The above responds `public/favicon.ico`.
 
-### Redirect *([godoc]({{ site.godoc }}#Controller.Redirect))*
+### Redirect *([godoc]({{ site.godoc }}#Redirect))*
 
 A shorthand for redirect of both *Http.StatusMovedPermanently (301)* and *http.StatusFound (302)*.
 
 Using *Redirect* renderer:
 
 ```go
-func (c *Root) Get() kocha.Result {
+func (r *Root) GET(c *kocha.Context) kocha.Result {
     // MovedPermanently if second argument is true.
-    return c.Redirect("/path/to/redirect", false)
+    return kocha.Redirect(c, "/path/to/redirect", false)
 }
 ```
 
 is same as below:
 
 ```go
-func (c *Root) Get() kocha.Result {
+func (r *Root) GET(c *kocha.Context) kocha.Result {
     c.Response.StatusCode = http.StatusFound
     c.Response.Header().Set("Location", "/path/to/redirect")
-    return c.RenderText("")
+    return kocha.RenderText(c, "")
 }
 ```
 
 ## Parameter <a id="Parameter"></a>
 
-Controller can take the routing parameters from arguments.
+Controller can take the routing parameters.
 
 If route defined as following in `config/routes.go`:
 
@@ -204,25 +204,31 @@ If route defined as following in `config/routes.go`:
 Path: "/:id"
 ```
 
-Controller can take the parameter as an argument of **id** of type *int*:
+Controller can take the parameter by [Context]({{ site.godoc }}#Context).[Params]({{ site.godoc }}#Params).
 
 ```go
-func (c *Root) Get(id int) kocha.Result {
-    return c.Render()
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    id := c.Params.Get("id")
+    return kocha.Render(c, kocha.Data{
+        "id": id,
+    })
 }
 ```
 
-Note that both names (**id** in this case) MUST be identical between argument name of Controller and routing parameter.
+The parameter that taken out is a `string` type. If you want other types, you can convert to other types using such as [strconv](http://golang.org/pkg/strconv/).
 
-Of course, it can take the different multiple types:
+Of course, it can take the multiple parameters:
 
 ```go
 Path: "/:id/:name"
 ```
 
 ```go
-func (c *Root) Get(id int, name string) kocha.Result {
-    return c.Render()
+func (r *Root) GET(c *kocha.Context) kocha.Result {
+    return kocha.Render(c, kocha.Data{
+        "id": c.Params.Get("id"),
+        "name": c.Params.Get("name"),
+    })
 }
 ```
 
@@ -231,3 +237,4 @@ For more details of definition of route parameters, see [Route parameter]({{ pag
 ## Built-in controller <a id="Built-in-controller"></a>
 
 * [StaticServe]({{ site.godoc }}#StaticServe)
+* [ErrorController]({{ site.godoc }}#ErrorController)
