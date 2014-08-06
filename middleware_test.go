@@ -11,10 +11,6 @@ import (
 	"github.com/naoina/kocha/util"
 )
 
-func TestResponseContentTypeMiddleware_Before(t *testing.T) {
-	t.Skip("do nothing")
-}
-
 func TestSessionMiddleware_Before(t *testing.T) {
 	newRequestResponse := func(cookie *http.Cookie) (*kocha.Request, *kocha.Response) {
 		r, err := http.NewRequest("GET", "/", nil)
