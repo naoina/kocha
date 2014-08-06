@@ -33,7 +33,7 @@ import (
 // try to retrieve the template file "root.xml".
 // Also ContentType set to "text/html" if not specified.
 func Render(c *Context, data ...interface{}) Result {
-	ctx, err := c.buildData(data)
+	d, err := c.buildData(data)
 	if err != nil {
 		panic(err)
 	}
@@ -47,7 +47,7 @@ func Render(c *Context, data ...interface{}) Result {
 		panic(errors.New("no such template: " + c.App.Template.Ident(c.App.Config.AppName, c.Layout, c.Name, format)))
 	}
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, ctx); err != nil {
+	if err := t.Execute(&buf, d); err != nil {
 		panic(err)
 	}
 	return &resultContent{
@@ -60,12 +60,12 @@ func Render(c *Context, data ...interface{}) Result {
 // RenderJSON is similar to Render but data will be encoded to JSON.
 // ContentType set to "application/json" if not specified.
 func RenderJSON(c *Context, data ...interface{}) Result {
-	ctx, err := c.buildData(data)
+	d, err := c.buildData(data)
 	if err != nil {
 		panic(err)
 	}
 	c.setContentTypeIfNotExists("application/json")
-	buf, err := json.Marshal(ctx)
+	buf, err := json.Marshal(d)
 	if err != nil {
 		panic(err)
 	}
@@ -79,12 +79,12 @@ func RenderJSON(c *Context, data ...interface{}) Result {
 // RenderXML is similar to Render but data will be encoded to XML.
 // ContentType set to "application/xml" if not specified.
 func RenderXML(c *Context, data ...interface{}) Result {
-	ctx, err := c.buildData(data)
+	d, err := c.buildData(data)
 	if err != nil {
 		panic(err)
 	}
 	c.setContentTypeIfNotExists("application/xml")
-	buf, err := xml.Marshal(ctx)
+	buf, err := xml.Marshal(d)
 	if err != nil {
 		panic(err)
 	}
@@ -112,7 +112,7 @@ func RenderText(c *Context, content string) Result {
 // If failed to retrieve the template file, it returns result of text with statusCode.
 // Also ContentType set to "text/html" if not specified.
 func RenderError(c *Context, statusCode int, data ...interface{}) Result {
-	ctx, err := c.buildData(data)
+	d, err := c.buildData(data)
 	if err != nil {
 		panic(err)
 	}
@@ -131,7 +131,7 @@ func RenderError(c *Context, statusCode int, data ...interface{}) Result {
 		}
 	}
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, ctx); err != nil {
+	if err := t.Execute(&buf, d); err != nil {
 		panic(err)
 	}
 	return &resultContent{

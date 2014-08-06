@@ -146,7 +146,7 @@ func (c *Context) setContentTypeIfNotExists(contentType string) {
 func (c *Context) buildData(data []interface{}) (interface{}, error) {
 	switch len(data) {
 	case 1:
-		ctx, ok := data[0].(Data)
+		d, ok := data[0].(Data)
 		if !ok {
 			if len(c.Data) == 0 {
 				return data[0], nil
@@ -157,7 +157,7 @@ func (c *Context) buildData(data []interface{}) (interface{}, error) {
 		if c.Data == nil {
 			c.Data = Data{}
 		}
-		for k, v := range ctx {
+		for k, v := range d {
 			c.Data[k] = v
 		}
 	case 0:
