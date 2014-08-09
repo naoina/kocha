@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"go/build"
 	"os"
@@ -9,50 +8,40 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/jessevdk/go-flags"
 	"github.com/naoina/kocha/util"
 )
 
-// newCommand implements `command` interface for `new` command.
-type newCommand struct {
-	flag *flag.FlagSet
+const (
+	progName = "kocha new"
+)
+
+var option struct {
+	Help bool `short:"h" long:"help"`
 }
 
-// Name returns name of `new` command.
-func (c *newCommand) Name() string {
-	return "new"
+func printUsage() {
+	fmt.Fprintf(os.Stderr, `Usage: %s [OPTIONS] APP_PATH
+
+Create a new application.
+
+Options:
+    -h, --help        display this help and exit
+
+`, progName)
 }
 
-// Alias returns alias of `new` command.
-func (c *newCommand) Alias() string {
-	return ""
-}
-
-// Short returns short description for help.
-func (c *newCommand) Short() string {
-	return "create a new application"
-}
-
-// Usage returns usage of `new` command.
-func (c *newCommand) Usage() string {
-	return fmt.Sprintf("%s APP_PATH", c.Name())
-}
-
-func (c *newCommand) DefineFlags(fs *flag.FlagSet) {
-	c.flag = fs
-}
-
-// Run execute the process for `new` command.
-func (c *newCommand) Run() {
-	appPath := c.flag.Arg(0)
-	if appPath == "" {
-		util.PanicOnError(c, "abort: no APP_PATH given")
+func run(args []string) error {
+	if len(args) < 1 || args[0] == "" {
+		return fmt.Errorf("no APP_PATH given")
 	}
+	appPath := args[0]
 	dstBasePath := filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src", appPath)
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
 	skeletonDir := filepath.Join(baseDir, "skeleton", "new")
 	if _, err := os.Stat(filepath.Join(dstBasePath, "config", "app.go")); err == nil {
-		util.PanicOnError(c, "abort: Kocha application is already exists")
+		return fmt.Errorf("Kocha application is already exists")
 	}
 	data := map[string]interface{}{
 		"appName":   filepath.Base(appPath),
@@ -60,9 +49,9 @@ func (c *newCommand) Run() {
 		"secretKey": fmt.Sprintf("%q", string(util.GenerateRandomKey(32))), // AES-256
 		"signedKey": fmt.Sprintf("%q", string(util.GenerateRandomKey(16))),
 	}
-	filepath.Walk(skeletonDir, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(skeletonDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if info.IsDir() {
 			return nil
@@ -71,13 +60,12 @@ func (c *newCommand) Run() {
 		dstDir := filepath.Dir(dstPath)
 		dirCreated, err := mkdirAllIfNotExists(dstDir)
 		if err != nil {
-			util.PanicOnError(c, "abort: failed to create directory: %v", err)
+			return fmt.Errorf("failed to create directory: %v", err)
 		}
 		if dirCreated {
 			util.PrintCreateDirectory(dstDir)
 		}
-		util.CopyTemplate(c, path, dstPath, data)
-		return nil
+		return util.CopyTemplate(path, dstPath, data)
 	})
 }
 
@@ -89,4 +77,25 @@ func mkdirAllIfNotExists(dstDir string) (created bool, err error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func main() {
+	parser := flags.NewNamedParser(progName, flags.PrintErrors|flags.PassDoubleDash)
+	if _, err := parser.AddGroup("", "", &option); err != nil {
+		panic(err)
+	}
+	args, err := parser.Parse()
+	if err != nil {
+		printUsage()
+		os.Exit(1)
+	}
+	if option.Help {
+		printUsage()
+		os.Exit(0)
+	}
+	if err := run(args); err != nil {
+		fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
+		printUsage()
+		os.Exit(1)
+	}
 }
