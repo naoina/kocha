@@ -1,39 +1,9 @@
 package main
 
-import (
-	"flag"
-	"reflect"
-	"testing"
-)
+import "testing"
 
-func Test_runCommand(t *testing.T) {
-	cmd := &runCommand{}
-	for _, v := range [][]interface{}{
-		{"Name", cmd.Name(), "run"},
-		{"Alias", cmd.Alias(), ""},
-		{"Short", cmd.Short(), "run the your application"},
-		{"Usage", cmd.Usage(), "run"},
-	} {
-		name, actual, expected := v[0], v[1], v[2]
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf(".%v expect %v, but %v", name, expected, actual)
-		}
-	}
-
-	if cmd.flag != nil {
-		t.Fatalf("Expect nil, but %v", cmd.flag)
-	}
-	flags := flag.NewFlagSet("testflags", flag.ExitOnError)
-	cmd.DefineFlags(flags)
-	flags.Parse([]string{})
-	actual, expected := cmd.flag, flags
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-}
-
-func Test_runCommand_Run(t *testing.T) {
-	// The below tests do not end because runCommand.Run() have an infinite loop.
+func TestRun(t *testing.T) {
+	// The below tests do not end because run() have an infinite loop.
 	// Any ideas?
 
 	// func() {

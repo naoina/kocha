@@ -495,3 +495,17 @@ func GenerateRandomKey(length int) []byte {
 	}
 	return result
 }
+
+func PrintSettingEnv() error {
+	env, err := FindSettingEnv()
+	if err != nil {
+		return err
+	}
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "NOTE: You can be setting for your app by using following environment variables at the time of launching the app:\n")
+	for key, value := range env {
+		fmt.Fprintf(&buf, "%4s%v=%v\n", "", key, strconv.Quote(value))
+	}
+	fmt.Println(buf.String())
+	return nil
+}
