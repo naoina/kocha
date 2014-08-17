@@ -1,0 +1,11 @@
+package migration
+
+import "{{.ImportPath}}"
+
+func (m *Migration) Up_{{.TimeStamp}}_{{.Name}}(tx {{.TxType}}) {
+	// FIXME: Update database schema and/or insert seed data.
+}
+
+func (m *Migration) Down_{{.TimeStamp}}_{{.Name}}(tx {{.TxType}}) {
+	// FIXME: Revert the change done by Up_{{.TimeStamp}}_{{.Name}}.
+}
