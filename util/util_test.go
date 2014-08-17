@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -307,5 +308,25 @@ func TestGenerateRandomKey(t *testing.T) {
 		return true
 	}, &quick.Config{MaxCount: 10}); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestSkeletonDir(t *testing.T) {
+	_, filename, _, _ := runtime.Caller(0)
+	baseDir := filepath.Join(filepath.Dir(filename), "skeleton")
+	for _, v := range []struct {
+		value  string
+		expect string
+	}{
+		{"model", filepath.Join(baseDir, "model")},
+		{"controller", filepath.Join(baseDir, "controller")},
+		{"foo", filepath.Join(baseDir, "foo")},
+		{"bar", filepath.Join(baseDir, "bar")},
+	} {
+		actual := SkeletonDir(v.value)
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf("SkeletonDir(%#v) => %#v, want %#v", v.value, actual, expect)
+		}
 	}
 }

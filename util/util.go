@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"text/template"
@@ -508,4 +509,11 @@ func PrintSettingEnv() error {
 	}
 	fmt.Println(buf.String())
 	return nil
+}
+
+// SkeletonDir returns the directory of skeleton files.
+func SkeletonDir(name string) string {
+	_, filename, _, _ := runtime.Caller(0)
+	baseDir := filepath.Dir(filename)
+	return filepath.Join(baseDir, "skeleton", name)
 }
