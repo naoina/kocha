@@ -6,9 +6,10 @@ import (
 	"testing"
 )
 
-func TestRunWithNoAPPPATHGiven(t *testing.T) {
+func Test_generateCommand_Run_withNoAPPPATHGiven(t *testing.T) {
+	c := &generateCommand{}
 	args := []string{}
-	err := run(args)
+	err := c.Run(args)
 	var actual interface{} = err
 	var expect interface{} = fmt.Errorf("no GENERATOR given")
 	if !reflect.DeepEqual(actual, expect) {
@@ -16,9 +17,10 @@ func TestRunWithNoAPPPATHGiven(t *testing.T) {
 	}
 }
 
-func TestRunWithUnknownGenerator(t *testing.T) {
+func Test_generateCommand_Run_withUnknownGenerator(t *testing.T) {
+	c := &generateCommand{}
 	args := []string{"unknown"}
-	err := run(args)
+	err := c.Run(args)
 	var actual interface{} = err
 	var expect interface{} = fmt.Errorf("could not found generator: unknown")
 	if !reflect.DeepEqual(actual, expect) {

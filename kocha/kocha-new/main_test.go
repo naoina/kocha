@@ -11,9 +11,10 @@ import (
 	"testing"
 )
 
-func TestRunWithNoAPPPATHGiven(t *testing.T) {
+func Test_newCommand_Run_withNoAPPPATHGiven(t *testing.T) {
+	c := &newCommand{}
 	args := []string{}
-	err := run(args)
+	err := c.Run(args)
 	var actual interface{} = err
 	var expect interface{} = fmt.Errorf("no APP_PATH given")
 	if !reflect.DeepEqual(actual, expect) {
@@ -21,7 +22,7 @@ func TestRunWithNoAPPPATHGiven(t *testing.T) {
 	}
 }
 
-func TestRunWithAlreadyExists(t *testing.T) {
+func Test_newCommand_Run_withAlreadyExists(t *testing.T) {
 	tempdir, err := ioutil.TempDir("", "TestRunWithAlreadyExists")
 	if err != nil {
 		t.Fatal(err)
@@ -41,8 +42,9 @@ func TestRunWithAlreadyExists(t *testing.T) {
 		build.Default.GOPATH = origGOPATH
 	}()
 	build.Default.GOPATH = tempdir + string(filepath.ListSeparator) + build.Default.GOPATH
+	c := &newCommand{}
 	args := []string{appPath}
-	err = run(args)
+	err = c.Run(args)
 	var actual interface{} = err
 	var expect interface{} = fmt.Errorf("Kocha application is already exists")
 	if !reflect.DeepEqual(actual, expect) {
@@ -50,7 +52,7 @@ func TestRunWithAlreadyExists(t *testing.T) {
 	}
 }
 
-func TestRun(t *testing.T) {
+func Test_newCommand_Run(t *testing.T) {
 	tempdir, err := ioutil.TempDir("", "Test_newRun")
 	if err != nil {
 		t.Fatal(err)
@@ -73,8 +75,9 @@ func TestRun(t *testing.T) {
 		build.Default.GOPATH = origGOPATH
 	}()
 	build.Default.GOPATH = tempdir + string(filepath.ListSeparator) + build.Default.GOPATH
+	c := &newCommand{}
 	args := []string{appPath}
-	err = run(args)
+	err = c.Run(args)
 	var actual interface{} = err
 	var expect interface{} = nil
 	if !reflect.DeepEqual(actual, expect) {

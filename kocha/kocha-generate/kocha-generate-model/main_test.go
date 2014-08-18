@@ -9,11 +9,12 @@ import (
 	"testing"
 )
 
-func TestGenerate(t *testing.T) {
+func Test_generateModelCommand_Run(t *testing.T) {
 	// test for no arguments.
 	func() {
+		c := &generateModelCommand{}
 		args := []string{}
-		err := generate(args)
+		err := c.Run(args)
 		var actual interface{} = err
 		var expect interface{} = fmt.Errorf("no NAME given")
 		if !reflect.DeepEqual(actual, expect) {
@@ -23,9 +24,10 @@ func TestGenerate(t *testing.T) {
 
 	// test for unsupported ORM.
 	func() {
-		option.ORM = "invalid"
+		c := &generateModelCommand{}
+		c.option.ORM = "invalid"
 		args := []string{"app_model"}
-		err := generate(args)
+		err := c.Run(args)
 		var actual interface{} = err
 		var expect interface{} = fmt.Errorf("unsupported ORM: `invalid'")
 		if !reflect.DeepEqual(actual, expect) {
@@ -35,7 +37,8 @@ func TestGenerate(t *testing.T) {
 
 	// test for invalid argument formats.
 	func() {
-		option.ORM = ""
+		c := &generateModelCommand{}
+		c.option.ORM = ""
 		for _, v := range []struct {
 			arg    string
 			expect interface{}
@@ -49,7 +52,7 @@ func TestGenerate(t *testing.T) {
 		} {
 			func() {
 				args := []string{"app_model", v.arg}
-				err := generate(args)
+				err := c.Run(args)
 				var actual interface{} = err
 				var expect interface{} = v.expect
 				if !reflect.DeepEqual(actual, expect) {
@@ -77,8 +80,9 @@ func TestGenerate(t *testing.T) {
 		defer func() {
 			os.Stdout, os.Stderr = oldStdout, oldStderr
 		}()
+		c := &generateModelCommand{}
 		args := []string{"app_model"}
-		err = generate(args)
+		err = c.Run(args)
 		var actual interface{} = err
 		var expect interface{} = nil
 		if !reflect.DeepEqual(actual, expect) {

@@ -8,30 +8,35 @@ import (
 	"runtime"
 
 	"github.com/howeyc/fsnotify"
-	"github.com/jessevdk/go-flags"
 	"github.com/naoina/kocha/util"
 )
 
-const (
-	progName = "kocha run"
-)
-
-var option struct {
-	Help bool `short:"h" long:"help"`
+type runCommand struct {
+	option struct {
+		Help bool `short:"h" long:"help"`
+	}
 }
 
-func printUsage() {
-	fmt.Fprintf(os.Stderr, `Usage: %s [OPTIONS]
+func (c *runCommand) Name() string {
+	return "kocha run"
+}
+
+func (c *runCommand) Usage() string {
+	return fmt.Sprintf(`Usage: %s [OPTIONS]
 
 Run the your application.
 
 Options:
     -h, --help        display this help and exit
 
-`, progName)
+`, c.Name())
 }
 
-func run(args []string) error {
+func (c *runCommand) Option() interface{} {
+	return &c.option
+}
+
+func (c *runCommand) Run(args []string) error {
 	basedir, err := os.Getwd()
 	if err != nil {
 		return err
@@ -108,24 +113,5 @@ func execCmd(name string, args ...string) (*exec.Cmd, error) {
 }
 
 func main() {
-	parser := flags.NewNamedParser(progName, flags.PrintErrors|flags.PassDoubleDash)
-	if _, err := parser.AddGroup("", "", &option); err != nil {
-		panic(err)
-	}
-	args, err := parser.Parse()
-	if err != nil {
-		printUsage()
-		os.Exit(1)
-	}
-	if option.Help {
-		printUsage()
-		os.Exit(0)
-	}
-	if err := run(args); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
-			printUsage()
-		}
-		os.Exit(1)
-	}
+	util.RunCommand(&runCommand{})
 }

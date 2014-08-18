@@ -12,10 +12,11 @@ import (
 	"testing"
 )
 
-func TestRun(t *testing.T) {
+func Test_migrateCommand_Run(t *testing.T) {
 	func() {
+		c := &migrateCommand{}
 		args := []string{}
-		err := run(args)
+		err := c.Run(args)
 		var actual interface{} = err
 		var expect interface{} = fmt.Errorf("no `up' or `down' specified")
 		if !reflect.DeepEqual(actual, expect) {
@@ -24,8 +25,9 @@ func TestRun(t *testing.T) {
 	}()
 
 	func() {
+		c := &migrateCommand{}
 		args := []string{"unknown"}
-		err := run(args)
+		err := c.Run(args)
 		var actual interface{} = err
 		var expect interface{} = fmt.Errorf("no `up' or `down' specified")
 		if !reflect.DeepEqual(actual, expect) {
@@ -78,9 +80,10 @@ func TestRun(t *testing.T) {
 				t.Fatal(err)
 			}
 			os.Stdout = w
-			option.Limit = v.limit
+			c := &migrateCommand{}
+			c.option.Limit = v.limit
 			args := []string{v.dir}
-			err = run(args)
+			err = c.Run(args)
 			var actual interface{} = err
 			var expect interface{} = nil
 			if !reflect.DeepEqual(actual, expect) {

@@ -9,20 +9,25 @@ import (
 
 	"go/build"
 
-	"github.com/jessevdk/go-flags"
+	"github.com/naoina/kocha/util"
 )
 
 const (
-	progName        = "kocha generate"
 	generatorPrefix = "kocha-generate-"
 )
 
-var option struct {
-	Help bool `short:"h" long:"help"`
+type generateCommand struct {
+	option struct {
+		Help bool `short:"h" long:"help"`
+	}
 }
 
-func printUsage() {
-	fmt.Fprintf(os.Stderr, `Usage: %s [OPTIONS] GENERATOR [argument...]
+func (c *generateCommand) Name() string {
+	return "kocha generate"
+}
+
+func (c *generateCommand) Usage() string {
+	return fmt.Sprintf(`Usage: %s [OPTIONS] GENERATOR [argument...]
 
 Generate the skeleton files.
 
@@ -35,11 +40,15 @@ Generators:
 Options:
     -h, --help        display this help and exit
 
-`, progName)
+`, c.Name())
+}
+
+func (c *generateCommand) Option() interface{} {
+	return &c.option
 }
 
 // Run execute the process for `generate` command.
-func run(args []string) error {
+func (c *generateCommand) Run(args []string) error {
 	if len(args) < 1 || args[0] == "" {
 		return fmt.Errorf("no GENERATOR given")
 	}
@@ -64,24 +73,5 @@ func run(args []string) error {
 }
 
 func main() {
-	parser := flags.NewNamedParser(progName, flags.PrintErrors|flags.PassDoubleDash)
-	if _, err := parser.AddGroup("", "", &option); err != nil {
-		panic(err)
-	}
-	args, err := parser.Parse()
-	if err != nil {
-		printUsage()
-		os.Exit(1)
-	}
-	if option.Help {
-		printUsage()
-		os.Exit(0)
-	}
-	if err := run(args); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
-			printUsage()
-		}
-		os.Exit(1)
-	}
+	util.RunCommand(&generateCommand{})
 }

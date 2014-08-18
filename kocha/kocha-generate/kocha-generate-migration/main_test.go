@@ -10,11 +10,12 @@ import (
 	"time"
 )
 
-func TestGenerate(t *testing.T) {
+func Test_generateMigrationCommand_Run(t *testing.T) {
 	// test for no arguments.
 	func() {
+		c := &generateMigrationCommand{}
 		args := []string{}
-		err := generate(args)
+		err := c.Run(args)
 		var actual interface{} = err
 		var expect interface{} = fmt.Errorf("no NAME given")
 		if !reflect.DeepEqual(actual, expect) {
@@ -24,9 +25,10 @@ func TestGenerate(t *testing.T) {
 
 	// test for unsupported ORM.
 	func() {
-		option.ORM = "invalid"
+		c := &generateMigrationCommand{}
+		c.option.ORM = "invalid"
 		args := []string{"create_table"}
-		err := generate(args)
+		err := c.Run(args)
 		var actual interface{} = err
 		var expect interface{} = fmt.Errorf("unsupported ORM: `invalid'")
 		if !reflect.DeepEqual(actual, expect) {
@@ -60,9 +62,10 @@ func TestGenerate(t *testing.T) {
 		defer func() {
 			_time.Now = time.Now
 		}()
-		option.ORM = ""
+		c := &generateMigrationCommand{}
+		c.option.ORM = ""
 		args := []string{"test_create_table"}
-		err = generate(args)
+		err = c.Run(args)
 		var actual interface{} = err
 		var expect interface{} = nil
 		if !reflect.DeepEqual(actual, expect) {

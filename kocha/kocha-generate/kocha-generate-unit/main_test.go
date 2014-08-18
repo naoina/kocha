@@ -9,10 +9,11 @@ import (
 	"testing"
 )
 
-func TestGenerate(t *testing.T) {
+func Test_generateUnitCommand_Run(t *testing.T) {
 	func() {
+		c := &generateUnitCommand{}
 		args := []string{}
-		err := generate(args)
+		err := c.Run(args)
 		var actual interface{} = err
 		var expect interface{} = fmt.Errorf("no NAME given")
 		if !reflect.DeepEqual(actual, expect) {
@@ -37,8 +38,9 @@ func TestGenerate(t *testing.T) {
 		defer func() {
 			os.Stdout, os.Stderr = oldStdout, oldStderr
 		}()
+		c := &generateUnitCommand{}
 		args := []string{"app_unit"}
-		err = generate(args)
+		err = c.Run(args)
 		var actual interface{} = err
 		var expect interface{} = nil
 		if !reflect.DeepEqual(actual, expect) {

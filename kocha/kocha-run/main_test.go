@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-func TestRun(t *testing.T) {
+func Test_runCommand_Run(t *testing.T) {
 	// The below tests do not end because run() have an infinite loop.
 	// Any ideas?
 

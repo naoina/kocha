@@ -11,23 +11,27 @@ import (
 
 	"go/build"
 
-	"github.com/jessevdk/go-flags"
 	"github.com/naoina/kocha/util"
 )
 
 const (
-	progName      = "kocha migrate"
 	defaultDBConf = "default"
 )
 
-var option struct {
-	DBConf string `long:"db"`
-	Limit  int    `short:"n" long:"limit"`
-	Help   bool   `short:"h" long:"help"`
+type migrateCommand struct {
+	option struct {
+		DBConf string `long:"db"`
+		Limit  int    `short:"n" long:"limit"`
+		Help   bool   `short:"h" long:"help"`
+	}
 }
 
-func printUsage() {
-	fmt.Fprintf(os.Stderr, `Usage: %s [OPTIONS] (up|down)
+func (c *migrateCommand) Name() string {
+	return "kocha migrate"
+}
+
+func (c *migrateCommand) Usage() string {
+	return fmt.Sprintf(`Usage: %s [OPTIONS] (up|down)
 
 Run the migrations.
 
@@ -40,22 +44,26 @@ Options:
         --db=NAME     config [default: "default"]
     -h, --help        display this help and exit
 
-`, progName)
+`, c.Name())
 }
 
-func run(args []string) error {
+func (c *migrateCommand) Option() interface{} {
+	return &c.option
+}
+
+func (c *migrateCommand) Run(args []string) error {
 	if len(args) < 1 || !isValidDirection(args[0]) {
 		return fmt.Errorf("no `up' or `down' specified")
 	}
-	if option.Limit < 1 {
-		if option.Limit == 0 {
-			option.Limit = -1
+	if c.option.Limit < 1 {
+		if c.option.Limit == 0 {
+			c.option.Limit = -1
 		} else {
 			return fmt.Errorf("`limit' must be greater than or equal to 1")
 		}
 	}
-	if option.DBConf == "" {
-		option.DBConf = defaultDBConf
+	if c.option.DBConf == "" {
+		c.option.DBConf = defaultDBConf
 	}
 	direction := args[0]
 	tmpDir, err := filepath.Abs("tmp")
@@ -89,8 +97,8 @@ func run(args []string) error {
 	data := map[string]interface{}{
 		"dbImportPath":        dbPkg.ImportPath,
 		"migrationImportPath": migrationPkg.ImportPath,
-		"dbconf":              option.DBConf,
-		"limit":               option.Limit,
+		"dbconf":              c.option.DBConf,
+		"limit":               c.option.Limit,
 	}
 	if err := t.Execute(file, data); err != nil {
 		return fmt.Errorf("failed to write file: %v", err)
@@ -131,24 +139,5 @@ func execCmd(cmd string, args ...string) error {
 }
 
 func main() {
-	parser := flags.NewNamedParser(progName, flags.PrintErrors|flags.PassDoubleDash)
-	if _, err := parser.AddGroup("", "", &option); err != nil {
-		panic(err)
-	}
-	args, err := parser.Parse()
-	if err != nil {
-		printUsage()
-		os.Exit(1)
-	}
-	if option.Help {
-		printUsage()
-		os.Exit(0)
-	}
-	if err := run(args); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
-			printUsage()
-		}
-		os.Exit(1)
-	}
+	util.RunCommand(&migrateCommand{})
 }

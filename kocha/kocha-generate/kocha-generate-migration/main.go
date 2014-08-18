@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -11,13 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jessevdk/go-flags"
 	"github.com/naoina/kocha"
 	"github.com/naoina/kocha/util"
 )
 
 const (
-	progName   = "kocha generate migration"
 	defaultORM = "genmai"
 )
 
@@ -34,13 +31,19 @@ var _time = struct {
 	Now: time.Now,
 }
 
-var option struct {
-	ORM  string `short:"o" long:"orm"`
-	Help bool   `short:"h" long:"help"`
+type generateMigrationCommand struct {
+	option struct {
+		ORM  string `short:"o" long:"orm"`
+		Help bool   `short:"h" long:"help"`
+	}
 }
 
-func printUsage() {
-	fmt.Fprintf(os.Stderr, `Usage: %s [OPTIONS] NAME
+func (c *generateMigrationCommand) Name() string {
+	return "kocha generate migration"
+}
+
+func (c *generateMigrationCommand) Usage() string {
+	return fmt.Sprintf(`Usage: %s [OPTIONS] NAME
 
 Generate the skeleton files of migration.
 
@@ -48,21 +51,25 @@ Options:
     -o, --orm=ORM     ORM to be used for a transaction [default: "genmai"]
     -h, --help        display this help and exit
 
-`, progName)
+`, c.Name())
 }
 
-// generate generates migration templates.
-func generate(args []string) error {
+func (c *generateMigrationCommand) Option() interface{} {
+	return &c.option
+}
+
+// Run generates migration templates.
+func (c *generateMigrationCommand) Run(args []string) error {
 	if len(args) < 1 || args[0] == "" {
 		return fmt.Errorf("no NAME given")
 	}
 	name := args[0]
-	if option.ORM == "" {
-		option.ORM = defaultORM
+	if c.option.ORM == "" {
+		c.option.ORM = defaultORM
 	}
-	orm, exists := ORM[option.ORM]
+	orm, exists := ORM[c.option.ORM]
 	if !exists {
-		return fmt.Errorf("unsupported ORM: `%v'", option.ORM)
+		return fmt.Errorf("unsupported ORM: `%v'", c.option.ORM)
 	}
 	now := _time.Now().Format("20060102150405")
 	data := map[string]interface{}{
@@ -87,7 +94,7 @@ func generate(args []string) error {
 		if err := util.CopyTemplate(
 			filepath.Join(skeletonDir("migration"), "init.go.template"),
 			initPath, map[string]interface{}{
-				"typeName":     option.ORM,
+				"typeName":     c.option.ORM,
 				"tx":           strings.TrimSpace(util.GoString(orm)),
 				"dbImportPath": path.Join(appDir, "db"),
 			},
@@ -105,24 +112,5 @@ func skeletonDir(name string) string {
 }
 
 func main() {
-	parser := flags.NewNamedParser(progName, flags.PrintErrors|flags.PassDoubleDash)
-	if _, err := parser.AddGroup("", "", &option); err != nil {
-		panic(err)
-	}
-	args, err := parser.Parse()
-	if err != nil {
-		printUsage()
-		os.Exit(1)
-	}
-	if option.Help {
-		printUsage()
-		os.Exit(0)
-	}
-	if err := generate(args); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
-			printUsage()
-		}
-		os.Exit(1)
-	}
+	util.RunCommand(&generateMigrationCommand{})
 }

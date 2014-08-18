@@ -13,23 +13,24 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/jessevdk/go-flags"
 	"github.com/naoina/kocha"
 	"github.com/naoina/kocha/util"
 )
 
-const (
-	progName = "kocha build"
-)
-
-var option struct {
-	All  bool   `short:"a" long:"all"`
-	Tag  string `short:"t" long:"tag"`
-	Help bool   `short:"h" long:"help"`
+type buildCommand struct {
+	option struct {
+		All  bool   `short:"a" long:"all"`
+		Tag  string `short:"t" long:"tag"`
+		Help bool   `short:"h" long:"help"`
+	}
 }
 
-func printUsage() {
-	fmt.Fprintf(os.Stderr, `Usage: %s [OPTIONS]
+func (c *buildCommand) Name() string {
+	return "kocha build"
+}
+
+func (c *buildCommand) Usage() string {
+	return fmt.Sprintf(`Usage: %s [OPTIONS]
 
 Build your application.
 
@@ -38,10 +39,14 @@ Options:
     -a, --all         make the true all-in-one binary
     -t, --tag         specify version tag
 
-`, progName)
+`, c.Name())
 }
 
-func run(args []string) error {
+func (c *buildCommand) Option() interface{} {
+	return &c.option
+}
+
+func (c *buildCommand) Run(args []string) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return err
@@ -87,10 +92,10 @@ func run(args []string) error {
 	builderTemplatePath := filepath.ToSlash(filepath.Join(skeletonDir, "builder.go.template"))
 	t := template.Must(template.ParseFiles(builderTemplatePath))
 	var resources map[string]string
-	if option.All {
+	if c.option.All {
 		resources = collectResourcePaths(filepath.Join(dir, kocha.StaticDir))
 	}
-	tag, err := detectVersionTag()
+	tag, err := c.detectVersionTag()
 	if err != nil {
 		return err
 	}
@@ -164,9 +169,9 @@ func collectResourcePaths(root string) map[string]string {
 	return result
 }
 
-func detectVersionTag() (string, error) {
-	if option.Tag != "" {
-		return option.Tag, nil
+func (c *buildCommand) detectVersionTag() (string, error) {
+	if c.option.Tag != "" {
+		return c.option.Tag, nil
 	}
 	var repo string
 	for _, dir := range []string{".git", ".hg"} {
@@ -180,7 +185,7 @@ func detectVersionTag() (string, error) {
 	case ".git":
 		bin, err := exec.LookPath("git")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s: WARNING: git repository found, but `git` command not found. use \"%s\" as version\n", progName, version)
+			fmt.Fprintf(os.Stderr, "%s: WARNING: git repository found, but `git` command not found. use \"%s\" as version\n", c.Name(), version)
 			break
 		}
 		line, err := exec.Command(bin, "rev-parse", "HEAD").Output()
@@ -191,7 +196,7 @@ func detectVersionTag() (string, error) {
 	case ".hg":
 		bin, err := exec.LookPath("hg")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s: WARNING: hg repository found, but `hg` command not found. use \"%s\" as version\n", progName, version)
+			fmt.Fprintf(os.Stderr, "%s: WARNING: hg repository found, but `hg` command not found. use \"%s\" as version\n", c.Name(), version)
 			break
 		}
 		line, err := exec.Command(bin, "identify").Output()
@@ -203,30 +208,11 @@ func detectVersionTag() (string, error) {
 	if version == "" {
 		// Probably doesn't reach here.
 		version = time.Now().Format(time.RFC1123Z)
-		fmt.Fprintf(os.Stderr, `%s: WARNING: version is empty, use "%s" as version`, progName, version)
+		fmt.Fprintf(os.Stderr, `%s: WARNING: version is empty, use "%s" as version`, c.Name(), version)
 	}
 	return version, nil
 }
 
 func main() {
-	parser := flags.NewNamedParser(progName, flags.PrintErrors|flags.PassDoubleDash)
-	if _, err := parser.AddGroup("", "", &option); err != nil {
-		panic(err)
-	}
-	args, err := parser.Parse()
-	if err != nil {
-		printUsage()
-		os.Exit(1)
-	}
-	if option.Help {
-		printUsage()
-		os.Exit(0)
-	}
-	if err := run(args); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
-			printUsage()
-		}
-		os.Exit(1)
-	}
+	util.RunCommand(&buildCommand{})
 }

@@ -12,6 +12,7 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -26,6 +27,7 @@ import (
 	"go/format"
 
 	"github.com/daviddengcn/go-colortext"
+	"github.com/jessevdk/go-flags"
 )
 
 var (
@@ -508,4 +510,39 @@ func PrintSettingEnv() error {
 	}
 	fmt.Println(buf.String())
 	return nil
+}
+
+type Commander interface {
+	Run(args []string) error
+	Name() string
+	Usage() string
+	Option() interface{}
+}
+
+func RunCommand(cmd Commander) {
+	parser := flags.NewNamedParser(cmd.Name(), flags.PrintErrors|flags.PassDoubleDash)
+	if _, err := parser.AddGroup("", "", cmd.Option()); err != nil {
+		panic(err)
+	}
+	args, err := parser.Parse()
+	if err != nil {
+		fmt.Fprint(os.Stderr, cmd.Usage())
+		os.Exit(1)
+	}
+	opt := reflect.ValueOf(cmd.Option())
+	for opt.Kind() == reflect.Ptr {
+		opt = opt.Elem()
+	}
+	h := opt.FieldByName("Help")
+	if h.IsValid() && h.Kind() == reflect.Bool && h.Bool() {
+		fmt.Fprint(os.Stderr, cmd.Usage())
+		os.Exit(0)
+	}
+	if err := cmd.Run(args); err != nil {
+		if _, ok := err.(*exec.ExitError); !ok {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", cmd.Name(), err)
+			fmt.Fprint(os.Stderr, cmd.Usage())
+		}
+		os.Exit(1)
+	}
 }

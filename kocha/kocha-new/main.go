@@ -4,35 +4,39 @@ import (
 	"fmt"
 	"go/build"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 
-	"github.com/jessevdk/go-flags"
 	"github.com/naoina/kocha/util"
 )
 
-const (
-	progName = "kocha new"
-)
-
-var option struct {
-	Help bool `short:"h" long:"help"`
+type newCommand struct {
+	option struct {
+		Help bool `short:"h" long:"help"`
+	}
 }
 
-func printUsage() {
-	fmt.Fprintf(os.Stderr, `Usage: %s [OPTIONS] APP_PATH
+func (c *newCommand) Name() string {
+	return "kocha new"
+}
+
+func (c *newCommand) Usage() string {
+	return fmt.Sprintf(`Usage: %s [OPTIONS] APP_PATH
 
 Create a new application.
 
 Options:
     -h, --help        display this help and exit
 
-`, progName)
+`, c.Name())
 }
 
-func run(args []string) error {
+func (c *newCommand) Option() interface{} {
+	return &c.option
+}
+
+func (c *newCommand) Run(args []string) error {
 	if len(args) < 1 || args[0] == "" {
 		return fmt.Errorf("no APP_PATH given")
 	}
@@ -81,24 +85,5 @@ func mkdirAllIfNotExists(dstDir string) (created bool, err error) {
 }
 
 func main() {
-	parser := flags.NewNamedParser(progName, flags.PrintErrors|flags.PassDoubleDash)
-	if _, err := parser.AddGroup("", "", &option); err != nil {
-		panic(err)
-	}
-	args, err := parser.Parse()
-	if err != nil {
-		printUsage()
-		os.Exit(1)
-	}
-	if option.Help {
-		printUsage()
-		os.Exit(0)
-	}
-	if err := run(args); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
-			printUsage()
-		}
-		os.Exit(1)
-	}
+	util.RunCommand(&newCommand{})
 }

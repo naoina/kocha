@@ -2,36 +2,40 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
+
 	"path/filepath"
 	"runtime"
 
-	"github.com/jessevdk/go-flags"
 	"github.com/naoina/kocha/util"
 )
 
-const (
-	progName = "kocha generate unit"
-)
-
-var option struct {
-	Help bool `short:"h" long:"help"`
+type generateUnitCommand struct {
+	option struct {
+		Help bool `short:"h" long:"help"`
+	}
 }
 
-func printUsage() {
-	fmt.Fprintf(os.Stderr, `Usage: %s [OPTIONS] NAME
+func (c *generateUnitCommand) Name() string {
+	return "kocha generate unit"
+}
+
+func (c *generateUnitCommand) Usage() string {
+	return fmt.Sprintf(`Usage: %s [OPTIONS] NAME
 
 Generate the skeleton files of unit.
 
 Options:
     -h, --help        display this help and exit
 
-`, progName)
+`, c.Name())
 }
 
-// generate generates unit skeleton files.
-func generate(args []string) error {
+func (c *generateUnitCommand) Option() interface{} {
+	return &c.option
+}
+
+// Run generates unit skeleton files.
+func (c *generateUnitCommand) Run(args []string) error {
 	if len(args) < 1 || args[0] == "" {
 		return fmt.Errorf("no NAME given")
 	}
@@ -56,24 +60,5 @@ func skeletonDir(name string) string {
 }
 
 func main() {
-	parser := flags.NewNamedParser(progName, flags.PrintErrors|flags.PassDoubleDash)
-	if _, err := parser.AddGroup("", "", &option); err != nil {
-		panic(err)
-	}
-	args, err := parser.Parse()
-	if err != nil {
-		printUsage()
-		os.Exit(1)
-	}
-	if option.Help {
-		printUsage()
-		os.Exit(0)
-	}
-	if err := generate(args); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
-			printUsage()
-		}
-		os.Exit(1)
-	}
+	util.RunCommand(&generateUnitCommand{})
 }

@@ -9,9 +9,10 @@ import (
 	"testing"
 )
 
-func TestGenerateWithNoNAMEGiven(t *testing.T) {
+func Test_generateControllerCommand_Run_withNoNAMEGiven(t *testing.T) {
+	c := &generateControllerCommand{}
 	args := []string{}
-	err := generate(args)
+	err := c.Run(args)
 	var actual interface{} = err
 	var expect interface{} = fmt.Errorf("no NAME given")
 	if !reflect.DeepEqual(actual, expect) {
@@ -19,7 +20,7 @@ func TestGenerateWithNoNAMEGiven(t *testing.T) {
 	}
 }
 
-func TestGenerate(t *testing.T) {
+func Test_generateControllerCommand_Run(t *testing.T) {
 	tempdir, err := ioutil.TempDir("", "Test_controllerGeneratorGenerate")
 	if err != nil {
 		t.Fatal(err)
@@ -68,8 +69,9 @@ func Routes() RouteTable {
 	defer func() {
 		os.Stdout, os.Stderr = oldStdout, oldStderr
 	}()
+	c := &generateControllerCommand{}
 	args := []string{"app_controller"}
-	err = generate(args)
+	err = c.Run(args)
 	var actual interface{} = err
 	var expect interface{} = nil
 	if !reflect.DeepEqual(actual, expect) {
@@ -122,7 +124,7 @@ func Routes() RouteTable {
 	}
 
 	// test that duplicated routes are not added
-	actual = generate(args)
+	actual = c.Run(args)
 	expect = nil
 	if !reflect.DeepEqual(actual, expect) {
 		t.Errorf(`generate(%#v) => %#v; want %#v`, args, actual, expect)

@@ -3,16 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/jessevdk/go-flags"
 	"github.com/naoina/kocha/util"
 )
 
 const (
-	progName   = "kocha generate model"
 	defaultORM = "genmai"
 )
 
@@ -20,40 +17,43 @@ var modelTypeMap = map[string]ModelTyper{
 	"genmai": &GenmaiModelType{},
 }
 
-var option struct {
-	ORM  string `short:"o" long:"orm"`
-	Help bool   `short:"h" long:"help"`
+type generateModelCommand struct {
+	option struct {
+		ORM  string `short:"o" long:"orm"`
+		Help bool   `short:"h" long:"help"`
+	}
 }
 
-func printUsage() {
-	fmt.Fprintf(os.Stderr, `Usage: %s [OPTIONS] NAME [[field:type]...]
+func (c *generateModelCommand) Name() string {
+	return "kocha generate model"
+}
+
+func (c *generateModelCommand) Usage() string {
+	return fmt.Sprintf(`Usage: %s [OPTIONS] NAME [[field:type]...]
 
 Options:
     -o, --orm=ORM     ORM to be used for a model [default: "%s"]
     -h, --help        display this help and exit
 
-`, progName, defaultORM)
+`, c.Name(), defaultORM)
 }
 
-type modelField struct {
-	Name       string
-	Type       string
-	Column     string
-	OptionTags []string
+func (c *generateModelCommand) Option() interface{} {
+	return &c.option
 }
 
-// generate generates model templates.
-func generate(args []string) error {
+// Run generates model templates.
+func (c *generateModelCommand) Run(args []string) error {
 	if len(args) < 1 || args[0] == "" {
 		return fmt.Errorf("no NAME given")
 	}
 	name := args[0]
-	if option.ORM == "" {
-		option.ORM = defaultORM
+	if c.option.ORM == "" {
+		c.option.ORM = defaultORM
 	}
-	mt, exists := modelTypeMap[option.ORM]
+	mt, exists := modelTypeMap[c.option.ORM]
 	if !exists {
-		return fmt.Errorf("unsupported ORM: `%v'", option.ORM)
+		return fmt.Errorf("unsupported ORM: `%v'", c.option.ORM)
 	}
 	m := mt.FieldTypeMap()
 	var fields []modelField
@@ -99,25 +99,13 @@ func generate(args []string) error {
 	return nil
 }
 
+type modelField struct {
+	Name       string
+	Type       string
+	Column     string
+	OptionTags []string
+}
+
 func main() {
-	parser := flags.NewNamedParser(progName, flags.PrintErrors|flags.PassDoubleDash)
-	if _, err := parser.AddGroup("", "", &option); err != nil {
-		panic(err)
-	}
-	args, err := parser.Parse()
-	if err != nil {
-		printUsage()
-		os.Exit(1)
-	}
-	if option.Help {
-		printUsage()
-		os.Exit(0)
-	}
-	if err := generate(args); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
-			printUsage()
-		}
-		os.Exit(1)
-	}
+	util.RunCommand(&generateModelCommand{})
 }
