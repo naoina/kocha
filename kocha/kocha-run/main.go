@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/howeyc/fsnotify"
 	"github.com/naoina/kocha/util"
+	"gopkg.in/fsnotify.v1"
 )
 
 type runCommand struct {
@@ -82,7 +82,7 @@ func watchApp(basedir, execName string) error {
 			}
 			return nil
 		}
-		if err := watcher.Watch(path); err != nil {
+		if err := watcher.Add(path); err != nil {
 			return err
 		}
 		return nil
@@ -95,8 +95,8 @@ func watchApp(basedir, execName string) error {
 		}
 	}
 	select {
-	case <-watcher.Event:
-	case err := <-watcher.Error:
+	case <-watcher.Events:
+	case err := <-watcher.Errors:
 		return err
 	}
 	fmt.Printf("Reloading...\n\n")
