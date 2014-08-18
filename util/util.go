@@ -520,7 +520,7 @@ type Commander interface {
 }
 
 func RunCommand(cmd Commander) {
-	parser := flags.NewNamedParser(cmd.Name(), flags.PrintErrors|flags.PassDoubleDash)
+	parser := flags.NewNamedParser(cmd.Name(), flags.PrintErrors|flags.PassDoubleDash|flags.PassAfterNonOption)
 	if _, err := parser.AddGroup("", "", cmd.Option()); err != nil {
 		panic(err)
 	}
