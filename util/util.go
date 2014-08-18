@@ -12,6 +12,7 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -26,6 +27,7 @@ import (
 	"go/format"
 
 	"github.com/daviddengcn/go-colortext"
+	"github.com/jessevdk/go-flags"
 )
 
 var (
@@ -116,7 +118,7 @@ type usager interface {
 type fileStatus uint8
 
 const (
-	fileStatusConflict fileStatus = iota
+	fileStatusConflict fileStatus = iota + 1
 	fileStatusNoConflict
 	fileStatusIdentical
 )
@@ -125,64 +127,69 @@ func PanicOnError(usager usager, format string, a ...interface{}) {
 	panic(Error{usager, fmt.Sprintf(format, a...)})
 }
 
-func CopyTemplate(u usager, srcPath, dstPath string, data map[string]interface{}) {
+func CopyTemplate(srcPath, dstPath string, data map[string]interface{}) error {
 	tmpl, err := template.ParseFiles(srcPath)
 	if err != nil {
-		PanicOnError(u, "abort: failed to parse template: %v: %v", srcPath, err)
+		return fmt.Errorf("failed to parse template: %v: %v", srcPath, err)
 	}
 	var bufFrom bytes.Buffer
 	if err := tmpl.Execute(&bufFrom, data); err != nil {
-		PanicOnError(u, "abort: failed to process template: %v: %v", srcPath, err)
+		return fmt.Errorf("failed to process template: %v: %v", srcPath, err)
 	}
 	buf := bufFrom.Bytes()
 	if strings.HasSuffix(srcPath, ".go.template") {
 		if buf, err = format.Source(buf); err != nil {
-			PanicOnError(u, "abort: failed to gofmt: %v: %v", srcPath, err)
+			return fmt.Errorf("failed to gofmt: %v: %v", srcPath, err)
 		}
 	}
 	dstDir := filepath.Dir(dstPath)
 	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
 		PrintCreateDirectory(dstDir)
 		if err := os.MkdirAll(dstDir, 0755); err != nil {
-			PanicOnError(u, "abort: failed to create directory: %v: %v", dstDir, err)
+			return fmt.Errorf("failed to create directory: %v: %v", dstDir, err)
 		}
 	}
 	printFunc := PrintCreate
-	switch detectConflict(u, buf, dstPath) {
+	status, err := detectConflict(buf, dstPath)
+	if err != nil {
+		return err
+	}
+	switch status {
 	case fileStatusConflict:
 		PrintConflict(dstPath)
 		if !confirmOverwrite(dstPath) {
 			PrintSkip(dstPath)
-			return
+			return nil
 		}
 		printFunc = PrintOverwrite
 	case fileStatusIdentical:
 		PrintIdentical(dstPath)
-		return
+		return nil
 	}
 	dstFile, err := os.Create(dstPath)
 	if err != nil {
-		PanicOnError(u, "abort: failed to create file: %v: %v", dstPath, err)
+		return fmt.Errorf("failed to create file: %v: %v", dstPath, err)
 	}
 	defer dstFile.Close()
 	if _, err := io.Copy(dstFile, bytes.NewBuffer(buf)); err != nil {
-		PanicOnError(u, "abort: failed to output file: %v: %v", dstPath, err)
+		return fmt.Errorf("failed to output file: %v: %v", dstPath, err)
 	}
 	printFunc(dstPath)
+	return nil
 }
 
-func detectConflict(u usager, src []byte, dstPath string) fileStatus {
+func detectConflict(src []byte, dstPath string) (fileStatus, error) {
 	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
-		return fileStatusNoConflict
+		return fileStatusNoConflict, nil
 	}
 	dstBuf, err := ioutil.ReadFile(dstPath)
 	if err != nil {
-		PanicOnError(u, "abort: failed to read file: %v", err)
+		return 0, fmt.Errorf("failed to read file: %v", err)
 	}
 	if bytes.Equal(src, dstBuf) {
-		return fileStatusIdentical
+		return fileStatusIdentical, nil
 	}
-	return fileStatusConflict
+	return fileStatusConflict, nil
 }
 
 func confirmOverwrite(dstPath string) bool {
@@ -489,4 +496,53 @@ func GenerateRandomKey(length int) []byte {
 		panic(err)
 	}
 	return result
+}
+
+func PrintSettingEnv() error {
+	env, err := FindSettingEnv()
+	if err != nil {
+		return err
+	}
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "NOTE: You can be setting for your app by using following environment variables at the time of launching the app:\n")
+	for key, value := range env {
+		fmt.Fprintf(&buf, "%4s%v=%v\n", "", key, strconv.Quote(value))
+	}
+	fmt.Println(buf.String())
+	return nil
+}
+
+type Commander interface {
+	Run(args []string) error
+	Name() string
+	Usage() string
+	Option() interface{}
+}
+
+func RunCommand(cmd Commander) {
+	parser := flags.NewNamedParser(cmd.Name(), flags.PrintErrors|flags.PassDoubleDash|flags.PassAfterNonOption)
+	if _, err := parser.AddGroup("", "", cmd.Option()); err != nil {
+		panic(err)
+	}
+	args, err := parser.Parse()
+	if err != nil {
+		fmt.Fprint(os.Stderr, cmd.Usage())
+		os.Exit(1)
+	}
+	opt := reflect.ValueOf(cmd.Option())
+	for opt.Kind() == reflect.Ptr {
+		opt = opt.Elem()
+	}
+	h := opt.FieldByName("Help")
+	if h.IsValid() && h.Kind() == reflect.Bool && h.Bool() {
+		fmt.Fprint(os.Stderr, cmd.Usage())
+		os.Exit(0)
+	}
+	if err := cmd.Run(args); err != nil {
+		if _, ok := err.(*exec.ExitError); !ok {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", cmd.Name(), err)
+			fmt.Fprint(os.Stderr, cmd.Usage())
+		}
+		os.Exit(1)
+	}
 }
