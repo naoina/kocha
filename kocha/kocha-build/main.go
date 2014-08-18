@@ -35,9 +35,9 @@ func (c *buildCommand) Usage() string {
 Build your application.
 
 Options:
-    -h, --help        display this help and exit
     -a, --all         make the true all-in-one binary
-    -t, --tag         specify version tag
+    -t, --tag=TAG     specify version tag
+    -h, --help        display this help and exit
 
 `, c.Name())
 }
