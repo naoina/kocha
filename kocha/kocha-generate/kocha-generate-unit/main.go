@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 
@@ -69,8 +70,10 @@ func main() {
 		os.Exit(0)
 	}
 	if err := generate(args); err != nil {
-		fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
-		printUsage()
+		if _, ok := err.(*exec.ExitError); !ok {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
+			printUsage()
+		}
 		os.Exit(1)
 	}
 }

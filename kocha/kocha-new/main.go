@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/build"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -94,8 +95,10 @@ func main() {
 		os.Exit(0)
 	}
 	if err := run(args); err != nil {
-		fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
-		printUsage()
+		if _, ok := err.(*exec.ExitError); !ok {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", progName, err)
+			printUsage()
+		}
 		os.Exit(1)
 	}
 }
