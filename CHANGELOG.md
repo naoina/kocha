@@ -1,3 +1,9 @@
+# Kocha v0.6.1
+
+## Changes
+
+* [bugfix] Fix a problem that reloading process of `kocha run' doesn't work
+
 # Kocha v0.6.0
 
 This release is an incompatible with previous releases.
