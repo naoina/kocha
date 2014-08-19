@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/naoina/kocha/util"
+	"github.com/naoina/miyabi"
 	"gopkg.in/fsnotify.v1"
 )
 
@@ -48,14 +49,6 @@ func (c *runCommand) Run(args []string) error {
 	if err := util.PrintSettingEnv(); err != nil {
 		return err
 	}
-	for {
-		if err := watchApp(basedir, execName); err != nil {
-			return err
-		}
-	}
-}
-
-func watchApp(basedir, execName string) error {
 	cmd, err := execCmd("go", "build", "-o", execName)
 	if err != nil {
 		return err
@@ -63,10 +56,34 @@ func watchApp(basedir, execName string) error {
 	if err := cmd.Wait(); err == nil {
 		cmd, err = execCmd(filepath.Join(basedir, execName))
 		if err != nil {
+			cmd.Process.Kill()
 			return err
 		}
 	}
-	defer cmd.Process.Kill()
+	for {
+		if err := watchApp(basedir, execName); err != nil {
+			if err := cmd.Process.Signal(miyabi.ShutdownSignal); err != nil {
+				cmd.Process.Kill()
+			}
+			return err
+		}
+		fmt.Printf("Reloading...\n\n")
+		c, err := execCmd("go", "build", "-o", execName)
+		if err != nil {
+			return err
+		}
+		if err := c.Wait(); err != nil {
+			c.Process.Kill()
+			return err
+		}
+		if err := cmd.Process.Signal(miyabi.RestartSignal); err != nil {
+			cmd.Process.Kill()
+			return err
+		}
+	}
+}
+
+func watchApp(basedir, execName string) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
@@ -99,7 +116,6 @@ func watchApp(basedir, execName string) error {
 	case err := <-watcher.Errors:
 		return err
 	}
-	fmt.Printf("Reloading...\n\n")
 	return nil
 }
 
