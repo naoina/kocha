@@ -98,6 +98,8 @@ func Test_newCommand_Run(t *testing.T) {
 	expects := []string{
 		filepath.Join("main.go"),
 		filepath.Join("app", "controller", "root.go"),
+		filepath.Join("app", "view", "error", "404.html"),
+		filepath.Join("app", "view", "error", "500.html"),
 		filepath.Join("app", "view", "layout", "app.html"),
 		filepath.Join("app", "view", "root.html"),
 		filepath.Join("config", "app.go"),
