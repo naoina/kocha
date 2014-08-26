@@ -224,7 +224,7 @@ func TestTemplate_Get(t *testing.T) {
 		for _, v := range tmpl.Templates() {
 			actual = append(actual, v.Name())
 		}
-		expected := []string{"layout", "testctrlr.html"}
+		expected := []string{"layout/application.html", "testctrlr.html"}
 		sort.Strings(actual)
 		sort.Strings(expected)
 		if !reflect.DeepEqual(actual, expected) {
@@ -258,7 +258,7 @@ func TestTemplate_Get(t *testing.T) {
 		for _, v := range tmpl.Templates() {
 			actual = append(actual, v.Name())
 		}
-		expected := []string{"layout", "testctrlr.html"}
+		expected := []string{"layout/another_layout.html", "testctrlr.html"}
 		sort.Strings(actual)
 		sort.Strings(expected)
 		if !reflect.DeepEqual(actual, expected) {

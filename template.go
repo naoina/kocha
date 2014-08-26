@@ -204,7 +204,10 @@ func (t *Template) buildSingleAppTemplateSet(appTemplateSet appTemplateSet, temp
 				templateBytes = b
 				t.app.ResourceSet.Add(fmt.Sprintf("_kocha_%s.%s", path, ext), b)
 			}
-			t := template.Must(template.New(name).Funcs(template.FuncMap(t.FuncMap)).Parse(string(templateBytes)))
+			t, err := template.New(name).Funcs(template.FuncMap(t.FuncMap)).Parse(string(templateBytes))
+			if err != nil {
+				return err
+			}
 			layoutTemplateSet[ext][name] = t
 		}
 	}
@@ -231,18 +234,28 @@ func (t *Template) buildLayoutAppTemplateSet(appTemplateSet appTemplateSet, layo
 				layoutBytes = b
 				t.app.ResourceSet.Add(fmt.Sprintf("_kocha_template_layout_bytes_%s", layoutPath), b)
 			}
+			displayLayoutPath := t.relativePath(layoutPath)
 			for name, path := range templates[ext] {
 				// do not use the layoutTemplate.Clone() in order to retrieve layout as string by `kocha build`
-				layout := template.Must(template.New("layout").Funcs(template.FuncMap(t.FuncMap)).Parse(string(layoutBytes)))
+				layout, err := template.New(displayLayoutPath).Funcs(template.FuncMap(t.FuncMap)).Parse(string(layoutBytes))
+				if err != nil {
+					return err
+				}
 				var tmpl *template.Template
 				if data := t.app.ResourceSet.Get(fmt.Sprintf("_kocha_%s.%s", path, ext)); data != nil {
 					if b, ok := data.([]byte); ok {
-						template.Must(layout.New(filepath.Base(path)).Parse(string(b)))
+						if _, err := layout.New(t.relativePath(path)).Parse(string(b)); err != nil {
+							return err
+						}
 						tmpl = layout
 					}
 				}
 				if tmpl == nil {
-					tmpl = template.Must(layout.ParseFiles(path))
+					t, err := layout.ParseFiles(path)
+					if err != nil {
+						return err
+					}
+					tmpl = t
 				}
 				layoutTemplateSet[ext][name] = tmpl
 			}
@@ -250,6 +263,15 @@ func (t *Template) buildLayoutAppTemplateSet(appTemplateSet appTemplateSet, layo
 		appTemplateSet[layoutName] = layoutTemplateSet
 	}
 	return nil
+}
+
+func (t *Template) relativePath(targpath string) string {
+	for _, basepath := range t.PathInfo.Paths {
+		if p, err := filepath.Rel(basepath, targpath); err == nil {
+			return p
+		}
+	}
+	return targpath
 }
 
 // in is for "in" template function.
