@@ -275,22 +275,22 @@ func (t *Template) relativePath(targpath string) string {
 }
 
 // in is for "in" template function.
-func (t *Template) in(a, b interface{}) bool {
+func (t *Template) in(a, b interface{}) (bool, error) {
 	v := reflect.ValueOf(a)
 	switch v.Kind() {
 	case reflect.Slice, reflect.Array, reflect.String:
 		if v.IsNil() {
-			return false
+			return false, nil
 		}
 		for i := 0; i < v.Len(); i++ {
 			if v.Index(i).Interface() == b {
-				return true
+				return true, nil
 			}
 		}
 	default:
-		panic(fmt.Errorf("invalid type %v: valid types are slice, array and string", v.Type().Name()))
+		return false, fmt.Errorf("invalid type %v: valid types are slice, array and string", v.Type().Name())
 	}
-	return false
+	return false, nil
 }
 
 // url is for "url" template function.
