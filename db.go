@@ -302,12 +302,12 @@ func (mig *Migration) collectInfos(r *regexp.Regexp, isTarget func(string) bool)
 			continue
 		}
 		if meth.Type.NumIn() != 2 {
-			return nil, fmt.Errorf("%v: arguments number must be 1", meth.Name)
+			return nil, fmt.Errorf("kocha: migrate: %v: arguments number must be 1", meth.Name)
 		}
 		argType := meth.Type.In(1)
 		tx := mig.findTransactioner(argType)
 		if tx == nil {
-			return nil, fmt.Errorf("argument type `%v' is undefined", argType)
+			return nil, fmt.Errorf("kocha: migrate: argument type `%v' is undefined", argType)
 		}
 		minfos = append(minfos, migrationInfo{
 			methodName: name,

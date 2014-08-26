@@ -100,7 +100,7 @@ func (router *Router) Reverse(name string, v ...interface{}) string {
 		for i, value := range v {
 			types[i] = reflect.TypeOf(value).Name()
 		}
-		panic(fmt.Errorf("no match route found: %v (%v)", name, strings.Join(types, ", ")))
+		panic(fmt.Errorf("kocha: no match route found: %v (%v)", name, strings.Join(types, ", ")))
 	}
 	return info.reverse(v...)
 }
@@ -167,9 +167,9 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	route := ri.route
 	switch vlen, nlen := len(v), len(ri.paramNames); {
 	case vlen < nlen:
-		panic(fmt.Errorf("too few arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
+		panic(fmt.Errorf("kocha: too few arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
 	case vlen > nlen:
-		panic(fmt.Errorf("too many arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
+		panic(fmt.Errorf("kocha: too many arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
 	case vlen+nlen == 0:
 		return route.Path
 	}
@@ -206,6 +206,6 @@ func astTypeName(expr ast.Expr) string {
 	case *ast.StarExpr:
 		return fmt.Sprintf("*%s", astTypeName(t.X))
 	default:
-		panic(fmt.Errorf("sorry, unexpected argument type `%T` found. please report this issue.", t))
+		panic(fmt.Errorf("kocha: sorry, unexpected argument type `%T` found. please report this issue.", t))
 	}
 }

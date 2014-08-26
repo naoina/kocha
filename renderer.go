@@ -40,11 +40,11 @@ func Render(c *Context, data ...interface{}) Result {
 	c.setContentTypeIfNotExists("text/html")
 	format := MimeTypeFormats.Get(c.Response.ContentType)
 	if format == "" {
-		panic(fmt.Errorf("unknown Content-Type: %v", c.Response.ContentType))
+		panic(fmt.Errorf("kocha: unknown Content-Type: %v", c.Response.ContentType))
 	}
 	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, format)
 	if t == nil {
-		panic(errors.New("no such template: " + c.App.Template.Ident(c.App.Config.AppName, c.Layout, c.Name, format)))
+		panic(errors.New("kocha: no such template: " + c.App.Template.Ident(c.App.Config.AppName, c.Layout, c.Name, format)))
 	}
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, d); err != nil {
@@ -119,7 +119,7 @@ func RenderError(c *Context, statusCode int, data ...interface{}) Result {
 	c.setContentTypeIfNotExists("text/html")
 	format := MimeTypeFormats.Get(c.Response.ContentType)
 	if format == "" {
-		panic(fmt.Errorf("unknown Content-Type: %v", c.Response.ContentType))
+		panic(fmt.Errorf("kocha: unknown Content-Type: %v", c.Response.ContentType))
 	}
 	c.Response.StatusCode = statusCode
 	name := filepath.Join("error", strconv.Itoa(statusCode))

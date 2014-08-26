@@ -130,23 +130,23 @@ func PanicOnError(usager usager, format string, a ...interface{}) {
 func CopyTemplate(srcPath, dstPath string, data map[string]interface{}) error {
 	tmpl, err := template.ParseFiles(srcPath)
 	if err != nil {
-		return fmt.Errorf("failed to parse template: %v: %v", srcPath, err)
+		return fmt.Errorf("kocha: failed to parse template: %v: %v", srcPath, err)
 	}
 	var bufFrom bytes.Buffer
 	if err := tmpl.Execute(&bufFrom, data); err != nil {
-		return fmt.Errorf("failed to process template: %v: %v", srcPath, err)
+		return fmt.Errorf("kocha: failed to process template: %v: %v", srcPath, err)
 	}
 	buf := bufFrom.Bytes()
 	if strings.HasSuffix(srcPath, ".go.template") {
 		if buf, err = format.Source(buf); err != nil {
-			return fmt.Errorf("failed to gofmt: %v: %v", srcPath, err)
+			return fmt.Errorf("kocha: failed to gofmt: %v: %v", srcPath, err)
 		}
 	}
 	dstDir := filepath.Dir(dstPath)
 	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
 		PrintCreateDirectory(dstDir)
 		if err := os.MkdirAll(dstDir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory: %v: %v", dstDir, err)
+			return fmt.Errorf("kocha: failed to create directory: %v: %v", dstDir, err)
 		}
 	}
 	printFunc := PrintCreate
@@ -168,11 +168,11 @@ func CopyTemplate(srcPath, dstPath string, data map[string]interface{}) error {
 	}
 	dstFile, err := os.Create(dstPath)
 	if err != nil {
-		return fmt.Errorf("failed to create file: %v: %v", dstPath, err)
+		return fmt.Errorf("kocha: failed to create file: %v: %v", dstPath, err)
 	}
 	defer dstFile.Close()
 	if _, err := io.Copy(dstFile, bytes.NewBuffer(buf)); err != nil {
-		return fmt.Errorf("failed to output file: %v: %v", dstPath, err)
+		return fmt.Errorf("kocha: failed to output file: %v: %v", dstPath, err)
 	}
 	printFunc(dstPath)
 	return nil
@@ -184,7 +184,7 @@ func detectConflict(src []byte, dstPath string) (fileStatus, error) {
 	}
 	dstBuf, err := ioutil.ReadFile(dstPath)
 	if err != nil {
-		return 0, fmt.Errorf("failed to read file: %v", err)
+		return 0, fmt.Errorf("kocha: failed to read file: %v", err)
 	}
 	if bytes.Equal(src, dstBuf) {
 		return fileStatusIdentical, nil

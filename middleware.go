@@ -64,7 +64,7 @@ type FlashMiddleware struct{}
 
 func (m *FlashMiddleware) Before(app *Application, c *Context) {
 	if c.Session == nil {
-		app.Logger.Error("FlashMiddleware hasn't been added after SessionMiddleware; it cannot be used")
+		app.Logger.Error("kocha: FlashMiddleware hasn't been added after SessionMiddleware; it cannot be used")
 		return
 	}
 	c.Flash = Flash{}

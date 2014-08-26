@@ -41,7 +41,7 @@ func (config *SessionConfig) Validate() error {
 		return nil
 	}
 	if config.Name == "" {
-		return fmt.Errorf("%T.Name must be specify", *config)
+		return fmt.Errorf("kocha: session: %T.Name must be specify", *config)
 	}
 	if config.Store != nil {
 		if err := config.Store.Validate(); err != nil {
@@ -210,7 +210,7 @@ func (store *SessionCookieStore) Validate() error {
 	case 16, 24, 32:
 		return nil
 	}
-	return fmt.Errorf("%T.SecretKey size must be 16, 24 or 32, but %v", *store, len(store.SecretKey))
+	return fmt.Errorf("kocha: session: %T.SecretKey size must be 16, 24 or 32, but %v", *store, len(store.SecretKey))
 }
 
 // encrypt returns encrypted data by AES-256-CBC.
@@ -286,12 +286,12 @@ func (store *SessionCookieStore) sign(src []byte) []byte {
 // verify verify signed data and returns unsigned data if valid.
 func (store *SessionCookieStore) verify(src []byte) (unsigned []byte, err error) {
 	if len(src) <= sha1.Size {
-		return nil, errors.New("session cookie value too short")
+		return nil, errors.New("kocha: session cookie value too short")
 	}
 	sign := src[:sha1.Size]
 	unsigned = src[sha1.Size:]
 	if !hmac.Equal(store.hash(unsigned), sign) {
-		return nil, errors.New("session cookie verification failed")
+		return nil, errors.New("kocha: session cookie verification failed")
 	}
 	return unsigned, nil
 }

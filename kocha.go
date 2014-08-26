@@ -42,9 +42,9 @@ func Run(config *Config) error {
 			fmt.Printf("Listening on %s\n", app.Config.Addr)
 			fmt.Printf("Server PID: %d\n", pid)
 		case miyabi.StateRestart:
-			app.Logger.Warn("graceful restarted")
+			app.Logger.Warn("kocha: graceful restarted")
 		case miyabi.StateShutdown:
-			app.Logger.Warn("graceful shutdown")
+			app.Logger.Warn("kocha: graceful shutdown")
 		}
 	}
 	server := &miyabi.Server{
@@ -187,10 +187,10 @@ func (app *Application) validateSessionConfig() error {
 	for _, m := range app.Config.Middlewares {
 		if middleware, ok := m.(*SessionMiddleware); ok {
 			if app.Config.Session == nil {
-				return fmt.Errorf("Because %T is nil, %T cannot be used", app.Config, *middleware)
+				return fmt.Errorf("kocha: session: Because %T is nil, %T cannot be used", app.Config, *middleware)
 			}
 			if app.Config.Session.Store == nil {
-				return fmt.Errorf("Because %T.Store is nil, %T cannot be used", *app.Config, *middleware)
+				return fmt.Errorf("kocha: session: Because %T.Store is nil, %T cannot be used", *app.Config, *middleware)
 			}
 			return nil
 		}

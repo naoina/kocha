@@ -151,7 +151,7 @@ func (c *Context) buildData(data []interface{}) (interface{}, error) {
 			if len(c.Data) == 0 {
 				return data[0], nil
 			}
-			return nil, fmt.Errorf("data of multiple types has been set: Context.Data has been set,"+
+			return nil, fmt.Errorf("kocha: data of multiple types has been set: Context.Data has been set,"+
 				" but data of other type was given: %v", reflect.TypeOf(data))
 		}
 		if c.Data == nil {

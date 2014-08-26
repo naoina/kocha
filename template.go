@@ -151,7 +151,7 @@ func (t *Template) collectLayoutPaths(layoutPaths map[string]map[string]string, 
 			layoutPaths[name] = make(map[string]string)
 		}
 		if layoutPath, exists := layoutPaths[name][ext]; exists {
-			return fmt.Errorf("duplicate name of layout file:\n  1. %s\n  2. %s\n", layoutPath, path)
+			return fmt.Errorf("kocha: duplicate name of layout file:\n  1. %s\n  2. %s\n", layoutPath, path)
 		}
 		layoutPaths[name][ext] = path
 		return nil
@@ -178,7 +178,7 @@ func (t *Template) collectTemplatePaths(templatePaths map[string]map[string]stri
 			templatePaths[ext] = make(map[string]string)
 		}
 		if templatePath, exists := templatePaths[ext][name]; exists {
-			return fmt.Errorf("duplicate name of template file:\n  1. %s\n  2. %s\n", templatePath, path)
+			return fmt.Errorf("kocha: duplicate name of template file:\n  1. %s\n  2. %s\n", templatePath, path)
 		}
 		templatePaths[ext][name] = path
 		return nil
