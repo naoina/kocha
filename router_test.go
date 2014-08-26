@@ -1,6 +1,7 @@
 package kocha_test
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -9,59 +10,60 @@ import (
 
 func TestRouter_Reverse(t *testing.T) {
 	app := kocha.NewTestApp()
-	actual := app.Router.Reverse("root")
-	expected := "/"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-
-	actual = app.Router.Reverse("user", 77)
-	expected = "/user/77"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-
-	actual = app.Router.Reverse("date", 2013, 10, 26, "naoina")
-	expected = "/2013/10/26/user/naoina"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-
-	for _, v := range []string{"/hoge.png", "hoge.png"} {
-		actual = app.Router.Reverse("static", v)
-		expected = "/static/hoge.png"
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+	for _, v := range []struct {
+		name   string
+		args   []interface{}
+		expect string
+	}{
+		{"root", []interface{}{}, "/"},
+		{"user", []interface{}{77}, "/user/77"},
+		{"date", []interface{}{2013, 10, 26, "naoina"}, "/2013/10/26/user/naoina"},
+		{"static", []interface{}{"/hoge.png"}, "/static/hoge.png"},
+		{"static", []interface{}{"hoge.png"}, "/static/hoge.png"},
+	} {
+		r, err := app.Router.Reverse(v.name, v.args...)
+		if err != nil {
+			t.Errorf(`Router.Reverse(%#v, %#v) => (_, %#v); want (_, %#v)`, v.name, v.args, err, err)
+			continue
+		}
+		actual := r
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`Router.Reverse(%#v, %#v) => (%#v, %#v); want (%#v, %#v)`, v.name, v.args, actual, err, expect, err)
 		}
 	}
 }
 
 func TestRouter_Reverse_withUnknownRouteName(t *testing.T) {
 	app := kocha.NewTestApp()
-	defer func() {
-		if err := recover(); err == nil {
-			t.Errorf("panic doesn't happened")
-		}
-	}()
-	app.Router.Reverse("unknown")
+	name := "unknown"
+	_, err := app.Router.Reverse(name)
+	actual := err
+	expect := fmt.Errorf("kocha: no match route found: %s ()", name)
+	if !reflect.DeepEqual(actual, expect) {
+		t.Errorf("Router.Reverse(%#v) => (_, %#v); want (_, %#v)", name, actual, expect)
+	}
 }
 
 func TestRouter_Reverse_withFewArguments(t *testing.T) {
 	app := kocha.NewTestApp()
-	defer func() {
-		if err := recover(); err == nil {
-			t.Errorf("panic doesn't happened")
-		}
-	}()
-	app.Router.Reverse("user")
+	name := "user"
+	_, err := app.Router.Reverse(name)
+	actual := err
+	expect := fmt.Errorf("kocha: too few arguments: %s (controller is %T)", name, &kocha.FixtureUserTestCtrl{})
+	if !reflect.DeepEqual(actual, expect) {
+		t.Errorf(`Router.Reverse(%#v) => (_, %#v); want (_, %#v)`, name, actual, expect)
+	}
 }
 
 func TestRouter_Reverse_withManyArguments(t *testing.T) {
 	app := kocha.NewTestApp()
-	defer func() {
-		if err := recover(); err == nil {
-			t.Errorf("panic doesn't happened")
-		}
-	}()
-	app.Router.Reverse("user", 77, 100)
+	name := "user"
+	args := []interface{}{77, 100}
+	_, err := app.Router.Reverse(name, args...)
+	actual := err
+	expect := fmt.Errorf("kocha: too many arguments: %s (controller is %T)", name, &kocha.FixtureUserTestCtrl{})
+	if !reflect.DeepEqual(actual, expect) {
+		t.Errorf(`Router.Reverse(%#v, %#v) => (_, %#v); want (_, %#v)`, name, args, actual, expect)
+	}
 }

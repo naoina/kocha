@@ -93,14 +93,14 @@ func (router *Router) buildReverse() error {
 }
 
 // Reverse returns path of route by name and any params.
-func (router *Router) Reverse(name string, v ...interface{}) string {
+func (router *Router) Reverse(name string, v ...interface{}) (string, error) {
 	info := router.reverse[name]
 	if info == nil {
 		types := make([]string, len(v))
 		for i, value := range v {
 			types[i] = reflect.TypeOf(value).Name()
 		}
-		panic(fmt.Errorf("kocha: no match route found: %v (%v)", name, strings.Join(types, ", ")))
+		return "", fmt.Errorf("kocha: no match route found: %v (%v)", name, strings.Join(types, ", "))
 	}
 	return info.reverse(v...)
 }
@@ -163,15 +163,15 @@ type routeInfo struct {
 	paramNames    []string
 }
 
-func (ri *routeInfo) reverse(v ...interface{}) string {
+func (ri *routeInfo) reverse(v ...interface{}) (string, error) {
 	route := ri.route
 	switch vlen, nlen := len(v), len(ri.paramNames); {
 	case vlen < nlen:
-		panic(fmt.Errorf("kocha: too few arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
+		return "", fmt.Errorf("kocha: too few arguments: %v (controller is %T)", route.Name, route.Controller)
 	case vlen > nlen:
-		panic(fmt.Errorf("kocha: too many arguments: %v (controller is %v)", route.Name, reflect.TypeOf(route.Controller).Name()))
+		return "", fmt.Errorf("kocha: too many arguments: %v (controller is %T)", route.Name, route.Controller)
 	case vlen+nlen == 0:
-		return route.Path
+		return route.Path, nil
 	}
 	var oldnew []string
 	for i := 0; i < len(v); i++ {
@@ -179,7 +179,7 @@ func (ri *routeInfo) reverse(v ...interface{}) string {
 	}
 	replacer := strings.NewReplacer(oldnew...)
 	path := replacer.Replace(route.Path)
-	return util.NormPath(path)
+	return util.NormPath(path), nil
 }
 
 func findPkgDir(pkgPath string) (string, error) {

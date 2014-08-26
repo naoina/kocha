@@ -294,7 +294,7 @@ func (t *Template) in(a, b interface{}) (bool, error) {
 }
 
 // url is for "url" template function.
-func (t *Template) url(name string, v ...interface{}) string {
+func (t *Template) url(name string, v ...interface{}) (string, error) {
 	return t.app.Router.Reverse(name, v...)
 }
 
