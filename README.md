@@ -23,7 +23,7 @@ A convenient web application framework for [Go](http://golang.org/)
 
     And command-line tool
 
-        go get -u github.com/naoina/kocha/kocha/...
+        go get -u github.com/naoina/kocha/cmd/...
 
 2. Create a new application:
 
