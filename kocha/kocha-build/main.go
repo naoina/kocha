@@ -111,6 +111,7 @@ func (c *buildCommand) Run(args []string) error {
 	if err := t.Execute(file, data); err != nil {
 		return fmt.Errorf("failed to write file: %v", err)
 	}
+	file.Close()
 	execName := appName
 	if runtime.GOOS == "windows" {
 		execName += ".exe"
