@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -119,7 +118,7 @@ type Context struct {
 	Name     string       // controller name.
 	Layout   string       // layout name.
 	Format   string       // format of response.
-	Data     Data         // data for template.
+	Data     interface{}  // data for template.
 	Request  *Request     // request.
 	Response *Response    // response.
 	Params   *Params      // parameters of form values.
@@ -144,36 +143,30 @@ func (c *Context) setContentTypeIfNotExists(contentType string) {
 	}
 }
 
-func (c *Context) buildData(data []interface{}) (interface{}, error) {
+func (c *Context) setData(data []interface{}) error {
 	switch len(data) {
 	case 1:
 		d, ok := data[0].(Data)
 		if !ok {
-			if len(c.Data) == 0 {
-				return data[0], nil
+			c.Data = data[0]
+			return nil
+		}
+		if data, ok := c.Data.(Data); ok {
+			if data == nil {
+				data = Data{}
 			}
-			return nil, fmt.Errorf("kocha: data of multiple types has been set: Context.Data has been set,"+
-				" but data of other type was given: %v", reflect.TypeOf(data))
+			for k, v := range d {
+				data[k] = v
+			}
+			d = data
 		}
-		if c.Data == nil {
-			c.Data = Data{}
-		}
-		for k, v := range d {
-			c.Data[k] = v
-		}
+		c.Data = d
 	case 0:
-		if c.Data == nil {
-			c.Data = Data{}
-		}
+		// do nothing.
 	default: // > 1
-		return nil, fmt.Errorf("too many arguments")
+		return fmt.Errorf("too many arguments")
 	}
-	if _, exists := c.Data["errors"]; exists {
-		c.App.Logger.Warn("kocha: Data: `errors' key has already been set, skipped")
-	} else {
-		c.Data["errors"] = c.Errors
-	}
-	return c.Data, nil
+	return nil
 }
 
 func (c *Context) setFormatFromContentTypeIfNotExists() error {

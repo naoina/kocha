@@ -32,8 +32,7 @@ import (
 // try to retrieve the template file "root.xml".
 // Also ContentType set to "text/html" if not specified.
 func Render(c *Context, data ...interface{}) Result {
-	d, err := c.buildData(data)
-	if err != nil {
+	if err := c.setData(data); err != nil {
 		panic(err)
 	}
 	c.setContentTypeIfNotExists("text/html")
@@ -45,7 +44,7 @@ func Render(c *Context, data ...interface{}) Result {
 		panic(errors.New("kocha: no such template: " + c.App.Template.Ident(c.App.Config.AppName, c.Layout, c.Name, c.Format)))
 	}
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, d); err != nil {
+	if err := t.Execute(&buf, c); err != nil {
 		panic(err)
 	}
 	return &resultContent{
@@ -58,12 +57,11 @@ func Render(c *Context, data ...interface{}) Result {
 // RenderJSON is similar to Render but data will be encoded to JSON.
 // ContentType set to "application/json" if not specified.
 func RenderJSON(c *Context, data ...interface{}) Result {
-	d, err := c.buildData(data)
-	if err != nil {
+	if err := c.setData(data); err != nil {
 		panic(err)
 	}
 	c.setContentTypeIfNotExists("application/json")
-	buf, err := json.Marshal(d)
+	buf, err := json.Marshal(c.Data)
 	if err != nil {
 		panic(err)
 	}
@@ -77,12 +75,11 @@ func RenderJSON(c *Context, data ...interface{}) Result {
 // RenderXML is similar to Render but data will be encoded to XML.
 // ContentType set to "application/xml" if not specified.
 func RenderXML(c *Context, data ...interface{}) Result {
-	d, err := c.buildData(data)
-	if err != nil {
+	if err := c.setData(data); err != nil {
 		panic(err)
 	}
 	c.setContentTypeIfNotExists("application/xml")
-	buf, err := xml.Marshal(d)
+	buf, err := xml.Marshal(c.Data)
 	if err != nil {
 		panic(err)
 	}
@@ -110,8 +107,7 @@ func RenderText(c *Context, content string) Result {
 // If failed to retrieve the template file, it returns result of text with statusCode.
 // Also ContentType set to "text/html" if not specified.
 func RenderError(c *Context, statusCode int, data ...interface{}) Result {
-	d, err := c.buildData(data)
-	if err != nil {
+	if err := c.setData(data); err != nil {
 		panic(err)
 	}
 	c.setContentTypeIfNotExists("text/html")
@@ -128,7 +124,7 @@ func RenderError(c *Context, statusCode int, data ...interface{}) Result {
 		}
 	}
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, d); err != nil {
+	if err := t.Execute(&buf, c); err != nil {
 		panic(err)
 	}
 	return &resultContent{

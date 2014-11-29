@@ -308,7 +308,7 @@ func TestApplication_ServeHTTP_withPOST(t *testing.T) {
 		}
 
 		actual = w.Body.String()
-		expected = "This is layout\n\nmap[errors:map[] params:map[name:[naoina] type:[human]]]\n\n"
+		expected = "This is layout\n\nmap[params:map[name:[naoina] type:[human]]]\n\n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("POST /post_test body => %#v, want %#v", actual, expected)
 		}

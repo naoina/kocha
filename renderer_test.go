@@ -82,7 +82,7 @@ func TestContext_Render_withoutData(t *testing.T) {
 	}
 
 	actual = c.Data
-	expected = kocha.Data{"errors": c.Errors}
+	expected = nil
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Context.Data => %#v, want %#v", actual, expected)
 	}
@@ -102,7 +102,6 @@ func TestContext_Render_WithContext(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		data["errors"] = c.Errors
 		actual := string(buf)
 		expected := fmt.Sprintf("tmpl_ctx: %v\n", data)
 		if !reflect.DeepEqual(actual, expected) {
@@ -152,10 +151,9 @@ func TestContext_Render_WithContext(t *testing.T) {
 		}
 		actual := string(buf)
 		expected := fmt.Sprintf("tmpl_ctx: %v\n", kocha.Data{
-			"c5":     "v5",
-			"c6":     "test",
-			"c7":     "v7",
-			"errors": c.Errors,
+			"c5": "v5",
+			"c6": "test",
+			"c7": "v7",
 		})
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
@@ -183,12 +181,18 @@ func TestContext_Render_WithContext(t *testing.T) {
 		c := newTestContext("testctrlr_ctx", "")
 		c.Data = kocha.Data{"c1": "v1"}
 		ctx := "test_ctx_override"
-		defer func() {
-			if err := recover(); err == nil {
-				t.Errorf("panic doesn't occurred")
-			}
-		}()
-		kocha.Render(c, ctx)
+		w := httptest.NewRecorder()
+		res := &kocha.Response{ResponseWriter: w}
+		kocha.Render(c, ctx).Proc(res)
+		buf, err := ioutil.ReadAll(w.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual := string(buf)
+		expected := "tmpl_ctx: test_ctx_override\n"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Expect %q, but %q", expected, actual)
+		}
 	}()
 
 	func() {
@@ -197,8 +201,7 @@ func TestContext_Render_WithContext(t *testing.T) {
 		kocha.Render(c)
 		actual := c.Data
 		expected := kocha.Data{
-			"c1":     "v1",
-			"errors": map[string][]*kocha.ParamError(nil),
+			"c1": "v1",
 		}
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Context.Data => %#v, want %#v", actual, expected)
@@ -211,8 +214,7 @@ func TestContext_Render_WithContext(t *testing.T) {
 		kocha.Render(c, ctx)
 		actual := c.Data
 		expected := kocha.Data{
-			"c1":     "v1",
-			"errors": map[string][]*kocha.ParamError(nil),
+			"c1": "v1",
 		}
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Context.Data => %#v, want %#v", actual, expected)
