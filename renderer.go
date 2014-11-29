@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -38,13 +37,12 @@ func Render(c *Context, data ...interface{}) Result {
 		panic(err)
 	}
 	c.setContentTypeIfNotExists("text/html")
-	format := MimeTypeFormats.Get(c.Response.ContentType)
-	if format == "" {
-		panic(fmt.Errorf("kocha: unknown Content-Type: %v", c.Response.ContentType))
+	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
+		panic(err)
 	}
-	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, format)
+	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, c.Format)
 	if t == nil {
-		panic(errors.New("kocha: no such template: " + c.App.Template.Ident(c.App.Config.AppName, c.Layout, c.Name, format)))
+		panic(errors.New("kocha: no such template: " + c.App.Template.Ident(c.App.Config.AppName, c.Layout, c.Name, c.Format)))
 	}
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, d); err != nil {
@@ -117,13 +115,12 @@ func RenderError(c *Context, statusCode int, data ...interface{}) Result {
 		panic(err)
 	}
 	c.setContentTypeIfNotExists("text/html")
-	format := MimeTypeFormats.Get(c.Response.ContentType)
-	if format == "" {
-		panic(fmt.Errorf("kocha: unknown Content-Type: %v", c.Response.ContentType))
+	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
+		panic(err)
 	}
 	c.Response.StatusCode = statusCode
 	name := filepath.Join("error", strconv.Itoa(statusCode))
-	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, name, format)
+	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, name, c.Format)
 	if t == nil {
 		c.Response.ContentType = "text/plain"
 		return &resultContent{

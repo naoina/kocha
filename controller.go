@@ -118,6 +118,7 @@ func (m mimeTypeFormats) Del(mimeType string) {
 type Context struct {
 	Name     string       // controller name.
 	Layout   string       // layout name.
+	Format   string       // format of response.
 	Data     Data         // data for template.
 	Request  *Request     // request.
 	Response *Response    // response.
@@ -173,6 +174,16 @@ func (c *Context) buildData(data []interface{}) (interface{}, error) {
 		c.Data["errors"] = c.Errors
 	}
 	return c.Data, nil
+}
+
+func (c *Context) setFormatFromContentTypeIfNotExists() error {
+	if c.Format != "" {
+		return nil
+	}
+	if c.Format = MimeTypeFormats.Get(c.Response.ContentType); c.Format == "" {
+		return fmt.Errorf("kocha: unknown Content-Type: %v", c.Response.ContentType)
+	}
+	return nil
 }
 
 func (c *Context) prepareRequest(params denco.Params) error {
