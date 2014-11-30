@@ -363,7 +363,7 @@ func TestContext_RenderError(t *testing.T) {
 		t.Fatal(err)
 	}
 	var actual interface{} = string(buf)
-	var expected interface{} = "\nsingle 500 error\n"
+	var expected interface{} = "500 error\n"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %q, but %q", expected, actual)
 	}
@@ -521,10 +521,14 @@ func TestContext_SendFile(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		file, err := ioutil.ReadFile(filepath.Join(c.App.Config.AppPath, "app", "view", "error", "404.html"))
+		if err != nil {
+			t.Fatal(err)
+		}
 		actual := string(buf)
-		expected := http.StatusText(http.StatusNotFound)
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+		expect := string(file)
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`kocha.SendFile(c, "unknown/path").Proc(res); body => %#v; want %#v`, actual, expect)
 		}
 	}()
 

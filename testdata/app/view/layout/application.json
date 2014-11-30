@@ -1,4 +1,4 @@
 {
   "layout": "application",
-  {{template "content" .}}
+  {{yield .}}
 }

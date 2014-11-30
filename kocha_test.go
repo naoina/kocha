@@ -161,16 +161,17 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		body        string
 		contentType string
 	}{
-		{"/", http.StatusOK, "This is layout\n\nThis is root\n\n", "text/html"},
-		{"/user/7", http.StatusOK, "This is layout\n\nThis is user 7\n\n", "text/html"},
-		{"/2013/07/19/user/naoina", http.StatusOK, "This is layout\n\nThis is date naoina: 2013-07-19\n\n", "text/html"},
-		{"/missing", http.StatusNotFound, "Not Found", "text/plain"},
-		{"/error", http.StatusInternalServerError, "This is layout\n\n500 error\n\n", "text/html"},
-		{"/json", http.StatusOK, "{\n  \"layout\": \"application\",\n  \n{\"tmpl5\":\"json\"}\n\n}\n", "application/json"},
-		{"/teapot", http.StatusTeapot, "This is layout\n\nI'm a tea pot\n\n", "text/html"},
+		{"/", http.StatusOK, "This is layout\nThis is root\n\n", "text/html"},
+		{"/user/7", http.StatusOK, "This is layout\nThis is user 7\n\n", "text/html"},
+		{"/2013/07/19/user/naoina", http.StatusOK, "This is layout\nThis is date naoina: 2013-07-19\n\n", "text/html"},
+		{"/missing", http.StatusNotFound, "This is layout\n404 template not found\n\n", "text/html"},
+		{"/error", http.StatusInternalServerError, "This is layout\n500 error\n\n", "text/html"},
+		{"/json", http.StatusOK, "{\n  \"layout\": \"application\",\n  {\"tmpl5\":\"json\"}\n\n}\n", "application/json"},
+		{"/teapot", http.StatusTeapot, "This is layout\nI'm a tea pot\n\n", "text/html"},
 		{"/panic_in_render", http.StatusInternalServerError, "Internal Server Error", "text/plain"},
 		{"/static/robots.txt", http.StatusOK, "# User-Agent: *\n# Disallow: /\n", "text/plain; charset=utf-8"},
-		{"/error_controller_test", http.StatusBadGateway, "Bad Gateway", "text/plain"},
+		// This returns 500 Internal Server Error (not 502 BadGateway) because the file 'error/502.html' not found.
+		{"/error_controller_test", http.StatusInternalServerError, "This is layout\n500 error\n\n", "text/html"},
 	} {
 		func() {
 			defer func() {
@@ -233,7 +234,7 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		}
 
 		actual = w.Body.String()
-		expected = "This is layout\n\nThis is root\n\n"
+		expected = "This is layout\nThis is root\n\n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf(`GET "/" with middlewares => %#v; want %#v`, actual, expected)
 		}
@@ -308,7 +309,7 @@ func TestApplication_ServeHTTP_withPOST(t *testing.T) {
 		}
 
 		actual = w.Body.String()
-		expected = "This is layout\n\nmap[params:map[name:[naoina] type:[human]]]\n\n"
+		expected = "This is layout\nmap[params:map[name:[naoina] type:[human]]]\n\n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("POST /post_test body => %#v, want %#v", actual, expected)
 		}

@@ -1,4 +1,1 @@
-{{define "content"}}
 {"status":418, "text":"I'm a tea pot"}
-{{end}}
-{"single":"tea pot"}

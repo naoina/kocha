@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"html/template"
 	"reflect"
-	"sort"
 	"testing"
 
 	"github.com/naoina/kocha"
@@ -220,15 +219,8 @@ func TestTemplate_Get(t *testing.T) {
 		if tmpl == nil {
 			t.Fatalf(`Template.Get(%#v, %#v, %#v, %#v) => nil, want *template.Template`, appname, a, ctrl, typ)
 		}
-		var actual []string
-		for _, v := range tmpl.Templates() {
-			actual = append(actual, v.Name())
-		}
-		expected := []string{"layout/application.html", "testctrlr.html"}
-		sort.Strings(actual)
-		sort.Strings(expected)
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+		if expect := "testctrlr.html"; tmpl.Lookup(expect) == nil {
+			t.Errorf("template %#v cannot be get", expect)
 		}
 	}()
 
@@ -238,13 +230,8 @@ func TestTemplate_Get(t *testing.T) {
 		if tmpl == nil {
 			t.Fatalf(`Template.Get(%#v, %#v, %#v, %#v) => nil, want *template.Template`, appname, a, ctrl, typ)
 		}
-		var actual []string
-		for _, v := range tmpl.Templates() {
-			actual = append(actual, v.Name())
-		}
-		expected := []string{"testctrlr"}
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+		if expect := "testctrlr.js"; tmpl.Lookup(expect) == nil {
+			t.Errorf("template %#v cannot be get", expect)
 		}
 	}()
 
@@ -254,15 +241,8 @@ func TestTemplate_Get(t *testing.T) {
 		if tmpl == nil {
 			t.Fatalf(`Template.Get(%#v, %#v, %#v, %#v) => nil, want *template.Template`, appname, a, ctrl, typ)
 		}
-		var actual []string
-		for _, v := range tmpl.Templates() {
-			actual = append(actual, v.Name())
-		}
-		expected := []string{"layout/another_layout.html", "testctrlr.html"}
-		sort.Strings(actual)
-		sort.Strings(expected)
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+		if expect := "testctrlr.html"; tmpl.Lookup(expect) == nil {
+			t.Errorf("template %#v cannot be get", expect)
 		}
 	}()
 

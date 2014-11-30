@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/naoina/kocha/util"
@@ -115,8 +114,8 @@ func RenderError(c *Context, statusCode int, data ...interface{}) Result {
 		panic(err)
 	}
 	c.Response.StatusCode = statusCode
-	name := filepath.Join("error", strconv.Itoa(statusCode))
-	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, name, c.Format)
+	c.Name = errorTemplateName(statusCode)
+	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, c.Format)
 	if t == nil {
 		c.Response.ContentType = "text/plain"
 		return &resultContent{
@@ -132,7 +131,7 @@ func RenderError(c *Context, statusCode int, data ...interface{}) Result {
 	}
 }
 
-// Sendfile returns result of any content.
+// SendFile returns result of any content.
 //
 // The path argument specifies an absolute or relative path.
 // If absolute path, read the content from the path as it is.
