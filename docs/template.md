@@ -48,9 +48,7 @@ app/view/root.html:
 
 {% raw %}
 ```html
-{{define "content"}}
 <h1>Welcome to Kocha</h1>
-{{end}}
 ```
 {% endraw %}
 
@@ -93,7 +91,7 @@ app/view/layout/sub.html:
 <html>
 <head></head>
 <body>
-  {{template "content" .}}
+  {{yield .}}
   <p>This is the sub layout.</p>
 </body>
 </html>

@@ -120,9 +120,7 @@ In `app/view/myroom.html`, edit to:
 
 {% raw %}
 ```html
-{{define "content"}}
 <h1>This is {{.name}}'s room</h1>
-{{end}}
 ```
 {% endraw %}
 
