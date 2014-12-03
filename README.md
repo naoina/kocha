@@ -1,4 +1,4 @@
-# Kocha  [![Build Status](https://travis-ci.org/naoina/kocha.png?branch=master)](https://travis-ci.org/naoina/kocha)
+# Kocha [![Build Status](https://travis-ci.org/naoina/kocha.svg?branch=master)](https://travis-ci.org/naoina/kocha)
 
 A convenient web application framework for [Go](http://golang.org/)
 
