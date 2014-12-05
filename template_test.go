@@ -2,6 +2,7 @@ package kocha_test
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"reflect"
 	"testing"
@@ -209,6 +210,35 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 			t.Errorf("no error returned by too many number of context")
 		}
 	}()
+}
+
+func TestTemplateFuncMap_flash(t *testing.T) {
+	c := newTestContext("testctrlr", "")
+	funcMap := template.FuncMap(c.App.Template.FuncMap)
+	for _, v := range []struct {
+		key    string
+		expect string
+	}{
+		{"", ""},
+		{"success", "test succeeded"},
+		{"success", "test successful"},
+		{"error", "test failed"},
+		{"error", "test failure"},
+	} {
+		c.Flash = kocha.Flash{}
+		c.Flash.Set(v.key, v.expect)
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(fmt.Sprintf(`{{flash . "unknown"}}{{flash . "%s"}}`, v.key)))
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, c); err != nil {
+			t.Error(err)
+			continue
+		}
+		actual := buf.String()
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`{{flash . %#v}} => %#v; want %#v`, v.key, actual, expect)
+		}
+	}
 }
 
 func TestTemplate_Get(t *testing.T) {

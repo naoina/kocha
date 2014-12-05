@@ -74,6 +74,7 @@ func (t *Template) buildFuncMap() (*Template, error) {
 		"nl2br":           t.nl2br,
 		"raw":             t.raw,
 		"invoke_template": t.invokeTemplate,
+		"flash":           t.flash,
 	}
 	for name, fn := range t.FuncMap {
 		m[name] = fn
@@ -241,6 +242,12 @@ func (t *Template) invokeTemplate(unit Unit, tmplName, defTmplName string, conte
 		html, err = t.readPartialTemplate(defTmplName, ctx)
 	})
 	return html, err
+}
+
+// flash is for "flash" template function.
+// This is a shorthand for {{.Flash.Get "success"}} in template.
+func (t *Template) flash(c *Context, key string) string {
+	return c.Flash.Get(key)
 }
 
 func (t *Template) readPartialTemplate(name string, ctx interface{}) (template.HTML, error) {
