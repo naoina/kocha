@@ -56,39 +56,7 @@ func newTestContext(name, layout string) *kocha.Context {
 	}
 }
 
-func TestContext_Render_withTooManyData(t *testing.T) {
-	defer func() {
-		if err := recover(); err == nil {
-			t.Error("panic doesn't happened")
-		}
-	}()
-	c := newTestContext("testctrlr", "")
-	kocha.Render(c, kocha.Data{}, kocha.Data{})
-}
-
-func TestContext_Render_withoutData(t *testing.T) {
-	c := newTestContext("testctrlr", "")
-	w := httptest.NewRecorder()
-	res := &kocha.Response{ResponseWriter: w}
-	kocha.Render(c).Proc(res)
-	buf, err := ioutil.ReadAll(w.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var actual interface{} = string(buf)
-	var expected interface{} = "tmpl\n"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %q, but %q", expected, actual)
-	}
-
-	actual = c.Data
-	expected = nil
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Context.Data => %#v, want %#v", actual, expected)
-	}
-}
-
-func TestContext_Render_WithContext(t *testing.T) {
+func TestContext_Render(t *testing.T) {
 	func() {
 		c := newTestContext("testctrlr_ctx", "")
 		data := kocha.Data{
@@ -120,7 +88,7 @@ func TestContext_Render_WithContext(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 		res := &kocha.Response{ResponseWriter: w}
-		kocha.Render(c).Proc(res)
+		kocha.Render(c, nil).Proc(res)
 		buf, err := ioutil.ReadAll(w.Body)
 		if err != nil {
 			t.Fatal(err)
@@ -198,7 +166,7 @@ func TestContext_Render_WithContext(t *testing.T) {
 	func() {
 		c := newTestContext("testctrlr_ctx", "")
 		c.Data = kocha.Data{"c1": "v1"}
-		kocha.Render(c)
+		kocha.Render(c, nil)
 		actual := c.Data
 		expected := kocha.Data{
 			"c1": "v1",
@@ -220,20 +188,6 @@ func TestContext_Render_WithContext(t *testing.T) {
 			t.Errorf("Context.Data => %#v, want %#v", actual, expected)
 		}
 	}()
-
-	func() {
-		c := newTestContext("testctrlr_ctx", "")
-		c.Data = kocha.Data{"c1": "v1", "errors": "testerr"}
-		kocha.Render(c)
-		actual := c.Data
-		expected := kocha.Data{
-			"c1":     "v1",
-			"errors": "testerr",
-		}
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Controller.Data => %#v, want %#v", actual, expected)
-		}
-	}()
 }
 
 func TestContext_Render_withContentType(t *testing.T) {
@@ -241,7 +195,7 @@ func TestContext_Render_withContentType(t *testing.T) {
 	c.Response.ContentType = "application/json"
 	w := httptest.NewRecorder()
 	res := &kocha.Response{ResponseWriter: w}
-	kocha.Render(c).Proc(res)
+	kocha.Render(c, nil).Proc(res)
 	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -261,7 +215,7 @@ func TestContext_Render_withMissingTemplateInAppName(t *testing.T) {
 	}()
 	c := newTestContext("testctrlr", "")
 	c.App.Config.AppName = "unknownAppName"
-	kocha.Render(c)
+	kocha.Render(c, nil)
 }
 
 func TestContext_Render_withMissingTemplate(t *testing.T) {
@@ -272,14 +226,14 @@ func TestContext_Render_withMissingTemplate(t *testing.T) {
 	}()
 	c := newTestContext("testctrlr", "")
 	c.Name = "unknownctrlr"
-	kocha.Render(c)
+	kocha.Render(c, nil)
 }
 
 func TestContext_Render_withAnotherLayout(t *testing.T) {
 	c := newTestContext("testctrlr", "another_layout")
 	w := httptest.NewRecorder()
 	res := &kocha.Response{ResponseWriter: w}
-	kocha.Render(c).Proc(res)
+	kocha.Render(c, nil).Proc(res)
 	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -357,7 +311,7 @@ func TestContext_RenderError(t *testing.T) {
 	c := newTestContext("testctrlr", "")
 	w := httptest.NewRecorder()
 	res := &kocha.Response{ResponseWriter: w}
-	kocha.RenderError(c, http.StatusInternalServerError).Proc(res)
+	kocha.RenderError(c, http.StatusInternalServerError, nil).Proc(res)
 	buf, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -376,7 +330,7 @@ func TestContext_RenderError(t *testing.T) {
 	c = newTestContext("testctrlr", "")
 	w = httptest.NewRecorder()
 	res = &kocha.Response{ResponseWriter: w}
-	kocha.RenderError(c, http.StatusBadRequest).Proc(res)
+	kocha.RenderError(c, http.StatusBadRequest, nil).Proc(res)
 	buf, err = ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -396,7 +350,7 @@ func TestContext_RenderError(t *testing.T) {
 	c.Response.ContentType = "application/json"
 	w = httptest.NewRecorder()
 	res = &kocha.Response{ResponseWriter: w}
-	kocha.RenderError(c, http.StatusInternalServerError).Proc(res)
+	kocha.RenderError(c, http.StatusInternalServerError, nil).Proc(res)
 	buf, err = ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -420,23 +374,13 @@ func TestContext_RenderError(t *testing.T) {
 			}
 		}()
 		c.Response.ContentType = "unknown/content-type"
-		kocha.RenderError(c, http.StatusInternalServerError)
-	}()
-
-	func() {
-		c = newTestContext("testctrlr", "")
-		defer func() {
-			if err := recover(); err == nil {
-				t.Errorf("panic doesn't happened")
-			}
-		}()
-		kocha.RenderError(c, http.StatusInternalServerError, nil, nil)
+		kocha.RenderError(c, http.StatusInternalServerError, nil)
 	}()
 
 	c = newTestContext("testctrlr", "")
 	w = httptest.NewRecorder()
 	res = &kocha.Response{ResponseWriter: w}
-	kocha.RenderError(c, http.StatusTeapot).Proc(res)
+	kocha.RenderError(c, http.StatusTeapot, nil).Proc(res)
 	buf, err = ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)

@@ -16,23 +16,20 @@ import (
 
 // Render returns result of template.
 //
-// The data variadic argument must be without specified or only one.
 // A data to used will be determined the according to the following rules.
 //
-// 1. If data of the Data type is given, it will be merged with Context.Data and it will be used.
+// 1. If data of the Data type is given, it will be merged to Context.Data.
 //
-// 2. If data of an other type is given, it will be used as it is.
+// 2. If data of another type is given, it will be set to Context.Data.
 //
-// 3. If data isn't given, Context.Data will be used.
+// 3. If data is nil, Context.Data as is.
 //
 // Render retrieve a template file from controller name and c.Response.ContentType.
 // e.g. If controller name is "root" and ContentType is "application/xml", Render will
 // try to retrieve the template file "root.xml".
 // Also ContentType set to "text/html" if not specified.
-func Render(c *Context, data ...interface{}) Result {
-	if err := c.setData(data); err != nil {
-		panic(err)
-	}
+func Render(c *Context, data interface{}) Result {
+	c.setData(data)
 	c.setContentTypeIfNotExists("text/html")
 	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
 		panic(err)
@@ -54,10 +51,8 @@ func Render(c *Context, data ...interface{}) Result {
 //
 // RenderJSON is similar to Render but data will be encoded to JSON.
 // ContentType set to "application/json" if not specified.
-func RenderJSON(c *Context, data ...interface{}) Result {
-	if err := c.setData(data); err != nil {
-		panic(err)
-	}
+func RenderJSON(c *Context, data interface{}) Result {
+	c.setData(data)
 	c.setContentTypeIfNotExists("application/json")
 	buf, err := json.Marshal(c.Data)
 	if err != nil {
@@ -72,10 +67,8 @@ func RenderJSON(c *Context, data ...interface{}) Result {
 //
 // RenderXML is similar to Render but data will be encoded to XML.
 // ContentType set to "application/xml" if not specified.
-func RenderXML(c *Context, data ...interface{}) Result {
-	if err := c.setData(data); err != nil {
-		panic(err)
-	}
+func RenderXML(c *Context, data interface{}) Result {
+	c.setData(data)
 	c.setContentTypeIfNotExists("application/xml")
 	buf, err := xml.Marshal(c.Data)
 	if err != nil {
@@ -104,10 +97,8 @@ func RenderText(c *Context, content string) Result {
 // try to retrieve the template file "errors/500.xml".
 // If failed to retrieve the template file, it returns result of text with statusCode.
 // Also ContentType set to "text/html" if not specified.
-func RenderError(c *Context, statusCode int, data ...interface{}) Result {
-	if err := c.setData(data); err != nil {
-		panic(err)
-	}
+func RenderError(c *Context, statusCode int, data interface{}) Result {
+	c.setData(data)
 	c.setContentTypeIfNotExists("text/html")
 	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
 		panic(err)
@@ -154,7 +145,7 @@ func SendFile(c *Context, path string) Result {
 			path = filepath.Join(c.App.Config.AppPath, StaticDir, path)
 		}
 		if _, err := os.Stat(path); err != nil {
-			return RenderError(c, http.StatusNotFound)
+			return RenderError(c, http.StatusNotFound, nil)
 		}
 		var err error
 		if file, err = os.Open(path); err != nil {

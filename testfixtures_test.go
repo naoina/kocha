@@ -172,7 +172,7 @@ type FixtureJsonTestCtrl struct {
 
 func (ctrl *FixtureJsonTestCtrl) GET(c *Context) Result {
 	c.Response.ContentType = "application/json"
-	return Render(c)
+	return Render(c, nil)
 }
 
 type FixtureRootTestCtrl struct {
@@ -180,7 +180,7 @@ type FixtureRootTestCtrl struct {
 }
 
 func (ctrl *FixtureRootTestCtrl) GET(c *Context) Result {
-	return Render(c)
+	return Render(c, nil)
 }
 
 type FixtureTeapotTestCtrl struct {
@@ -189,7 +189,7 @@ type FixtureTeapotTestCtrl struct {
 
 func (ctrl *FixtureTeapotTestCtrl) GET(c *Context) Result {
 	c.Response.StatusCode = http.StatusTeapot
-	return Render(c)
+	return Render(c, nil)
 }
 
 type FixtureInvalidReturnValueTypeTestCtrl struct {

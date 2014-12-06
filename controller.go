@@ -60,32 +60,32 @@ type DefaultController struct {
 
 // GET implements Getter interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) GET(c *Context) Result {
-	return RenderError(c, http.StatusMethodNotAllowed)
+	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
 // POST implements Poster interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) POST(c *Context) Result {
-	return RenderError(c, http.StatusMethodNotAllowed)
+	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
 // PUT implements Putter interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) PUT(c *Context) Result {
-	return RenderError(c, http.StatusMethodNotAllowed)
+	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
 // DELETE implements Deleter interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) DELETE(c *Context) Result {
-	return RenderError(c, http.StatusMethodNotAllowed)
+	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
 // HEAD implements Header interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) HEAD(c *Context) Result {
-	return RenderError(c, http.StatusMethodNotAllowed)
+	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
 // PATCH implements Patcher interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) PATCH(c *Context) Result {
-	return RenderError(c, http.StatusMethodNotAllowed)
+	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
 type mimeTypeFormats map[string]string
@@ -143,30 +143,25 @@ func (c *Context) setContentTypeIfNotExists(contentType string) {
 	}
 }
 
-func (c *Context) setData(data []interface{}) error {
-	switch len(data) {
-	case 1:
-		d, ok := data[0].(Data)
-		if !ok {
-			c.Data = data[0]
-			return nil
-		}
-		if data, ok := c.Data.(Data); ok {
-			if data == nil {
-				data = Data{}
-			}
-			for k, v := range d {
-				data[k] = v
-			}
-			d = data
-		}
-		c.Data = d
-	case 0:
-		// do nothing.
-	default: // > 1
-		return fmt.Errorf("too many arguments")
+func (c *Context) setData(data interface{}) {
+	if data == nil {
+		return
 	}
-	return nil
+	d, ok := data.(Data)
+	if !ok {
+		c.Data = data
+		return
+	}
+	if data, ok := c.Data.(Data); ok {
+		if data == nil {
+			data = Data{}
+		}
+		for k, v := range d {
+			data[k] = v
+		}
+		d = data
+	}
+	c.Data = d
 }
 
 func (c *Context) setFormatFromContentTypeIfNotExists() error {
@@ -219,7 +214,7 @@ type StaticServe struct {
 func (ss *StaticServe) GET(c *Context) Result {
 	path, err := url.Parse(c.Params.Get("path"))
 	if err != nil {
-		return RenderError(c, http.StatusBadRequest)
+		return RenderError(c, http.StatusBadRequest, nil)
 	}
 	return SendFile(c, path.Path)
 }
@@ -236,5 +231,5 @@ type ErrorController struct {
 }
 
 func (ec *ErrorController) GET(c *Context) Result {
-	return RenderError(c, ec.StatusCode)
+	return RenderError(c, ec.StatusCode, nil)
 }
