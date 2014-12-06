@@ -109,7 +109,7 @@ type Myroom struct {
 }
 
 func (c *Myroom) Get(c *kocha.Context) kocha.Result {
-    return c.Render(kocha.Data{
+    return kocha.Render(c, kocha.Data{
         "name": "Alice",
     })
 }
@@ -162,7 +162,7 @@ Second, In `app/controller/myroom.go`, edit:
 {% raw %}
 ```go
 func (c *Myroom) Get(c *kocha.Context) kocha.Result {
-    return c.Render(kocha.Data{
+    return kocha.Render(c, kocha.Data{
         "name": "Alice",
     })
 }
@@ -174,7 +174,7 @@ to
 {% raw %}
 ```go
 func (c *Myroom) Get(c *kocha.Context) kocha.Result {
-    return c.Render(kocha.Data{
+    return kocha.Render(c, kocha.Data{
         "name": c.Params.Get("name"),
     })
 }
