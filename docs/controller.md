@@ -57,7 +57,7 @@ Render a template that collect from a template directory in boot time (Usually, 
 
 ```go
 func (r *Root) GET(c *kocha.Context) kocha.Result {
-    return kocha.Render(c)
+    return kocha.Render(c, nil)
 }
 ```
 
@@ -69,7 +69,7 @@ e.g.
 ```go
 func (r *Root) GET(c *kocha.Context) kocha.Result {
     c.Response.ContentType = "application/json"
-    return kocha.Render(c)
+    return kocha.Render(c, nil)
 }
 ```
 
@@ -139,7 +139,7 @@ Render template (or returns status text) with status code.
 
 ```go
 func (r *Root) GET(c *kocha.Context) kocha.Result {
-    return kocha.RenderError(c, http.StatusBadRequest)
+    return kocha.RenderError(c, http.StatusBadRequest, nil)
 }
 ```
 

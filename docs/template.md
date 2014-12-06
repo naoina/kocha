@@ -104,7 +104,7 @@ In app/controller/root.go:
 ```go
 func (r *Root) GET(c *kocha.Context) kocha.Result {
     c.Layout = "sub"
-    return kocha.Render(c)
+    return kocha.Render(c, nil)
 }
 ```
 {% endraw %}

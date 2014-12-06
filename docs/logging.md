@@ -32,7 +32,7 @@ In controller:
 ```go
 func (r *Root) GET(c *kocha.Context) kocha.Result {
     c.App.Logger.Info("This is a root")
-    return kocha.Render(c)
+    return kocha.Render(c, nil)
 }
 ```
 
