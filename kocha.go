@@ -244,8 +244,8 @@ func (app *Application) panicHandler(w http.ResponseWriter) {
 
 func (app *Application) logStackAndError(err interface{}) {
 	buf := make([]byte, 4096)
-	runtime.Stack(buf, false)
-	app.Logger.Errorf("%v\n%v", err, string(buf))
+	n := runtime.Stack(buf, false)
+	app.Logger.Errorf("%v\n%s", err, buf[:n])
 }
 
 // Config represents a application-scope configuration.
