@@ -43,7 +43,7 @@ Install the Kocha framework:
 
 And command line tool:
 
-    go get -u github.com/naoina/kocha/kocha/...
+    go get -u github.com/naoina/kocha/cmd/...
 
 NOTE: If you want to use a specific Go version and/or specific GOPATH, please use a Go version manager such as [gvm](https://github.com/moovweb/gvm).
 
