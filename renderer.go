@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -34,9 +33,9 @@ func Render(c *Context, data interface{}) Result {
 	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
 		panic(err)
 	}
-	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, c.Format)
-	if t == nil {
-		panic(errors.New("kocha: no such template: " + c.App.Template.Ident(c.App.Config.AppName, c.Layout, c.Name, c.Format)))
+	t, err := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, c.Format)
+	if err != nil {
+		panic(err)
 	}
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, c); err != nil {
@@ -105,8 +104,8 @@ func RenderError(c *Context, statusCode int, data interface{}) Result {
 	}
 	c.Response.StatusCode = statusCode
 	c.Name = errorTemplateName(statusCode)
-	t := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, c.Format)
-	if t == nil {
+	t, err := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, c.Format)
+	if err != nil {
 		c.Response.ContentType = "text/plain"
 		return &resultContent{
 			Body: bytes.NewReader([]byte(http.StatusText(statusCode))),

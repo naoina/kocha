@@ -35,22 +35,24 @@ type Template struct {
 }
 
 // Get gets a parsed template.
-func (t *Template) Get(appName, layout, name, format string) *template.Template {
+func (t *Template) Get(appName, layout, name, format string) (*template.Template, error) {
+	var r *template.Template
+	name = util.ToSnakeCase(name)
 	tmpl := t.m[appName][format]
 	if tmpl == nil {
-		return nil
+		goto ErrNotFound
 	}
 	if layout != "" {
-		name = filepath.Join(LayoutDir, layout)
+		r = tmpl.Lookup(filepath.Join(LayoutDir, layout) + "." + format)
 	} else {
-		name = util.ToSnakeCase(name)
+		r = tmpl.Lookup(name + "." + format)
 	}
-	r := tmpl.Lookup(name + "." + format)
-	return r
-}
-
-func (t *Template) Ident(appName, layoutName, name, format string) string {
-	return fmt.Sprintf("%s:%s %s.%s", appName, layoutName, util.ToSnakeCase(name), format)
+	if r == nil {
+		goto ErrNotFound
+	}
+	return r, nil
+ErrNotFound:
+	return nil, fmt.Errorf("kocha: template not found: %s:%s/%s.%s", appName, layout, name, format)
 }
 
 func (t *Template) build(app *Application) (*Template, error) {
@@ -178,9 +180,9 @@ func (t *Template) relativePath(targpath string) string {
 }
 
 func (t *Template) yield(c *Context) (template.HTML, error) {
-	tmpl := t.Get(t.app.Config.AppName, "", c.Name, c.Format)
-	if tmpl == nil {
-		return "", fmt.Errorf("%s: template not found", c.Name)
+	tmpl, err := t.Get(t.app.Config.AppName, "", c.Name, c.Format)
+	if err != nil {
+		return "", err
 	}
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, c); err != nil {
@@ -251,9 +253,9 @@ func (t *Template) flash(c *Context, key string) string {
 }
 
 func (t *Template) readPartialTemplate(name string, ctx interface{}) (template.HTML, error) {
-	tmpl := t.Get(t.app.Config.AppName, "", name, "html")
-	if tmpl == nil {
-		return "", fmt.Errorf("%v: template not found", name)
+	tmpl, err := t.Get(t.app.Config.AppName, "", name, "html")
+	if err != nil {
+		return "", err
 	}
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, ctx); err != nil {

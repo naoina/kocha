@@ -244,72 +244,46 @@ func TestTemplateFuncMap_flash(t *testing.T) {
 func TestTemplate_Get(t *testing.T) {
 	app := kocha.NewTestApp()
 	func() {
-		appname, a, ctrl, typ := "appname", "application", "testctrlr", "html"
-		tmpl := app.Template.Get(appname, a, ctrl, typ)
-		if tmpl == nil {
-			t.Fatalf(`Template.Get(%#v, %#v, %#v, %#v) => nil, want *template.Template`, appname, a, ctrl, typ)
-		}
-		if expect := "testctrlr.html"; tmpl.Lookup(expect) == nil {
-			t.Errorf("template %#v cannot be get", expect)
-		}
-	}()
-
-	func() {
-		appname, a, ctrl, typ := "appname", "", "testctrlr", "js"
-		tmpl := app.Template.Get(appname, a, ctrl, typ)
-		if tmpl == nil {
-			t.Fatalf(`Template.Get(%#v, %#v, %#v, %#v) => nil, want *template.Template`, appname, a, ctrl, typ)
-		}
-		if expect := "testctrlr.js"; tmpl.Lookup(expect) == nil {
-			t.Errorf("template %#v cannot be get", expect)
+		for _, v := range []struct {
+			appName   string
+			layout    string
+			ctrlrName string
+			format    string
+		}{
+			{"appname", "application", "testctrlr", "html"},
+			{"appname", "", "testctrlr", "js"},
+			{"appname", "another_layout", "testctrlr", "html"},
+		} {
+			tmpl, err := app.Template.Get(v.appName, v.layout, v.ctrlrName, v.format)
+			var actual interface{} = err
+			var expect interface{} = nil
+			if !reflect.DeepEqual(actual, expect) {
+				t.Fatalf(`Template.Get(%#v, %#v, %#v, %#v) => %T, %#v, want *template.Template, %#v`, v.appName, v.layout, v.ctrlrName, v.format, tmpl, actual, expect)
+			}
 		}
 	}()
 
 	func() {
-		appname, a, ctrl, typ := "appname", "another_layout", "testctrlr", "html"
-		tmpl := app.Template.Get(appname, a, ctrl, typ)
-		if tmpl == nil {
-			t.Fatalf(`Template.Get(%#v, %#v, %#v, %#v) => nil, want *template.Template`, appname, a, ctrl, typ)
-		}
-		if expect := "testctrlr.html"; tmpl.Lookup(expect) == nil {
-			t.Errorf("template %#v cannot be get", expect)
-		}
-	}()
-
-	func() {
-		actual := app.Template.Get("unknownAppName", "app", "test_tmpl1", "html")
-		if actual != nil {
-			t.Errorf("Expect %v, but %v", nil, actual)
-		}
-	}()
-
-	func() {
-		actual := app.Template.Get("testAppName", "app", "unknown_tmpl1", "html")
-		if actual != nil {
-			t.Errorf("Expect %v, but %v", nil, actual)
-		}
-	}()
-
-	func() {
-		actual := app.Template.Get("testAppName", "app", "test_tmpl1", "xml")
-		if actual != nil {
-			t.Errorf("Expect %v, but %v", nil, actual)
+		for _, v := range []struct {
+			appName   string
+			layout    string
+			ctrlrName string
+			format    string
+			expectErr error
+		}{
+			{"unknownAppName", "app", "test_tmpl1", "html", fmt.Errorf("kocha: template not found: unknownAppName:app/test_tmpl1.html")},
+			{"testAppName", "app", "unknown_tmpl1", "html", fmt.Errorf("kocha: template not found: testAppName:app/unknown_tmpl1.html")},
+			{"testAppName", "app", "test_tmpl1", "xml", fmt.Errorf("kocha: template not found: testAppName:app/test_tmpl1.xml")},
+			{"testAppName", "", "test_tmpl1", "xml", fmt.Errorf("kocha: template not found: testAppName:/test_tmpl1.xml")},
+		} {
+			tmpl, err := app.Template.Get(v.appName, v.layout, v.ctrlrName, v.format)
+			actual := tmpl
+			expect := (*template.Template)(nil)
+			actualErr := err
+			expectErr := v.expectErr
+			if !reflect.DeepEqual(actual, expect) || !reflect.DeepEqual(actualErr, expectErr) {
+				t.Errorf(`Template.Get(%#v, %#v, %#v, %#v) => %#v, %#v, ; want %#v, %#v`, v.appName, v.layout, v.ctrlrName, v.format, actual, actualErr, expect, expectErr)
+			}
 		}
 	}()
-}
-
-func TestTemplate_Ident(t *testing.T) {
-	app := kocha.NewTestApp()
-	for expected, args := range map[string][]string{
-		"a:b c.html":   []string{"a", "b", "c", "html"},
-		"b:a c.html":   []string{"b", "a", "c", "html"},
-		"a:b c.js":     []string{"a", "b", "c", "js"},
-		"a:b c_d.html": []string{"a", "b", "cD", "html"},
-		"a:b c_d_e.js": []string{"a", "b", "CDE", "js"},
-	} {
-		actual := app.Template.Ident(args[0], args[1], args[2], args[3])
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
-		}
-	}
 }
