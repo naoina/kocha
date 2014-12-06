@@ -21,8 +21,7 @@ import (
 //
 // 1. If data of the Data type is given, it will be merged with Context.Data and it will be used.
 //
-// 2. If data of an other type is given and Context.Data hasn't been set, it will be used as it is.
-//    Or it panics if Context.Data has been set.
+// 2. If data of an other type is given, it will be used as it is.
 //
 // 3. If data isn't given, Context.Data will be used.
 //
