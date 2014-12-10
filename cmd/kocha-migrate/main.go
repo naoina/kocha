@@ -75,7 +75,7 @@ func (c *migrateCommand) Run(args []string) error {
 	}
 	_, filename, _, _ := runtime.Caller(0)
 	skeletonDir := filepath.Join(filepath.Dir(filename), "skeleton", "migrate")
-	t := template.Must(template.ParseFiles(filepath.Join(skeletonDir, direction+".go.template")))
+	t := template.Must(template.ParseFiles(filepath.Join(skeletonDir, direction+".go"+util.TemplateSuffix)))
 	mainFilePath := filepath.ToSlash(filepath.Join(tmpDir, "migrate.go"))
 	file, err := os.Create(mainFilePath)
 	if err != nil {

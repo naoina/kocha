@@ -3,6 +3,8 @@ package main
 import (
 	"path/filepath"
 	"runtime"
+
+	"github.com/naoina/kocha/util"
 )
 
 // GenmaiModelType implements ModelTyper interface.
@@ -45,8 +47,8 @@ func (mt *GenmaiModelType) FieldTypeMap() map[string]ModelFieldType {
 
 // TemplatePath returns paths that templates of Genmai ORM for model generation.
 func (mt *GenmaiModelType) TemplatePath() (templatePath string, configTemplatePath string) {
-	templatePath = filepath.Join(skeletonDir("model"), "genmai", "genmai.go.template")
-	configTemplatePath = filepath.Join(skeletonDir("model"), "genmai", "config.go.template")
+	templatePath = filepath.Join(skeletonDir("model"), "genmai", "genmai.go"+util.TemplateSuffix)
+	configTemplatePath = filepath.Join(skeletonDir("model"), "genmai", "config.go"+util.TemplateSuffix)
 	return templatePath, configTemplatePath
 }
 

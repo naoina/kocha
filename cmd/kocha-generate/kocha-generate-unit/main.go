@@ -46,7 +46,7 @@ func (c *generateUnitCommand) Run(args []string) error {
 		"Name": camelCaseName,
 	}
 	if err := util.CopyTemplate(
-		filepath.Join(skeletonDir("unit"), "unit.go.template"),
+		filepath.Join(skeletonDir("unit"), "unit.go"+util.TemplateSuffix),
 		filepath.Join("app", "unit", snakeCaseName+".go"), data); err != nil {
 		return err
 	}

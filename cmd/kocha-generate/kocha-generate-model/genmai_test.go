@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
+
+	"github.com/naoina/kocha/util"
 )
 
 func TestGenmaiModelType_FieldTypeMap(t *testing.T) {
@@ -51,12 +53,12 @@ func TestGenmaiModelType_TemplatePath(t *testing.T) {
 	basepath := filepath.Dir(filename)
 	path1, path2 := (&GenmaiModelType{}).TemplatePath()
 	actual := path1
-	expected := filepath.Join(basepath, "skeleton", "model", "genmai", "genmai.go.template")
+	expected := filepath.Join(basepath, "skeleton", "model", "genmai", "genmai.go"+util.TemplateSuffix)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("(&GenmaiModelType{}).TemplatePath() => %q, $, want %q, $", actual, expected)
 	}
 	actual = path2
-	expected = filepath.Join(basepath, "skeleton", "model", "genmai", "config.go.template")
+	expected = filepath.Join(basepath, "skeleton", "model", "genmai", "config.go"+util.TemplateSuffix)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("(&GenmaiModelType{}).TemplatePath() => $, %q, want $, %q", actual, expected)
 	}

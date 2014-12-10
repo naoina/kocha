@@ -67,12 +67,12 @@ func (c *generateControllerCommand) Run(args []string) error {
 		"Receiver": receiverName,
 	}
 	if err := util.CopyTemplate(
-		filepath.Join(skeletonDir("controller"), "controller.go.template"),
+		filepath.Join(skeletonDir("controller"), "controller.go"+util.TemplateSuffix),
 		filepath.Join("app", "controller", snakeCaseName+".go"), data); err != nil {
 		return err
 	}
 	if err := util.CopyTemplate(
-		filepath.Join(skeletonDir("controller"), "view.html"),
+		filepath.Join(skeletonDir("controller"), "view.html"+util.TemplateSuffix),
 		filepath.Join("app", "view", snakeCaseName+".html"), data); err != nil {
 		return err
 	}

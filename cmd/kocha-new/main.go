@@ -61,7 +61,7 @@ func (c *newCommand) Run(args []string) error {
 		if info.IsDir() {
 			return nil
 		}
-		dstPath := filepath.Join(dstBasePath, strings.TrimSuffix(strings.TrimPrefix(path, skeletonDir), ".template"))
+		dstPath := filepath.Join(dstBasePath, strings.TrimSuffix(strings.TrimPrefix(path, skeletonDir), util.TemplateSuffix))
 		dstDir := filepath.Dir(dstPath)
 		dirCreated, err := mkdirAllIfNotExists(dstDir)
 		if err != nil {

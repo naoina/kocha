@@ -78,7 +78,7 @@ func (c *buildCommand) Run(args []string) error {
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
 	skeletonDir := filepath.Join(baseDir, "skeleton", "build")
-	mainTemplate, err := ioutil.ReadFile(filepath.Join(skeletonDir, "main.go.template"))
+	mainTemplate, err := ioutil.ReadFile(filepath.Join(skeletonDir, "main.go"+util.TemplateSuffix))
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (c *buildCommand) Run(args []string) error {
 		return fmt.Errorf("failed to create file: %v", err)
 	}
 	defer file.Close()
-	builderTemplatePath := filepath.ToSlash(filepath.Join(skeletonDir, "builder.go.template"))
+	builderTemplatePath := filepath.ToSlash(filepath.Join(skeletonDir, "builder.go"+util.TemplateSuffix))
 	t := template.Must(template.ParseFiles(builderTemplatePath))
 	var resources map[string]string
 	if c.option.All {

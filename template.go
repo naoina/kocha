@@ -134,7 +134,7 @@ func (t *Template) collectTemplatePaths(templatePaths map[string]map[string]stri
 		if err != nil {
 			return err
 		}
-		name, ext := util.SplitExt(baseName)
+		name, ext := util.SplitExt(strings.TrimSuffix(baseName, util.TemplateSuffix))
 		if _, exists := templatePaths[ext]; !exists {
 			templatePaths[ext] = make(map[string]string)
 		}
@@ -161,7 +161,8 @@ func (t *Template) buildAppTemplateSet(appTemplateSet map[string]*template.Templ
 				templateBytes = b
 				t.app.ResourceSet.Add(fmt.Sprintf("_kocha_%s.%s", path, ext), b)
 			}
-			if _, err := tmpl.New(t.relativePath(path)).Funcs(template.FuncMap(t.FuncMap)).Parse(string(templateBytes)); err != nil {
+			name := strings.TrimSuffix(t.relativePath(path), util.TemplateSuffix)
+			if _, err := tmpl.New(name).Funcs(template.FuncMap(t.FuncMap)).Parse(string(templateBytes)); err != nil {
 				return err
 			}
 		}

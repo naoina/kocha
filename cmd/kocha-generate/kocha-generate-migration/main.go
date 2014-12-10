@@ -79,7 +79,7 @@ func (c *generateMigrationCommand) Run(args []string) error {
 		"TxType":     reflect.TypeOf(orm.TransactionType()).String(),
 	}
 	if err := util.CopyTemplate(
-		filepath.Join(skeletonDir("migration"), "migration.go.template"),
+		filepath.Join(skeletonDir("migration"), "migration.go"+util.TemplateSuffix),
 		filepath.Join("db", "migration", fmt.Sprintf("%v_%v.go", now, util.ToSnakeCase(name))),
 		data,
 	); err != nil {
@@ -92,7 +92,7 @@ func (c *generateMigrationCommand) Run(args []string) error {
 			return err
 		}
 		if err := util.CopyTemplate(
-			filepath.Join(skeletonDir("migration"), "init.go.template"),
+			filepath.Join(skeletonDir("migration"), "init.go"+util.TemplateSuffix),
 			initPath, map[string]interface{}{
 				"typeName":     c.option.ORM,
 				"tx":           strings.TrimSpace(util.GoString(orm)),

@@ -30,6 +30,10 @@ import (
 	"github.com/jessevdk/go-flags"
 )
 
+const (
+	TemplateSuffix = ".tmpl"
+)
+
 var (
 	// Now returns current time. This is for mock in tests.
 	Now = func() time.Time { return time.Now() }
@@ -137,7 +141,7 @@ func CopyTemplate(srcPath, dstPath string, data map[string]interface{}) error {
 		return fmt.Errorf("kocha: failed to process template: %v: %v", srcPath, err)
 	}
 	buf := bufFrom.Bytes()
-	if strings.HasSuffix(srcPath, ".go.template") {
+	if strings.HasSuffix(srcPath, ".go"+TemplateSuffix) {
 		if buf, err = format.Source(buf); err != nil {
 			return fmt.Errorf("kocha: failed to gofmt: %v: %v", srcPath, err)
 		}
