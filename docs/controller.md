@@ -61,7 +61,7 @@ func (r *Root) GET(c *kocha.Context) kocha.Result {
 }
 ```
 
-By default, template type is `text/html`. It responds `app/view/root.html`. (Where *root* in *root.html* is the Controller name mapped to snake case)
+By default, template type is `text/html`. It responds `app/view/root.html.tmpl`. (Where *root* in *root.html.tmpl* is the Controller name mapped to snake case)
 If ContentType isn't specified, render the file type specific template that it detects by ContentType.
 
 e.g.

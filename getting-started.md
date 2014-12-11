@@ -116,7 +116,7 @@ func (c *Myroom) Get(c *kocha.Context) kocha.Result {
 ```
 {% endraw %}
 
-In `app/view/myroom.html`, edit to:
+In `app/view/myroom.html.tmpl`, edit to:
 
 {% raw %}
 ```html

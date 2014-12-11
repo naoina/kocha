@@ -31,8 +31,8 @@ Kocha uses standard Go template format that provided by [html/template](http://g
 `-- app
     `-- view
         |-- layout
-        |   `-- app.html    # A layout file for HTML file type
-        `-- root.html       # HTML template file for Root controller
+        |   `-- app.html.tmpl    # A layout file for HTML file type
+        `-- root.html.tmpl       # HTML template file for Root controller
 ```
 
 ## Basics <a id="Basics"></a>
@@ -40,11 +40,11 @@ Kocha uses standard Go template format that provided by [html/template](http://g
 Template is highly related with [Controller]({{ page.root }}/docs/controller.html).
 
 When Controller name is `root`, a template file name **MUST** be `app/view/root.[extension]`.
-`[extension]` is `html` by default. (See [File types](#File-types))
+`[extension]` is `html.tmpl` by default. (See [File types](#File-types))
 
-Use `html` extension in this example.
+Use `html.tmpl` extension in this example.
 
-app/view/root.html:
+app/view/root.html.tmpl:
 
 {% raw %}
 ```html
@@ -84,7 +84,7 @@ To use another layout instead of the default layout, set any layout name to `c.L
 
 For example, layout name set to `sub`, and when templates and Controller are following.
 
-app/view/layout/sub.html:
+app/view/layout/sub.html.tmpl:
 
 {% raw %}
 ```html
@@ -109,7 +109,7 @@ func (r *Root) GET(c *kocha.Context) kocha.Result {
 ```
 {% endraw %}
 
-app/view/root.html is same as previous.
+`app/view/root.html.tmpl` is same as previous.
 
 Output:
 

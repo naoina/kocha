@@ -39,8 +39,8 @@ In order to learn basic usage of Kocha, see [Getting started]({{ page.root }}/ge
 |   |   `-- root.go
 |   `-- view
 |       |-- layout
-|       |   `-- app.html
-|       `-- root.html
+|       |   `-- app.html.tmpl
+|       `-- root.html.tmpl
 |-- config
 |   |-- app.go
 |   `-- routes.go
