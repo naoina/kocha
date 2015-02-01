@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -286,4 +290,53 @@ func TestTemplate_Get(t *testing.T) {
 			}
 		}
 	}()
+}
+
+func TestTemplateDelims(t *testing.T) {
+	app, err := kocha.New(&kocha.Config{
+		AppPath:       "testdata",
+		AppName:       "appname",
+		DefaultLayout: "",
+		Template: &kocha.Template{
+			PathInfo: kocha.TemplatePathInfo{
+				Name: "appname",
+				Paths: []string{
+					filepath.Join("testdata", "app", "view"),
+				},
+			},
+			LeftDelim:  "{%",
+			RightDelim: "%}",
+		},
+		RouteTable: []*kocha.Route{
+			{
+				Name: "root",
+				Path: "/",
+				Controller: &kocha.FixtureAnotherDelimsTestCtrl{
+					Ctx: "test_other_delims_ctx",
+				},
+			},
+		},
+		Logger: &kocha.LoggerConfig{
+			Writer: ioutil.Discard,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	app.ServeHTTP(w, req)
+	var actual interface{} = w.Code
+	var expect interface{} = 200
+	if !reflect.DeepEqual(actual, expect) {
+		t.Errorf(`GET / status => %#v; want %#v`, actual, expect)
+	}
+	actual = w.Body.String()
+	expect = "This is other delims: test_other_delims_ctx\n"
+	if !reflect.DeepEqual(actual, expect) {
+		t.Errorf(`GET / => %#v; want %#v`, actual, expect)
+	}
 }

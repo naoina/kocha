@@ -211,3 +211,12 @@ func (ctrl *FixturePostTestCtrl) POST(c *Context) Result {
 	}
 	return Render(c, Data{"params": m})
 }
+
+type FixtureAnotherDelimsTestCtrl struct {
+	*DefaultController
+	Ctx string
+}
+
+func (ctrl *FixtureAnotherDelimsTestCtrl) GET(c *Context) Result {
+	return Render(c, ctrl.Ctx)
+}

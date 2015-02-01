@@ -27,8 +27,10 @@ type TemplatePathInfo struct {
 
 // Template represents the templates information.
 type Template struct {
-	PathInfo TemplatePathInfo // information of location of template paths.
-	FuncMap  TemplateFuncMap  // same as template.FuncMap.
+	PathInfo   TemplatePathInfo // information of location of template paths.
+	FuncMap    TemplateFuncMap  // same as template.FuncMap.
+	LeftDelim  string           // left action delimiter.
+	RightDelim string           // right action delimiter.
 
 	m   templateMap
 	app *Application
@@ -57,6 +59,12 @@ ErrNotFound:
 
 func (t *Template) build(app *Application) (*Template, error) {
 	t.app = app
+	if t.LeftDelim == "" {
+		t.LeftDelim = "{{"
+	}
+	if t.RightDelim == "" {
+		t.RightDelim = "}}"
+	}
 	t, err := t.buildFuncMap()
 	if err != nil {
 		return nil, err
@@ -162,7 +170,7 @@ func (t *Template) buildAppTemplateSet(appTemplateSet map[string]*template.Templ
 				t.app.ResourceSet.Add(fmt.Sprintf("_kocha_%s.%s", path, ext), b)
 			}
 			name := strings.TrimSuffix(t.relativePath(path), util.TemplateSuffix)
-			if _, err := tmpl.New(name).Funcs(template.FuncMap(t.FuncMap)).Parse(string(templateBytes)); err != nil {
+			if _, err := tmpl.New(name).Delims(t.LeftDelim, t.RightDelim).Funcs(template.FuncMap(t.FuncMap)).Parse(string(templateBytes)); err != nil {
 				return err
 			}
 		}
