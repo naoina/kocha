@@ -235,22 +235,22 @@ func (t *Template) raw(text string) template.HTML {
 }
 
 // invokeTemplate is for "invoke_template" template function.
-func (t *Template) invokeTemplate(unit Unit, tmplName, defTmplName string, context ...interface{}) (html template.HTML, err error) {
-	var ctx interface{}
-	switch len(context) {
+func (t *Template) invokeTemplate(unit Unit, tmplName, defTmplName string, ctx ...*Context) (html template.HTML, err error) {
+	var c *Context
+	switch len(ctx) {
 	case 0: // do nothing.
 	case 1:
-		ctx = context[0]
+		c = ctx[0]
 	default:
 		return "", fmt.Errorf("number of context must be 0 or 1")
 	}
 	t.app.Invoke(unit, func() {
-		if html, err = t.readPartialTemplate(tmplName, ctx); err != nil {
+		if html, err = t.readPartialTemplate(tmplName, c); err != nil {
 			// TODO: logging error.
 			panic(ErrInvokeDefault)
 		}
 	}, func() {
-		html, err = t.readPartialTemplate(defTmplName, ctx)
+		html, err = t.readPartialTemplate(defTmplName, c)
 	})
 	return html, err
 }
@@ -261,13 +261,13 @@ func (t *Template) flash(c *Context, key string) string {
 	return c.Flash.Get(key)
 }
 
-func (t *Template) readPartialTemplate(name string, ctx interface{}) (template.HTML, error) {
+func (t *Template) readPartialTemplate(name string, c *Context) (template.HTML, error) {
 	tmpl, err := t.Get(t.app.Config.AppName, "", name, "html")
 	if err != nil {
 		return "", err
 	}
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, ctx); err != nil {
+	if err := tmpl.Execute(&buf, c); err != nil {
 		return "", err
 	}
 	return template.HTML(buf.String()), nil

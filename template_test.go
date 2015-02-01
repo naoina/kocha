@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/naoina/kocha"
@@ -115,14 +116,19 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 	func() {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
-		unit := &testUnit{"test1", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl"}}`))
+		c := &kocha.Context{
+			Data: kocha.Data{
+				"unit": &testUnit{"test1", true, 0},
+				"ctx":  "testctx1",
+			},
+		}
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template .Data.unit "test_tmpl1" "def_tmpl" $}}`))
 		var buf bytes.Buffer
-		if err := tmpl.Execute(&buf, unit); err != nil {
+		if err := tmpl.Execute(&buf, c); err != nil {
 			t.Error(err)
 		}
 		actual := buf.String()
-		expected := "test_tmpl1: \n"
+		expected := "test_tmpl1: testctx1\n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}
@@ -132,14 +138,19 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 	func() {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
-		unit := &testUnit{"test2", false, 0}
-		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl"}}`))
+		c := &kocha.Context{
+			Data: kocha.Data{
+				"unit": &testUnit{"test2", false, 0},
+				"ctx":  "testctx2",
+			},
+		}
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template .Data.unit "test_tmpl1" "def_tmpl" $}}`))
 		var buf bytes.Buffer
-		if err := tmpl.Execute(&buf, unit); err != nil {
+		if err := tmpl.Execute(&buf, c); err != nil {
 			t.Error(err)
 		}
 		actual := buf.String()
-		expected := "def_tmpl: \n"
+		expected := "def_tmpl: testctx2\n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}
@@ -149,14 +160,19 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 	func() {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
-		unit := &testUnit{"test3", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "unknown_tmpl" "def_tmpl"}}`))
+		c := &kocha.Context{
+			Data: kocha.Data{
+				"unit": &testUnit{"test3", true, 0},
+				"ctx":  "testctx3",
+			},
+		}
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template .Data.unit "unknown_tmpl" "def_tmpl" $}}`))
 		var buf bytes.Buffer
-		if err := tmpl.Execute(&buf, unit); err != nil {
+		if err := tmpl.Execute(&buf, c); err != nil {
 			t.Error(err)
 		}
 		actual := buf.String()
-		expected := "def_tmpl: \n"
+		expected := "def_tmpl: testctx3\n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}
@@ -166,11 +182,16 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 	func() {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
-		unit := &testUnit{"test4", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "unknown_tmpl" "unknown_def_tmpl"}}`))
+		c := &kocha.Context{
+			Data: kocha.Data{
+				"unit": &testUnit{"test4", true, 0},
+				"ctx":  "testctx4",
+			},
+		}
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template .Data.unit "unknown_tmpl" "unknown_def_tmpl" $}}`))
 		var buf bytes.Buffer
-		if err := tmpl.Execute(&buf, unit); err == nil {
-			t.Errorf("no error returned by unknown template")
+		if err := tmpl.Execute(&buf, c); !strings.HasSuffix(err.Error(), "template not found: appname:/unknown_def_tmpl.html") {
+			t.Error(err)
 		}
 	}()
 
@@ -178,11 +199,16 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 	func() {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
-		unit := &testUnit{"test5", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "test_tmpl1" "unknown"}}`))
+		c := &kocha.Context{
+			Data: kocha.Data{
+				"unit": &testUnit{"test5", true, 0},
+				"ctx":  "testctx5",
+			},
+		}
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template .Data.unit "test_tmpl1" "unknown" $}}`))
 		var buf bytes.Buffer
-		if err := tmpl.Execute(&buf, unit); err != nil {
-			t.Errorf("no error returned by unknown default template")
+		if err := tmpl.Execute(&buf, c); err != nil {
+			t.Error(err)
 		}
 	}()
 
@@ -190,14 +216,19 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 	func() {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
-		unit := &testUnit{"test6", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl" "ctx"}}`))
+		c := &kocha.Context{
+			Data: kocha.Data{
+				"unit": &testUnit{"test6", true, 0},
+				"ctx":  "testctx6",
+			},
+		}
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template .Data.unit "test_tmpl1" "def_tmpl" $}}`))
 		var buf bytes.Buffer
-		if err := tmpl.Execute(&buf, unit); err != nil {
+		if err := tmpl.Execute(&buf, c); err != nil {
 			t.Error(err)
 		}
 		actual := buf.String()
-		expected := "test_tmpl1: ctx\n"
+		expected := "test_tmpl1: testctx6\n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Expect %q, but %q", expected, actual)
 		}
@@ -207,11 +238,16 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 	func() {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
-		unit := &testUnit{"test7", true, 0}
-		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template . "test_tmpl1" "def_tmpl" "ctx" "over"}}`))
+		c := &kocha.Context{
+			Data: kocha.Data{
+				"unit": &testUnit{"test7", true, 0},
+				"ctx":  "testctx7",
+			},
+		}
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template .Data.unit "test_tmpl1" "def_tmpl" $ $}}`))
 		var buf bytes.Buffer
-		if err := tmpl.Execute(&buf, unit); err == nil {
-			t.Errorf("no error returned by too many number of context")
+		if err := tmpl.Execute(&buf, c); !strings.HasSuffix(err.Error(), "number of context must be 0 or 1") {
+			t.Error(err)
 		}
 	}()
 }
