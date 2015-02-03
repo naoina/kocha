@@ -170,7 +170,11 @@ func (t *Template) buildAppTemplateSet(appTemplateSet map[string]*template.Templ
 				t.app.ResourceSet.Add(fmt.Sprintf("_kocha_%s.%s", path, ext), b)
 			}
 			name := strings.TrimSuffix(t.relativePath(path), util.TemplateSuffix)
-			if _, err := tmpl.New(name).Delims(t.LeftDelim, t.RightDelim).Funcs(template.FuncMap(t.FuncMap)).Parse(string(templateBytes)); err != nil {
+			content := fmt.Sprint(
+				t.LeftDelim, "$ := .Data", t.RightDelim,
+				string(templateBytes),
+			)
+			if _, err := tmpl.New(name).Delims(t.LeftDelim, t.RightDelim).Funcs(template.FuncMap(t.FuncMap)).Parse(content); err != nil {
 				return err
 			}
 		}
