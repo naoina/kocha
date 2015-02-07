@@ -208,19 +208,13 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 		App:      app,
 		Errors:   make(map[string][]*ParamError),
 	}
-	var result Result
 	defer func() {
 		defer app.panicHandler(ctx.Response)
 		if err := recover(); err != nil {
 			app.logStackAndError(err)
-			result = internalServerErrorController.GET(ctx)
-		}
-		for i := len(app.Config.Middlewares) - 1; i >= 0; i-- {
-			app.Config.Middlewares[i].After(app, ctx)
-		}
-		ctx.Response.Header().Set("Content-Type", ctx.Response.ContentType)
-		if err := result.Proc(ctx.Response); err != nil {
-			panic(err)
+			if err := internalServerErrorController.GET(ctx); err != nil {
+				panic(err)
+			}
 		}
 	}()
 	if err := ctx.prepareRequest(params); err != nil {
@@ -232,7 +226,21 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 	for _, m := range app.Config.Middlewares {
 		m.Before(app, ctx)
 	}
-	result = handler(ctx)
+	if err := handler(ctx); err != nil {
+		panic(err)
+	}
+	app.runAfterMiddlewares(ctx)
+}
+
+func (app *Application) runAfterMiddlewares(c *Context) {
+	defer func() {
+		if err := recover(); err != nil {
+			app.logStackAndError(err)
+		}
+	}()
+	for i := len(app.Config.Middlewares) - 1; i >= 0; i-- {
+		app.Config.Middlewares[i].After(app, c)
+	}
 }
 
 func (app *Application) panicHandler(w http.ResponseWriter) {

@@ -2,6 +2,7 @@ package kocha
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -22,35 +23,35 @@ type Controller interface {
 
 // Getter interface is an interface representing a handler for HTTP GET request.
 type Getter interface {
-	GET(c *Context) Result
+	GET(c *Context) error
 }
 
 // Poster interface is an interface representing a handler for HTTP POST request.
 type Poster interface {
-	POST(c *Context) Result
+	POST(c *Context) error
 }
 
 // Putter interface is an interface representing a handler for HTTP PUT request.
 type Putter interface {
-	PUT(c *Context) Result
+	PUT(c *Context) error
 }
 
 // Deleter interface is an interface representing a handler for HTTP DELETE request.
 type Deleter interface {
-	DELETE(c *Context) Result
+	DELETE(c *Context) error
 }
 
 // Header interface is an interface representing a handler for HTTP HEAD request.
 type Header interface {
-	HEAD(c *Context) Result
+	HEAD(c *Context) error
 }
 
 // Patcher interface is an interface representing a handler for HTTP PATCH request.
 type Patcher interface {
-	PATCH(c *Context) Result
+	PATCH(c *Context) error
 }
 
-type requestHandler func(c *Context) Result
+type requestHandler func(c *Context) error
 
 // DefaultController implements Controller interface.
 // This can be used to save the trouble to implement all of the methods of
@@ -59,32 +60,32 @@ type DefaultController struct {
 }
 
 // GET implements Getter interface that renders the HTTP 405 Method Not Allowed.
-func (dc *DefaultController) GET(c *Context) Result {
+func (dc *DefaultController) GET(c *Context) error {
 	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
 // POST implements Poster interface that renders the HTTP 405 Method Not Allowed.
-func (dc *DefaultController) POST(c *Context) Result {
+func (dc *DefaultController) POST(c *Context) error {
 	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
 // PUT implements Putter interface that renders the HTTP 405 Method Not Allowed.
-func (dc *DefaultController) PUT(c *Context) Result {
+func (dc *DefaultController) PUT(c *Context) error {
 	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
 // DELETE implements Deleter interface that renders the HTTP 405 Method Not Allowed.
-func (dc *DefaultController) DELETE(c *Context) Result {
+func (dc *DefaultController) DELETE(c *Context) error {
 	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
 // HEAD implements Header interface that renders the HTTP 405 Method Not Allowed.
-func (dc *DefaultController) HEAD(c *Context) Result {
+func (dc *DefaultController) HEAD(c *Context) error {
 	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
 // PATCH implements Patcher interface that renders the HTTP 405 Method Not Allowed.
-func (dc *DefaultController) PATCH(c *Context) Result {
+func (dc *DefaultController) PATCH(c *Context) error {
 	return RenderError(c, http.StatusMethodNotAllowed, nil)
 }
 
@@ -135,6 +136,13 @@ type Context struct {
 // Invoke is shorthand of c.App.Invoke.
 func (c *Context) Invoke(unit Unit, newFunc func(), defaultFunc func()) {
 	c.App.Invoke(unit, newFunc, defaultFunc)
+}
+
+func (c *Context) render(r io.Reader) error {
+	c.Response.Header().Set("Content-Type", c.Response.ContentType)
+	c.Response.WriteHeader(c.Response.StatusCode)
+	_, err := io.Copy(c.Response, r)
+	return err
 }
 
 func (c *Context) setContentTypeIfNotExists(contentType string) {
@@ -211,7 +219,7 @@ type StaticServe struct {
 	*DefaultController
 }
 
-func (ss *StaticServe) GET(c *Context) Result {
+func (ss *StaticServe) GET(c *Context) error {
 	path, err := url.Parse(c.Params.Get("path"))
 	if err != nil {
 		return RenderError(c, http.StatusBadRequest, nil)
@@ -230,6 +238,6 @@ type ErrorController struct {
 	StatusCode int
 }
 
-func (ec *ErrorController) GET(c *Context) Result {
+func (ec *ErrorController) GET(c *Context) error {
 	return RenderError(c, ec.StatusCode, nil)
 }

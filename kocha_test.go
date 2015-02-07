@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/naoina/kocha"
@@ -279,12 +280,26 @@ func TestApplication_ServeHTTP(t *testing.T) {
 			t.Fatal(err)
 		}
 		app := kocha.NewTestApp()
+		var buf bytes.Buffer
+		app.Logger = log.New(&buf, &log.LTSVFormatter{}, app.Config.Logger.Level)
 		m := &TestPanicInAfterMiddleware{}
 		app.Config.Middlewares = []kocha.Middleware{m} // all default middlewares are override
 		app.ServeHTTP(w, req)
 		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusInternalServerError) {
-			t.Errorf("Expect %v, but %v", http.StatusInternalServerError, status)
+		if !reflect.DeepEqual(status, http.StatusOK) {
+			t.Errorf("Expect %v, but %v", http.StatusInternalServerError, http.StatusOK)
+		}
+
+		actual := w.Body.String()
+		expect := "This is layout\nThis is root\n\n"
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`GET / with TestPanicInAfterMiddleware => %#v; want => %#v`, actual, expect)
+		}
+
+		logline := strings.SplitN(buf.String(), "\n", 2)[0]
+		contain := "\tmessage:after"
+		if !strings.Contains(logline, contain) {
+			t.Errorf("GET / with TestPanicInAfterMiddleware; log => %#v; want contains => %#v", logline, contain)
 		}
 	}()
 }

@@ -131,7 +131,7 @@ type FixturePanicInRenderTestCtrl struct {
 	*DefaultController
 }
 
-func (ctrl *FixturePanicInRenderTestCtrl) GET(c *Context) Result {
+func (ctrl *FixturePanicInRenderTestCtrl) GET(c *Context) error {
 	return RenderXML(c, Data{}) // Context is unsupported type in XML.
 }
 
@@ -139,7 +139,7 @@ type FixtureUserTestCtrl struct {
 	*DefaultController
 }
 
-func (ctrl *FixtureUserTestCtrl) GET(c *Context) Result {
+func (ctrl *FixtureUserTestCtrl) GET(c *Context) error {
 	return Render(c, Data{
 		"id": c.Params.Get("id"),
 	})
@@ -149,7 +149,7 @@ type FixtureDateTestCtrl struct {
 	DefaultController
 }
 
-func (ctrl *FixtureDateTestCtrl) GET(c *Context) Result {
+func (ctrl *FixtureDateTestCtrl) GET(c *Context) error {
 	return Render(c, Data{
 		"year":  c.Params.Get("year"),
 		"month": c.Params.Get("month"),
@@ -162,7 +162,7 @@ type FixtureErrorTestCtrl struct {
 	DefaultController
 }
 
-func (ctrl *FixtureErrorTestCtrl) GET(c *Context) Result {
+func (ctrl *FixtureErrorTestCtrl) GET(c *Context) error {
 	panic("panic test")
 }
 
@@ -170,7 +170,7 @@ type FixtureJsonTestCtrl struct {
 	DefaultController
 }
 
-func (ctrl *FixtureJsonTestCtrl) GET(c *Context) Result {
+func (ctrl *FixtureJsonTestCtrl) GET(c *Context) error {
 	c.Response.ContentType = "application/json"
 	return Render(c, nil)
 }
@@ -179,7 +179,7 @@ type FixtureRootTestCtrl struct {
 	*DefaultController
 }
 
-func (ctrl *FixtureRootTestCtrl) GET(c *Context) Result {
+func (ctrl *FixtureRootTestCtrl) GET(c *Context) error {
 	return Render(c, nil)
 }
 
@@ -187,7 +187,7 @@ type FixtureTeapotTestCtrl struct {
 	DefaultController
 }
 
-func (ctrl *FixtureTeapotTestCtrl) GET(c *Context) Result {
+func (ctrl *FixtureTeapotTestCtrl) GET(c *Context) error {
 	c.Response.StatusCode = http.StatusTeapot
 	return Render(c, nil)
 }
@@ -204,7 +204,7 @@ type FixturePostTestCtrl struct {
 	*DefaultController
 }
 
-func (ctrl *FixturePostTestCtrl) POST(c *Context) Result {
+func (ctrl *FixturePostTestCtrl) POST(c *Context) error {
 	m := orderedOutputMap{}
 	for k, v := range c.Params.Values {
 		m[k] = v
@@ -217,6 +217,6 @@ type FixtureAnotherDelimsTestCtrl struct {
 	Ctx string
 }
 
-func (ctrl *FixtureAnotherDelimsTestCtrl) GET(c *Context) Result {
+func (ctrl *FixtureAnotherDelimsTestCtrl) GET(c *Context) error {
 	return Render(c, ctrl.Ctx)
 }
