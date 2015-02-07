@@ -37,7 +37,9 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		req, res := newRequestResponse(nil)
 		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
-		m.Before(app, c)
+		if err := m.Before(app, c); err != nil {
+			t.Fatal(err)
+		}
 		actual := c.Session
 		expected := make(kocha.Session)
 		if !reflect.DeepEqual(actual, expected) {
@@ -50,14 +52,20 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		app := kocha.NewTestApp()
 		store := kocha.NewTestSessionCookieStore()
 		sess := make(kocha.Session)
+		value, err := store.Save(sess)
+		if err != nil {
+			t.Fatal(err)
+		}
 		cookie := &http.Cookie{
 			Name:  app.Config.Session.Name,
-			Value: store.Save(sess),
+			Value: value,
 		}
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
-		m.Before(app, c)
+		if err := m.Before(app, c); err != nil {
+			t.Fatal(err)
+		}
 		actual := c.Session
 		expected := make(kocha.Session)
 		if !reflect.DeepEqual(actual, expected) {
@@ -71,14 +79,20 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		store := kocha.NewTestSessionCookieStore()
 		sess := make(kocha.Session)
 		sess[kocha.SessionExpiresKey] = "invalid format"
+		value, err := store.Save(sess)
+		if err != nil {
+			t.Fatal(err)
+		}
 		cookie := &http.Cookie{
 			Name:  app.Config.Session.Name,
-			Value: store.Save(sess),
+			Value: value,
 		}
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
-		m.Before(app, c)
+		if err := m.Before(app, c); err != nil {
+			t.Fatal(err)
+		}
 		actual := c.Session
 		expected := make(kocha.Session)
 		if !reflect.DeepEqual(actual, expected) {
@@ -92,14 +106,20 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		store := kocha.NewTestSessionCookieStore()
 		sess := make(kocha.Session)
 		sess[kocha.SessionExpiresKey] = "1383820442"
+		value, err := store.Save(sess)
+		if err != nil {
+			t.Fatal(err)
+		}
 		cookie := &http.Cookie{
 			Name:  app.Config.Session.Name,
-			Value: store.Save(sess),
+			Value: value,
 		}
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
-		m.Before(app, c)
+		if err := m.Before(app, c); err != nil {
+			t.Fatal(err)
+		}
 		actual := c.Session
 		expected := make(kocha.Session)
 		if !reflect.DeepEqual(actual, expected) {
@@ -113,14 +133,20 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		sess := make(kocha.Session)
 		sess[kocha.SessionExpiresKey] = "1383820443"
 		sess["brown fox"] = "lazy dog"
+		value, err := store.Save(sess)
+		if err != nil {
+			t.Fatal(err)
+		}
 		cookie := &http.Cookie{
 			Name:  app.Config.Session.Name,
-			Value: store.Save(sess),
+			Value: value,
 		}
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
-		m.Before(app, c)
+		if err := m.Before(app, c); err != nil {
+			t.Fatal(err)
+		}
 		actual := c.Session
 		expected := kocha.Session{
 			kocha.SessionExpiresKey: "1383820443",
@@ -150,7 +176,9 @@ func TestSessionMiddleware_After(t *testing.T) {
 	app.Config.Session.SessionExpires = time.Duration(1) * time.Second
 	app.Config.Session.CookieExpires = time.Duration(2) * time.Second
 	m := &kocha.SessionMiddleware{}
-	m.After(app, c)
+	if err := m.After(app, c); err != nil {
+		t.Fatal(err)
+	}
 	var (
 		actual   interface{} = c.Session
 		expected interface{} = kocha.Session{
@@ -162,10 +190,14 @@ func TestSessionMiddleware_After(t *testing.T) {
 	}
 
 	c.Session[kocha.SessionExpiresKey] = "1383820444"
+	value, err := app.Config.Session.Store.Save(c.Session)
+	if err != nil {
+		t.Fatal(err)
+	}
 	c1 := res.Cookies()[0]
 	c2 := &http.Cookie{
 		Name:     app.Config.Session.Name,
-		Value:    app.Config.Session.Store.Save(c.Session),
+		Value:    value,
 		Path:     "/",
 		Expires:  util.Now().UTC().Add(app.Config.Session.CookieExpires),
 		MaxAge:   2,
@@ -177,8 +209,14 @@ func TestSessionMiddleware_After(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
-	actual = app.Config.Session.Store.Load(c1.Value)
-	expected = app.Config.Session.Store.Load(c2.Value)
+	actual, err = app.Config.Session.Store.Load(c1.Value)
+	if err != nil {
+		t.Error(err)
+	}
+	expected, err = app.Config.Session.Store.Load(c2.Value)
+	if err != nil {
+		t.Error(err)
+	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -213,7 +251,9 @@ func TestFlashMiddleware_Before_withNilSession(t *testing.T) {
 	app := kocha.NewTestApp()
 	m := &kocha.FlashMiddleware{}
 	c := &kocha.Context{Session: nil}
-	m.Before(app, c)
+	if err := m.Before(app, c); err != nil {
+		t.Fatal(err)
+	}
 	var actual interface{} = c.Flash
 	var expected interface{} = kocha.Flash(nil)
 	if !reflect.DeepEqual(actual, expected) {
@@ -225,7 +265,9 @@ func TestFlashMiddleware(t *testing.T) {
 	app := kocha.NewTestApp()
 	m := &kocha.FlashMiddleware{}
 	c := &kocha.Context{Session: make(kocha.Session)}
-	m.Before(app, c)
+	if err := m.Before(app, c); err != nil {
+		t.Fatal(err)
+	}
 	var actual interface{} = c.Flash.Len()
 	var expected interface{} = 0
 	if !reflect.DeepEqual(actual, expected) {
@@ -233,9 +275,13 @@ func TestFlashMiddleware(t *testing.T) {
 	}
 
 	c.Flash.Set("test_param", "abc")
-	m.After(app, c)
+	if err := m.After(app, c); err != nil {
+		t.Fatal(err)
+	}
 	c.Flash = nil
-	m.Before(app, c)
+	if err := m.Before(app, c); err != nil {
+		t.Fatal(err)
+	}
 	actual = c.Flash.Len()
 	expected = 1
 	if !reflect.DeepEqual(actual, expected) {
@@ -247,9 +293,13 @@ func TestFlashMiddleware(t *testing.T) {
 		t.Errorf(`FlashMiddleware.After(app, c) then Before(app, c); c.Flash.Get("test_param") => %#v; want %#v`, actual, expected)
 	}
 
-	m.After(app, c)
+	if err := m.After(app, c); err != nil {
+		t.Fatal(err)
+	}
 	c.Flash = nil
-	m.Before(app, c)
+	if err := m.Before(app, c); err != nil {
+		t.Fatal(err)
+	}
 	actual = c.Flash.Len()
 	expected = 0
 	if !reflect.DeepEqual(actual, expected) {

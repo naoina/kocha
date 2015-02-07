@@ -337,26 +337,34 @@ type TestMiddleware struct {
 	called *[]string
 }
 
-func (m *TestMiddleware) Before(app *kocha.Application, c *kocha.Context) {
+func (m *TestMiddleware) Before(app *kocha.Application, c *kocha.Context) error {
 	*m.called = append(*m.called, "before"+m.id)
+	return nil
 }
 
-func (m *TestMiddleware) After(app *kocha.Application, c *kocha.Context) {
+func (m *TestMiddleware) After(app *kocha.Application, c *kocha.Context) error {
 	*m.called = append(*m.called, "after"+m.id)
+	return nil
 }
 
 type TestPanicInBeforeMiddleware struct{}
 
-func (m *TestPanicInBeforeMiddleware) Before(app *kocha.Application, c *kocha.Context) {
+func (m *TestPanicInBeforeMiddleware) Before(app *kocha.Application, c *kocha.Context) error {
 	panic("before")
+	return nil
 }
-func (m *TestPanicInBeforeMiddleware) After(app *kocha.Application, c *kocha.Context) {}
+func (m *TestPanicInBeforeMiddleware) After(app *kocha.Application, c *kocha.Context) error {
+	return nil
+}
 
 type TestPanicInAfterMiddleware struct{}
 
-func (m *TestPanicInAfterMiddleware) Before(app *kocha.Application, c *kocha.Context) {}
-func (m *TestPanicInAfterMiddleware) After(app *kocha.Application, c *kocha.Context) {
+func (m *TestPanicInAfterMiddleware) Before(app *kocha.Application, c *kocha.Context) error {
+	return nil
+}
+func (m *TestPanicInAfterMiddleware) After(app *kocha.Application, c *kocha.Context) error {
 	panic("after")
+	return nil
 }
 
 type testUnit struct {

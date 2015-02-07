@@ -224,7 +224,9 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 		panic(err)
 	}
 	for _, m := range app.Config.Middlewares {
-		m.Before(app, ctx)
+		if err := m.Before(app, ctx); err != nil {
+			panic(err)
+		}
 	}
 	if err := handler(ctx); err != nil {
 		panic(err)
@@ -239,7 +241,9 @@ func (app *Application) runAfterMiddlewares(c *Context) {
 		}
 	}()
 	for i := len(app.Config.Middlewares) - 1; i >= 0; i-- {
-		app.Config.Middlewares[i].After(app, c)
+		if err := app.Config.Middlewares[i].After(app, c); err != nil {
+			panic(err)
+		}
 	}
 }
 

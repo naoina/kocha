@@ -53,8 +53,8 @@ func (config *SessionConfig) Validate() error {
 
 // SessionStore is the interface that session store.
 type SessionStore interface {
-	Save(sess Session) (key string)
-	Load(key string) (sess Session)
+	Save(sess Session) (key string, err error)
+	Load(key string) (sess Session, err error)
 
 	// Validate calls in boot time.
 	// Validate the session store specific values if you want. But highly recommended.
@@ -133,20 +133,6 @@ func NewErrSession(msg string) error {
 	}
 }
 
-type ErrSessionExpected struct {
-	msg string
-}
-
-func (e ErrSessionExpected) Error() string {
-	return e.msg
-}
-
-func NewErrSessionExpected(msg string) error {
-	return ErrSessionExpected{
-		msg: msg,
-	}
-}
-
 // Implementation of cookie store.
 //
 // This session store will be a session save to client-side cookie.
@@ -163,45 +149,37 @@ var codecHandler = &codec.MsgpackHandle{}
 
 // Save saves and returns the key of session cookie.
 // Actually, key is session cookie data itself.
-func (store *SessionCookieStore) Save(sess Session) (key string) {
+func (store *SessionCookieStore) Save(sess Session) (key string, err error) {
 	var buf bytes.Buffer
 	if err := codec.NewEncoder(&buf, codecHandler).Encode(sess); err != nil {
-		panic(err)
+		return "", err
 	}
 	encrypted, err := store.encrypt(buf.Bytes())
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return store.encode(store.sign(encrypted))
+	return store.encode(store.sign(encrypted)), nil
 }
 
 // Load returns the session data that extract from cookie value.
 // The key is stored session cookie value.
-func (store *SessionCookieStore) Load(key string) (sess Session) {
-	defer func() {
-		if err := recover(); err != nil {
-			if err, ok := err.(error); ok {
-				panic(NewErrSession(err.Error()))
-			}
-			panic(err)
-		}
-	}()
+func (store *SessionCookieStore) Load(key string) (sess Session, err error) {
 	decoded, err := store.decode(key)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	unsigned, err := store.verify(decoded)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	decrypted, err := store.decrypt(unsigned)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if err := codec.NewDecoderBytes(decrypted, codecHandler).Decode(&sess); err != nil {
-		panic(err)
+		return nil, err
 	}
-	return sess
+	return sess, nil
 }
 
 // Validate validates SecretKey size.

@@ -59,8 +59,8 @@ func Test_SessionConfig_Validate(t *testing.T) {
 
 type ValidateTestSessionStore struct{ validated bool }
 
-func (s *ValidateTestSessionStore) Save(sess kocha.Session) string { return "" }
-func (s *ValidateTestSessionStore) Load(key string) kocha.Session  { return nil }
+func (s *ValidateTestSessionStore) Save(sess kocha.Session) (string, error) { return "", nil }
+func (s *ValidateTestSessionStore) Load(key string) (kocha.Session, error)  { return nil, nil }
 func (s *ValidateTestSessionStore) Validate() error {
 	s.validated = true
 	return fmt.Errorf("")
@@ -227,23 +227,28 @@ func Test_SessionCookieStore(t *testing.T) {
 		expected := make(kocha.Session)
 		expected[k] = v
 		store := kocha.NewTestSessionCookieStore()
-		r := store.Save(expected)
-		actual := store.Load(r)
+		r, err := store.Save(expected)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual, err := store.Load(r)
+		if err != nil {
+			t.Fatal(err)
+		}
 		return reflect.DeepEqual(actual, expected)
 	}, nil); err != nil {
 		t.Error(err)
 	}
 
 	func() {
-		defer func() {
-			if err := recover(); err == nil {
-				t.Error("panic doesn't occurs")
-			} else if _, ok := err.(kocha.ErrSession); !ok {
-				t.Error("Expect %T, but %T", kocha.ErrSession{}, err)
-			}
-		}()
 		store := kocha.NewTestSessionCookieStore()
-		store.Load("invalid")
+		key := "invalid"
+		_, err := store.Load(key)
+		actual := err
+		expect := fmt.Errorf("kocha: session cookie value too short")
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`SessionCookieStore.Load(%#v) => _, %#v; want %#v`, key, actual, expect)
+		}
 	}()
 }
 
