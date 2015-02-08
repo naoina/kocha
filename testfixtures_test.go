@@ -100,9 +100,9 @@ func NewTestSessionCookieStore() *SessionCookieStore {
 	}
 }
 
-type orderedOutputMap map[string]interface{}
+type OrderedOutputMap map[string]interface{}
 
-func (m orderedOutputMap) String() string {
+func (m OrderedOutputMap) String() string {
 	keys := make([]string, 0, len(m))
 	for key, _ := range m {
 		keys = append(keys, key)
@@ -115,7 +115,7 @@ func (m orderedOutputMap) String() string {
 	return fmt.Sprintf("map[%v]", strings.Join(outputs, " "))
 }
 
-func (m orderedOutputMap) GoString() string {
+func (m OrderedOutputMap) GoString() string {
 	keys := make([]string, 0, len(m))
 	for key, _ := range m {
 		keys = append(keys, key)
@@ -132,7 +132,7 @@ type FixturePanicInRenderTestCtrl struct {
 }
 
 func (ctrl *FixturePanicInRenderTestCtrl) GET(c *Context) error {
-	return c.RenderXML(Data{}) // Context is unsupported type in XML.
+	return c.RenderXML(map[interface{}]interface{}{}) // Context is unsupported type in XML.
 }
 
 type FixtureUserTestCtrl struct {
@@ -140,7 +140,7 @@ type FixtureUserTestCtrl struct {
 }
 
 func (ctrl *FixtureUserTestCtrl) GET(c *Context) error {
-	return c.Render(Data{
+	return c.Render(map[interface{}]interface{}{
 		"id": c.Params.Get("id"),
 	})
 }
@@ -150,7 +150,7 @@ type FixtureDateTestCtrl struct {
 }
 
 func (ctrl *FixtureDateTestCtrl) GET(c *Context) error {
-	return c.Render(Data{
+	return c.Render(map[interface{}]interface{}{
 		"year":  c.Params.Get("year"),
 		"month": c.Params.Get("month"),
 		"day":   c.Params.Get("day"),
@@ -205,11 +205,11 @@ type FixturePostTestCtrl struct {
 }
 
 func (ctrl *FixturePostTestCtrl) POST(c *Context) error {
-	m := orderedOutputMap{}
+	m := OrderedOutputMap{}
 	for k, v := range c.Params.Values {
 		m[k] = v
 	}
-	return c.Render(Data{"params": m})
+	return c.Render(map[interface{}]interface{}{"params": m})
 }
 
 type FixtureAnotherDelimsTestCtrl struct {

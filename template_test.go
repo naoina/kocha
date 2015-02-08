@@ -117,7 +117,7 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
 		c := &kocha.Context{
-			Data: kocha.Data{
+			Data: map[interface{}]interface{}{
 				"unit": &testUnit{"test1", true, 0},
 				"ctx":  "testctx1",
 			},
@@ -139,7 +139,7 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
 		c := &kocha.Context{
-			Data: kocha.Data{
+			Data: map[interface{}]interface{}{
 				"unit": &testUnit{"test2", false, 0},
 				"ctx":  "testctx2",
 			},
@@ -161,7 +161,7 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
 		c := &kocha.Context{
-			Data: kocha.Data{
+			Data: map[interface{}]interface{}{
 				"unit": &testUnit{"test3", true, 0},
 				"ctx":  "testctx3",
 			},
@@ -183,7 +183,7 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
 		c := &kocha.Context{
-			Data: kocha.Data{
+			Data: map[interface{}]interface{}{
 				"unit": &testUnit{"test4", true, 0},
 				"ctx":  "testctx4",
 			},
@@ -200,7 +200,7 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
 		c := &kocha.Context{
-			Data: kocha.Data{
+			Data: map[interface{}]interface{}{
 				"unit": &testUnit{"test5", true, 0},
 				"ctx":  "testctx5",
 			},
@@ -217,7 +217,7 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
 		c := &kocha.Context{
-			Data: kocha.Data{
+			Data: map[interface{}]interface{}{
 				"unit": &testUnit{"test6", true, 0},
 				"ctx":  "testctx6",
 			},
@@ -239,7 +239,7 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 		app := kocha.NewTestApp()
 		funcMap := template.FuncMap(app.Template.FuncMap)
 		c := &kocha.Context{
-			Data: kocha.Data{
+			Data: map[interface{}]interface{}{
 				"unit": &testUnit{"test7", true, 0},
 				"ctx":  "testctx7",
 			},

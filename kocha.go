@@ -202,7 +202,7 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 	ctx := &Context{
 		Name:     reflect.TypeOf(controller).Elem().Name(),
 		Layout:   app.Config.DefaultLayout,
-		Data:     make(Data),
+		Data:     map[interface{}]interface{}{},
 		Request:  newRequest(r),
 		Response: newResponse(w),
 		App:      app,

@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sort"
+	"reflect"
 	"strings"
 
 	"github.com/naoina/denco"
@@ -143,7 +143,7 @@ type Context struct {
 //
 // A data to used will be determined the according to the following rules.
 //
-// 1. If data of the Data type is given, it will be merged to Context.Data.
+// 1. If data of any map type is given, it will be merged to Context.Data if possible.
 //
 // 2. If data of another type is given, it will be set to Context.Data.
 //
@@ -154,7 +154,9 @@ type Context struct {
 // try to retrieve the template file "root.xml".
 // Also ContentType set to "text/html" if not specified.
 func (c *Context) Render(data interface{}) error {
-	c.setData(data)
+	if err := c.setData(data); err != nil {
+		return err
+	}
 	c.setContentTypeIfNotExists("text/html")
 	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
 		return err
@@ -175,7 +177,9 @@ func (c *Context) Render(data interface{}) error {
 // RenderJSON is similar to Render but data will be encoded to JSON.
 // ContentType set to "application/json" if not specified.
 func (c *Context) RenderJSON(data interface{}) error {
-	c.setData(data)
+	if err := c.setData(data); err != nil {
+		return err
+	}
 	c.setContentTypeIfNotExists("application/json")
 	buf, err := json.Marshal(c.Data)
 	if err != nil {
@@ -189,7 +193,9 @@ func (c *Context) RenderJSON(data interface{}) error {
 // RenderXML is similar to Render but data will be encoded to XML.
 // ContentType set to "application/xml" if not specified.
 func (c *Context) RenderXML(data interface{}) error {
-	c.setData(data)
+	if err := c.setData(data); err != nil {
+		return err
+	}
 	c.setContentTypeIfNotExists("application/xml")
 	buf, err := xml.Marshal(c.Data)
 	if err != nil {
@@ -215,7 +221,9 @@ func (c *Context) RenderText(content string) error {
 // If failed to retrieve the template file, it returns result of text with statusCode.
 // Also ContentType set to "text/html" if not specified.
 func (c *Context) RenderError(statusCode int, data interface{}) error {
-	c.setData(data)
+	if err := c.setData(data); err != nil {
+		return err
+	}
 	c.setContentTypeIfNotExists("text/html")
 	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
 		return err
@@ -306,25 +314,36 @@ func (c *Context) setContentTypeIfNotExists(contentType string) {
 	}
 }
 
-func (c *Context) setData(data interface{}) {
+func (c *Context) setData(data interface{}) error {
 	if data == nil {
-		return
+		return nil
 	}
-	d, ok := data.(Data)
-	if !ok {
+	srcType := reflect.TypeOf(data)
+	if srcType.Kind() != reflect.Map {
 		c.Data = data
-		return
+		return nil
 	}
-	if data, ok := c.Data.(Data); ok {
-		if data == nil {
-			data = Data{}
-		}
-		for k, v := range d {
-			data[k] = v
-		}
-		d = data
+	if c.Data == nil {
+		c.Data = map[interface{}]interface{}{}
 	}
-	c.Data = d
+	destType := reflect.TypeOf(c.Data)
+	if sk, dk := srcType.Key(), destType.Key(); !sk.AssignableTo(dk) {
+		return fmt.Errorf("kocha: context: key of type %v is not assignable to type %v", sk, dk)
+	}
+	src := reflect.ValueOf(data)
+	dest := reflect.ValueOf(c.Data)
+	dtype := destType.Elem()
+	for _, k := range src.MapKeys() {
+		v := src.MapIndex(k)
+		if vtype := v.Type(); !vtype.AssignableTo(dtype) {
+			if !vtype.ConvertibleTo(dtype) {
+				return fmt.Errorf("kocha: context: value of type %v is not assignable to type %v", vtype, dtype)
+			}
+			v = v.Convert(dtype)
+		}
+		dest.SetMapIndex(k, v)
+	}
+	return nil
 }
 
 func (c *Context) setFormatFromContentTypeIfNotExists() error {
@@ -351,22 +370,6 @@ func (c *Context) prepareRequest(params denco.Params) error {
 func (c *Context) prepareParams() error {
 	c.Params = newParams(c, c.Request.Form, "")
 	return nil
-}
-
-// Data is shorthand type for map[string]interface{}
-type Data map[string]interface{}
-
-// String returns string of a map that sorted by keys.
-func (c Data) String() string {
-	keys := make([]string, 0, len(c))
-	for key, _ := range c {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for i, key := range keys {
-		keys[i] = fmt.Sprintf("%v:%v", key, c[key])
-	}
-	return fmt.Sprintf("map[%v]", strings.Join(keys, " "))
 }
 
 // StaticServe is generic controller for serve a static file.

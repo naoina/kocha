@@ -121,7 +121,7 @@ func newTestContext(name, layout string) *kocha.Context {
 func TestContext_Render(t *testing.T) {
 	func() {
 		c := newTestContext("testctrlr_ctx", "")
-		data := kocha.Data{
+		data := kocha.OrderedOutputMap{
 			"c1": "v1",
 			"c2": "v2",
 		}
@@ -135,9 +135,10 @@ func TestContext_Render(t *testing.T) {
 			t.Fatal(err)
 		}
 		actual := string(buf)
-		expected := fmt.Sprintf("tmpl_ctx: %v\n", data)
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %q, but %q", expected, actual)
+		expect1 := "tmpl_ctx: map[c1:v1 c2:v2]\n"
+		expect2 := "tmpl_ctx: map[c2:v2 c1:v1]\n"
+		if !reflect.DeepEqual(actual, expect1) && !reflect.DeepEqual(actual, expect2) {
+			t.Errorf(`c.Render(%#v) => %#v; want %#v or %#v`, data, actual, expect1, expect2)
 		}
 		if !reflect.DeepEqual(c.Response.ContentType, "text/html") {
 			t.Errorf("Expect %v, but %v", "text/html", c.Response.ContentType)
@@ -146,7 +147,7 @@ func TestContext_Render(t *testing.T) {
 
 	func() {
 		c := newTestContext("testctrlr_ctx", "")
-		c.Data = kocha.Data{
+		c.Data = kocha.OrderedOutputMap{
 			"c3": "v3",
 			"c4": "v4",
 		}
@@ -168,11 +169,11 @@ func TestContext_Render(t *testing.T) {
 
 	func() {
 		c := newTestContext("testctrlr_ctx", "")
-		c.Data = kocha.Data{
+		c.Data = kocha.OrderedOutputMap{
 			"c5": "v5",
 			"c6": "v6",
 		}
-		ctx := kocha.Data{
+		ctx := kocha.OrderedOutputMap{
 			"c6": "test",
 			"c7": "v7",
 		}
@@ -186,7 +187,7 @@ func TestContext_Render(t *testing.T) {
 			t.Fatal(err)
 		}
 		actual := string(buf)
-		expected := fmt.Sprintf("tmpl_ctx: %v\n", kocha.Data{
+		expected := fmt.Sprintf("tmpl_ctx: %v\n", kocha.OrderedOutputMap{
 			"c5": "v5",
 			"c6": "test",
 			"c7": "v7",
@@ -217,7 +218,7 @@ func TestContext_Render(t *testing.T) {
 
 	func() {
 		c := newTestContext("testctrlr_ctx", "")
-		c.Data = kocha.Data{"c1": "v1"}
+		c.Data = map[interface{}]interface{}{"c1": "v1"}
 		ctx := "test_ctx_override"
 		w := httptest.NewRecorder()
 		c.Response = &kocha.Response{ResponseWriter: w}
@@ -237,12 +238,12 @@ func TestContext_Render(t *testing.T) {
 
 	func() {
 		c := newTestContext("testctrlr_ctx", "")
-		c.Data = kocha.Data{"c1": "v1"}
+		c.Data = map[interface{}]interface{}{"c1": "v1"}
 		if err := c.Render(nil); err != nil {
 			t.Fatal(err)
 		}
 		actual := c.Data
-		expected := kocha.Data{
+		expected := map[interface{}]interface{}{
 			"c1": "v1",
 		}
 		if !reflect.DeepEqual(actual, expected) {
@@ -252,18 +253,43 @@ func TestContext_Render(t *testing.T) {
 
 	func() {
 		c := newTestContext("testctrlr_ctx", "")
-		ctx := kocha.Data{"c1": "v1"}
+		ctx := map[interface{}]interface{}{"c1": "v1"}
 		if err := c.Render(ctx); err != nil {
 			t.Fatal(err)
 		}
 		actual := c.Data
-		expected := kocha.Data{
+		expected := map[interface{}]interface{}{
 			"c1": "v1",
 		}
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("Context.Data => %#v, want %#v", actual, expected)
 		}
 	}()
+}
+
+func TestContext_Render_withDifferentKeyType(t *testing.T) {
+	for _, v := range []struct {
+		data   interface{}
+		ctx    interface{}
+		expect error
+	}{
+		{map[interface{}]interface{}{"c1": "v1"}, map[string]interface{}{"c2": "v2"}, nil},
+		{map[string]interface{}{"c1": "v1"}, map[interface{}]interface{}{"c2": "v2"}, fmt.Errorf("kocha: context: key of type interface {} is not assignable to type string")},
+		{map[int]interface{}{1: "v1"}, map[string]interface{}{"2": "v2"}, fmt.Errorf("kocha: context: key of type string is not assignable to type int")},
+		{map[string]string{"c1": "v1"}, map[string]interface{}{"c2": "v2"}, fmt.Errorf("kocha: context: value of type interface {} is not assignable to type string")},
+		{map[string]int{"c1": 1}, map[string]string{"c2": "v2"}, fmt.Errorf("kocha: context: value of type string is not assignable to type int")},
+		{map[string]string{"c1": "v1"}, map[string][]byte{"c2": []byte("v2")}, nil},
+		{map[string]interface{}{"c1": "v1"}, map[string]int{"c2": 2}, nil},
+	} {
+		c := newTestContext("testctrlr_ctx", "")
+		c.Data = v.data
+		ctx := v.ctx
+		actual := c.Render(ctx)
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`c.Render(%#v) => %#v; want %#v`, ctx, actual, expect)
+		}
+	}
 }
 
 func TestContext_Render_withContentType(t *testing.T) {
