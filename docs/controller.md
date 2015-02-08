@@ -56,8 +56,8 @@ Kocha provides some renderer for various purpose.
 Render a template that collect from a template directory in boot time (Usually, *app/view*).
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
-    return kocha.Render(c, nil)
+func (r *Root) GET(c *kocha.Context) error {
+    return c.Render(nil)
 }
 ```
 
@@ -67,9 +67,9 @@ If ContentType isn't specified, render the file type specific template that it d
 e.g.
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     c.Response.ContentType = "application/json"
-    return kocha.Render(c, nil)
+    return c.Render(nil)
 }
 ```
 
@@ -78,8 +78,8 @@ The above responds `app/view/root.json` template.
 Also *Render* can be passed data to [Template.Execute](http://golang.org/pkg/html/template/#Template.Execute):
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
-    return kocha.Render(c, kocha.Data{
+func (r *Root) GET(c *kocha.Context) error {
+    return c.Render(map[string]interface{}{
         "name": "alice",
     })
 }
@@ -90,8 +90,8 @@ func (r *Root) GET(c *kocha.Context) kocha.Result {
 Render context as JSON. See [json.Marshal](http://golang.org/pkg/encoding/json/#Marshal) for encode details.
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
-    return kocha.RenderJSON(c, kocha.Data{
+func (r *Root) GET(c *kocha.Context) error {
+    return c.RenderJSON(map[string]interface{}{
         "name": "alice",
         "id": 1,
     })
@@ -107,8 +107,8 @@ Render context as XML. See [xml.Marshal](http://golang.org/pkg/encoding/xml/#Mar
 ```go
 import "encoding/xml"
 
-func (r *Root) GET(c *kocha.Context) kocha.Result {
-    return kocha.RenderXML(c, struct {
+func (r *Root) GET(c *kocha.Context) error {
+    return c.RenderXML(struct {
         XMLName xml.Name `xml:"person"`
         Id      int      `xml:"id"`
         Name    string   `xml:"name"`
@@ -126,8 +126,8 @@ If you want to render your own XML format, please use [Render](#Render) with Con
 Render plain text.
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
-    return kocha.RenderText(c, "something")
+func (r *Root) GET(c *kocha.Context) error {
+    return c.RenderText("something")
 }
 ```
 
@@ -138,8 +138,8 @@ If you want to templating text, please use [Render](#Render) with ContentType sp
 Render template (or returns status text) with status code.
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
-    return kocha.RenderError(c, http.StatusBadRequest, nil)
+func (r *Root) GET(c *kocha.Context) error {
+    return c.RenderError(http.StatusBadRequest, nil)
 }
 ```
 
@@ -151,8 +151,8 @@ Render a static file that gets from the static file directory (Usually, *public*
 Or gets from binary included resources (See [True All-in-One binary]({{ page.root }}/docs/deployment.html#True-all-in-one-binary)).
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
-    return kocha.SendFile(c, "/path/to/file")
+func (r *Root) GET(c *kocha.Context) error {
+    return c.SendFile("/path/to/file")
 }
 ```
 
@@ -161,13 +161,13 @@ If passed path is relative, First, try to get the content from included resource
 
 For example, an absolute path:
 
-    kocha.SendFile(c, "/srv/favicon.ico")
+    c.SendFile("/srv/favicon.ico")
 
 The above responds `/srv/favicon.ico`.
 
 A relative path:
 
-    kocha.SendFile(c, "favicon.ico")
+    c.SendFile("favicon.ico")
 
 The above responds `public/favicon.ico`.
 
@@ -178,19 +178,19 @@ A shorthand for redirect of both *Http.StatusMovedPermanently (301)* and *http.S
 Using *Redirect* renderer:
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     // MovedPermanently if second argument is true.
-    return kocha.Redirect(c, "/path/to/redirect", false)
+    return c.Redirect("/path/to/redirect", false)
 }
 ```
 
 is same as below:
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     c.Response.StatusCode = http.StatusFound
     c.Response.Header().Set("Location", "/path/to/redirect")
-    return kocha.RenderText(c, "")
+    return c.RenderText("")
 }
 ```
 
@@ -207,9 +207,9 @@ Path: "/:id"
 Controller can take the parameter by [Context]({{ site.godoc }}#Context).[Params]({{ site.godoc }}#Params).
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     id := c.Params.Get("id")
-    return kocha.Render(c, kocha.Data{
+    return c.Render(map[string]interface{}{
         "id": id,
     })
 }
@@ -224,8 +224,8 @@ Path: "/:id/:name"
 ```
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
-    return kocha.Render(c, kocha.Data{
+func (r *Root) GET(c *kocha.Context) error {
+    return c.Render(map[string]interface{}{
         "id": c.Params.Get("id"),
         "name": c.Params.Get("name"),
     })

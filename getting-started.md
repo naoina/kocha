@@ -108,8 +108,8 @@ type Myroom struct {
     *kocha.DefaultController
 }
 
-func (c *Myroom) Get(c *kocha.Context) kocha.Result {
-    return kocha.Render(c, kocha.Data{
+func (c *Myroom) Get(c *kocha.Context) error {
+    return c.Render(map[string]interface{}{
         "name": "Alice",
     })
 }
@@ -161,8 +161,8 @@ Second, In `app/controller/myroom.go`, edit:
 
 {% raw %}
 ```go
-func (c *Myroom) Get(c *kocha.Context) kocha.Result {
-    return kocha.Render(c, kocha.Data{
+func (c *Myroom) Get(c *kocha.Context) error {
+    return c.Render(map[string]interface{}{
         "name": "Alice",
     })
 }
@@ -173,8 +173,8 @@ to
 
 {% raw %}
 ```go
-func (c *Myroom) Get(c *kocha.Context) kocha.Result {
-    return kocha.Render(c, kocha.Data{
+func (c *Myroom) Get(c *kocha.Context) error {
+    return c.Render(map[string]interface{}{
         "name": c.Params.Get("name"),
     })
 }

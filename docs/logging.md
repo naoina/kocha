@@ -30,9 +30,9 @@ Usage:
 In controller:
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     c.App.Logger.Info("This is a root")
-    return kocha.Render(c, nil)
+    return c.Render(nil)
 }
 ```
 

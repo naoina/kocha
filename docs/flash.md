@@ -19,20 +19,20 @@ This feature is provided by [FlashMiddleware]({{ page.root }}/docs/middleware.ht
 For example, when controller is below and route `/comment` is set to it,
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     name := c.Flash.Get("name")
     msg := c.Flash.Get("msg")
-    return kocha.Render(c, kocha.Data{
+    return c.Render(map[string]interface{}{
         "name": name,
         "msg": msg,
     })
 }
 
-func (r *Root) POST(c *kocha.Context) kocha.Result {
+func (r *Root) POST(c *kocha.Context) error {
     c.Flash.Set("name", "alice")
     c.Flash.Set("msg", "your comment has been posted!")
     // do something...
-    return kocha.Redirect(c, "/comment", false)
+    return c.Redirect("/comment", false)
 }
 ```
 

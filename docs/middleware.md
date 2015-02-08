@@ -25,8 +25,8 @@ Middleware interface definition is following:
 {% raw %}
 ```go
 type Middleware interface {
-	Before(app *Application, c *Context)
-	After(app *Application, c *Context)
+	Before(app *Application, c *Context) error
+	After(app *Application, c *Context) error
 }
 ```
 {% endraw %}

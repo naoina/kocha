@@ -91,7 +91,7 @@ This is routing definition that it includes `:name` route parameter.
 If *Controller.GET* of that route is defined as follows:
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     c.Params.Get("name")
     ......
 }
@@ -113,7 +113,7 @@ Path: "/:id/:name"
 Controller:
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     c.Params.Get("id")
     c.Params.Get("name")
     ......
@@ -137,7 +137,7 @@ Path: "/*path"
 Controller:
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     c.Params.Get("path")
     ......
 }

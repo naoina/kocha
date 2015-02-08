@@ -102,9 +102,9 @@ In app/controller/root.go:
 
 {% raw %}
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     c.Layout = "sub"
-    return kocha.Render(c, nil)
+    return c.Render(nil)
 }
 ```
 {% endraw %}

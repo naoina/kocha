@@ -27,7 +27,7 @@ This feature is provided by [SessionMiddleware]({{ page.root }}/docs/middleware.
 For example, do the following in order to set the data into the session:
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     c.Session.Set("name", "alice")
     ......
 }
@@ -36,7 +36,7 @@ func (r *Root) GET(c *kocha.Context) kocha.Result {
 And load the data from session:
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     name := c.Session.Get("name")
     ......
 }
@@ -45,7 +45,7 @@ func (r *Root) GET(c *kocha.Context) kocha.Result {
 To delete the data from session, use the `delete` built-in function:
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     c.Session.Set("name", "alice")
     name := c.Session.Get("name") // returns "alice".
     c.Session.Del("name")
@@ -57,7 +57,7 @@ func (r *Root) GET(c *kocha.Context) kocha.Result {
 Also Session has `Clear` method that clear all data from the session.
 
 ```go
-func (r *Root) GET(c *kocha.Context) kocha.Result {
+func (r *Root) GET(c *kocha.Context) error {
     c.Session.Set("name", "alice")
     c.Session.Set("id", "1")
     l := len(c.Session) // returns 2
