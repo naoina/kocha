@@ -9,5 +9,5 @@ type Root struct {
 }
 
 func (ro *Root) GET(c *kocha.Context) error {
-	return kocha.Render(c, nil)
+	return c.Render(nil)
 }

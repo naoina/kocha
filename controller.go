@@ -1,14 +1,20 @@
 package kocha
 
 import (
+	"bytes"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/naoina/denco"
+	"github.com/naoina/kocha/util"
 )
 
 // Controller is the interface that the request controller.
@@ -61,32 +67,32 @@ type DefaultController struct {
 
 // GET implements Getter interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) GET(c *Context) error {
-	return RenderError(c, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil)
 }
 
 // POST implements Poster interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) POST(c *Context) error {
-	return RenderError(c, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil)
 }
 
 // PUT implements Putter interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) PUT(c *Context) error {
-	return RenderError(c, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil)
 }
 
 // DELETE implements Deleter interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) DELETE(c *Context) error {
-	return RenderError(c, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil)
 }
 
 // HEAD implements Header interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) HEAD(c *Context) error {
-	return RenderError(c, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil)
 }
 
 // PATCH implements Patcher interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) PATCH(c *Context) error {
-	return RenderError(c, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil)
 }
 
 type mimeTypeFormats map[string]string
@@ -131,6 +137,155 @@ type Context struct {
 	// A map key is field name, and value is slice of errors.
 	// Errors will be set by Context.Params.Bind().
 	Errors map[string][]*ParamError
+}
+
+// Render renders a template.
+//
+// A data to used will be determined the according to the following rules.
+//
+// 1. If data of the Data type is given, it will be merged to Context.Data.
+//
+// 2. If data of another type is given, it will be set to Context.Data.
+//
+// 3. If data is nil, Context.Data as is.
+//
+// Render retrieve a template file from controller name and c.Response.ContentType.
+// e.g. If controller name is "root" and ContentType is "application/xml", Render will
+// try to retrieve the template file "root.xml".
+// Also ContentType set to "text/html" if not specified.
+func (c *Context) Render(data interface{}) error {
+	c.setData(data)
+	c.setContentTypeIfNotExists("text/html")
+	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
+		return err
+	}
+	t, err := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, c.Format)
+	if err != nil {
+		return err
+	}
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, c); err != nil {
+		return err
+	}
+	return c.render(&buf)
+}
+
+// RenderJSON renders the data as JSON.
+//
+// RenderJSON is similar to Render but data will be encoded to JSON.
+// ContentType set to "application/json" if not specified.
+func (c *Context) RenderJSON(data interface{}) error {
+	c.setData(data)
+	c.setContentTypeIfNotExists("application/json")
+	buf, err := json.Marshal(c.Data)
+	if err != nil {
+		return err
+	}
+	return c.render(bytes.NewReader(buf))
+}
+
+// RenderXML renders the data as XML.
+//
+// RenderXML is similar to Render but data will be encoded to XML.
+// ContentType set to "application/xml" if not specified.
+func (c *Context) RenderXML(data interface{}) error {
+	c.setData(data)
+	c.setContentTypeIfNotExists("application/xml")
+	buf, err := xml.Marshal(c.Data)
+	if err != nil {
+		return err
+	}
+	return c.render(bytes.NewReader(buf))
+}
+
+// RenderText renders the content.
+//
+// ContentType set to "text/plain" if not specified.
+func (c *Context) RenderText(content string) error {
+	c.setContentTypeIfNotExists("text/plain")
+	return c.render(strings.NewReader(content))
+}
+
+// RenderError renders an error page with statusCode.
+//
+// RenderError is similar to Render, but there is a point where some different.
+// Render retrieve a template file from statusCode and c.Response.ContentType.
+// e.g. If statusCode is 500 and ContentType is "application/xml", Render will
+// try to retrieve the template file "errors/500.xml".
+// If failed to retrieve the template file, it returns result of text with statusCode.
+// Also ContentType set to "text/html" if not specified.
+func (c *Context) RenderError(statusCode int, data interface{}) error {
+	c.setData(data)
+	c.setContentTypeIfNotExists("text/html")
+	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
+		return err
+	}
+	c.Response.StatusCode = statusCode
+	c.Name = errorTemplateName(statusCode)
+	t, err := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, c.Format)
+	if err != nil {
+		c.Response.ContentType = "text/plain"
+		return c.render(bytes.NewReader([]byte(http.StatusText(statusCode))))
+	}
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, c); err != nil {
+		return err
+	}
+	return c.render(&buf)
+}
+
+// SendFile sends a content.
+//
+// The path argument specifies an absolute or relative path.
+// If absolute path, read the content from the path as it is.
+// If relative path, First, Try to get the content from included resources and
+// returns it if successful. Otherwise, Add AppPath and StaticDir to the prefix
+// of the path and then will read the content from the path that.
+// Also, set ContentType detect from content if c.Response.ContentType is empty.
+func (c *Context) SendFile(path string) error {
+	var file io.ReadSeeker
+	path = filepath.FromSlash(path)
+	if rc := c.App.ResourceSet.Get(path); rc != nil {
+		switch b := rc.(type) {
+		case string:
+			file = strings.NewReader(b)
+		case []byte:
+			file = bytes.NewReader(b)
+		}
+	}
+	if file == nil {
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(c.App.Config.AppPath, StaticDir, path)
+		}
+		if _, err := os.Stat(path); err != nil {
+			return c.RenderError(http.StatusNotFound, nil)
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		file = f
+	}
+	c.Response.ContentType = util.DetectContentTypeByExt(path)
+	if c.Response.ContentType == "" {
+		c.Response.ContentType = util.DetectContentTypeByBody(file)
+	}
+	return c.render(file)
+}
+
+// Redirect renders result of redirect.
+//
+// If permanently is true, redirect to url with 301. (http.StatusMovedPermanently)
+// Otherwise redirect to url with 302. (http.StatusFound)
+func (c *Context) Redirect(url string, permanently bool) error {
+	if permanently {
+		c.Response.StatusCode = http.StatusMovedPermanently
+	} else {
+		c.Response.StatusCode = http.StatusFound
+	}
+	http.Redirect(c.Response, c.Request.Request, url, c.Response.StatusCode)
+	return nil
 }
 
 // Invoke is shorthand of c.App.Invoke.
@@ -222,9 +377,9 @@ type StaticServe struct {
 func (ss *StaticServe) GET(c *Context) error {
 	path, err := url.Parse(c.Params.Get("path"))
 	if err != nil {
-		return RenderError(c, http.StatusBadRequest, nil)
+		return c.RenderError(http.StatusBadRequest, nil)
 	}
-	return SendFile(c, path.Path)
+	return c.SendFile(path.Path)
 }
 
 var internalServerErrorController = &ErrorController{
@@ -239,5 +394,5 @@ type ErrorController struct {
 }
 
 func (ec *ErrorController) GET(c *Context) error {
-	return RenderError(c, ec.StatusCode, nil)
+	return c.RenderError(ec.StatusCode, nil)
 }
