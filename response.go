@@ -48,7 +48,6 @@ func (r *Response) writeTo(w http.ResponseWriter) error {
 }
 
 func (r *Response) reset() {
-	r.ContentType = ""
 	r.StatusCode = http.StatusOK
 	r.resp = httptest.NewRecorder()
 	r.ResponseWriter = r.resp
