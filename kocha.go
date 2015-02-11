@@ -208,41 +208,50 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 		App:      app,
 		Errors:   make(map[string][]*ParamError),
 	}
+	var err interface{}
 	defer func() {
 		defer app.panicHandler(ctx.Response)
-		if err := recover(); err != nil {
+		if err != nil {
+			app.Logger.Error(err)
+		} else if perr := recover(); perr != nil {
 			app.logStackAndError(err)
+			err = perr
+		}
+		if err != nil {
 			if err := internalServerErrorController.GET(ctx); err != nil {
 				panic(err)
 			}
 		}
 	}()
-	if err := ctx.prepareRequest(params); err != nil {
-		panic(err)
+	if err = ctx.prepareRequest(params); err != nil {
+		return
 	}
-	if err := ctx.prepareParams(); err != nil {
-		panic(err)
+	if err = ctx.prepareParams(); err != nil {
+		return
 	}
 	for _, m := range app.Config.Middlewares {
-		if err := m.Before(app, ctx); err != nil {
-			panic(err)
+		if err = m.Before(app, ctx); err != nil {
+			return
 		}
 	}
-	if err := handler(ctx); err != nil {
-		panic(err)
+	if err = handler(ctx); err != nil {
+		return
 	}
 	app.runAfterMiddlewares(ctx)
 }
 
 func (app *Application) runAfterMiddlewares(c *Context) {
+	var err interface{}
 	defer func() {
-		if err := recover(); err != nil {
-			app.logStackAndError(err)
+		if err != nil {
+			app.Logger.Error(err)
+		} else if perr := recover(); perr != nil {
+			app.logStackAndError(perr)
 		}
 	}()
 	for i := len(app.Config.Middlewares) - 1; i >= 0; i-- {
-		if err := app.Config.Middlewares[i].After(app, c); err != nil {
-			panic(err)
+		if err = app.Config.Middlewares[i].After(app, c); err != nil {
+			return
 		}
 	}
 }
