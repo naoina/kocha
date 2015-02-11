@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 
 	"github.com/naoina/kocha"
@@ -285,7 +286,11 @@ func TestContext_Render_withDifferentKeyType(t *testing.T) {
 		c.Data = v.data
 		ctx := v.ctx
 		actual := c.Render(ctx)
+		_, file, line, _ := runtime.Caller(0)
 		expect := v.expect
+		if expect != nil {
+			expect = fmt.Errorf("%s:%d: %v", file, line-1, expect)
+		}
 		if !reflect.DeepEqual(actual, expect) {
 			t.Errorf(`c.Render(%#v) => %#v; want %#v`, ctx, actual, expect)
 		}
@@ -315,7 +320,8 @@ func TestContext_Render_withMissingTemplateInAppName(t *testing.T) {
 	c := newTestContext("testctrlr", "")
 	c.App.Config.AppName = "unknownAppName"
 	actual := c.Render(nil)
-	expect := fmt.Errorf("kocha: template not found: unknownAppName:/testctrlr.html")
+	_, file, line, _ := runtime.Caller(0)
+	expect := fmt.Errorf("%s:%d: kocha: template not found: unknownAppName:/testctrlr.html", file, line-1)
 	if !reflect.DeepEqual(actual, expect) {
 		t.Errorf(`kocha.Render(%#v, %#v) => %#v; want %#v`, c, nil, actual, expect)
 	}
@@ -325,7 +331,8 @@ func TestContext_Render_withMissingTemplate(t *testing.T) {
 	c := newTestContext("testctrlr", "")
 	c.Name = "unknownctrlr"
 	actual := c.Render(nil)
-	expect := fmt.Errorf("kocha: template not found: appname:/unknownctrlr.html")
+	_, file, line, _ := runtime.Caller(0)
+	expect := fmt.Errorf("%s:%d: kocha: template not found: appname:/unknownctrlr.html", file, line-1)
 	if !reflect.DeepEqual(actual, expect) {
 		t.Errorf(`kocha.Render(%#v, %#v) => %#v; want %#v`, c, nil, actual, expect)
 	}
@@ -486,7 +493,8 @@ func TestContext_RenderError(t *testing.T) {
 		c = newTestContext("testctrlr", "")
 		c.Response.ContentType = "unknown/content-type"
 		actual := c.RenderError(http.StatusInternalServerError, nil)
-		expect := fmt.Errorf("kocha: unknown Content-Type: unknown/content-type")
+		_, file, line, _ := runtime.Caller(0)
+		expect := fmt.Errorf("%s:%d: kocha: unknown Content-Type: unknown/content-type", file, line-1)
 		if !reflect.DeepEqual(actual, expect) {
 			t.Errorf(`kocha.RenderError(%#v, %#v, %#v) => %#v; want %#v`, c, http.StatusInternalServerError, nil, actual, expect)
 		}
