@@ -204,13 +204,18 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 		Layout:   app.Config.DefaultLayout,
 		Data:     map[interface{}]interface{}{},
 		Request:  newRequest(r),
-		Response: newResponse(w),
+		Response: newResponse(),
 		App:      app,
 		Errors:   make(map[string][]*ParamError),
 	}
 	var err interface{}
 	defer func() {
-		defer app.panicHandler(ctx.Response)
+		defer func() {
+			if err := recover(); err != nil {
+				app.logStackAndError(err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+		}()
 		if err != nil {
 			app.Logger.Error(err)
 		} else if perr := recover(); perr != nil {
@@ -218,9 +223,13 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 			err = perr
 		}
 		if err != nil {
+			ctx.Response.reset()
 			if err := internalServerErrorController.GET(ctx); err != nil {
 				panic(err)
 			}
+		}
+		if err := ctx.Response.writeTo(w); err != nil {
+			app.Logger.Error(err)
 		}
 	}()
 	if err = ctx.prepareRequest(params); err != nil {
@@ -253,13 +262,6 @@ func (app *Application) runAfterMiddlewares(c *Context) {
 		if err = app.Config.Middlewares[i].After(app, c); err != nil {
 			return
 		}
-	}
-}
-
-func (app *Application) panicHandler(w http.ResponseWriter) {
-	if err := recover(); err != nil {
-		app.logStackAndError(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
 
