@@ -219,7 +219,7 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 		if err != nil {
 			app.Logger.Error(err)
 		} else if perr := recover(); perr != nil {
-			app.logStackAndError(err)
+			app.logStackAndError(perr)
 			err = perr
 		}
 		if err != nil {
@@ -232,37 +232,25 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 			app.Logger.Error(err)
 		}
 	}()
-	if err = ctx.prepareRequest(params); err != nil {
-		return
-	}
-	if err = ctx.prepareParams(); err != nil {
-		return
-	}
-	for _, m := range app.Config.Middlewares {
-		if err = m.Before(app, ctx); err != nil {
-			return
+	err = app.wrapMiddlewares(ctx, func() error {
+		if err := ctx.prepareRequest(params); err != nil {
+			return err
 		}
-	}
-	if err = handler(ctx); err != nil {
-		return
-	}
-	app.runAfterMiddlewares(ctx)
+		if err := ctx.prepareParams(); err != nil {
+			return err
+		}
+		return handler(ctx)
+	})()
 }
 
-func (app *Application) runAfterMiddlewares(c *Context) {
-	var err interface{}
-	defer func() {
-		if err != nil {
-			app.Logger.Error(err)
-		} else if perr := recover(); perr != nil {
-			app.logStackAndError(perr)
-		}
-	}()
+func (app *Application) wrapMiddlewares(c *Context, wrapped func() error) func() error {
 	for i := len(app.Config.Middlewares) - 1; i >= 0; i-- {
-		if err = app.Config.Middlewares[i].After(app, c); err != nil {
-			return
+		f, next := app.Config.Middlewares[i].Process, wrapped
+		wrapped = func() error {
+			return f(app, c, next)
 		}
 	}
+	return wrapped
 }
 
 func (app *Application) logStackAndError(err interface{}) {

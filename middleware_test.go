@@ -1,6 +1,7 @@
 package kocha_test
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -37,13 +38,23 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		req, res := newRequestResponse(nil)
 		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
-		if err := m.Before(app, c); err != nil {
-			t.Fatal(err)
+		err := m.Process(app, c, func() error {
+			actual := c.Session
+			expected := make(kocha.Session)
+			if !reflect.DeepEqual(actual, expected) {
+				t.Errorf("Expect %v, but %v", expected, actual)
+			}
+			return fmt.Errorf("expected error")
+		})
+		var actual interface{} = err
+		var expect interface{} = fmt.Errorf("expected error")
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`kocha.SessionMiddleware.Process(app, c, func) => %#v; want %#v`, actual, expect)
 		}
-		actual := c.Session
-		expected := make(kocha.Session)
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+		actual = c.Session
+		expect = make(kocha.Session)
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf("Expect %v, but %v", expect, actual)
 		}
 	}()
 
@@ -63,13 +74,23 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
-		if err := m.Before(app, c); err != nil {
-			t.Fatal(err)
+		err = m.Process(app, c, func() error {
+			actual := c.Session
+			expected := make(kocha.Session)
+			if !reflect.DeepEqual(actual, expected) {
+				t.Errorf("Expect %v, but %v", expected, actual)
+			}
+			return fmt.Errorf("expected error")
+		})
+		var actual interface{} = err
+		var expect interface{} = fmt.Errorf("expected error")
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`kocha.SessionMiddleware.Process(app, c, func) => %#v; want %#v`, actual, expect)
 		}
-		actual := c.Session
-		expected := make(kocha.Session)
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+		actual = c.Session
+		expect = make(kocha.Session)
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf("Expect %v, but %v", expect, actual)
 		}
 	}()
 
@@ -90,13 +111,23 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
-		if err := m.Before(app, c); err != nil {
-			t.Fatal(err)
+		err = m.Process(app, c, func() error {
+			actual := c.Session
+			expect := make(kocha.Session)
+			if !reflect.DeepEqual(actual, expect) {
+				t.Errorf("Expect %v, but %v", expect, actual)
+			}
+			return fmt.Errorf("expected error")
+		})
+		var actual interface{} = err
+		var expect interface{} = fmt.Errorf("expected error")
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`kocha.SessionMiddleware.Process(app, c, func) => %#v; want %#v`, actual, expect)
 		}
-		actual := c.Session
-		expected := make(kocha.Session)
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+		actual = c.Session
+		expect = make(kocha.Session)
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf("Expect %v, but %v", expect, actual)
 		}
 	}()
 
@@ -117,13 +148,23 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
-		if err := m.Before(app, c); err != nil {
-			t.Fatal(err)
+		err = m.Process(app, c, func() error {
+			actual := c.Session
+			expected := make(kocha.Session)
+			if !reflect.DeepEqual(actual, expected) {
+				t.Errorf("Expect %v, but %v", expected, actual)
+			}
+			return fmt.Errorf("expected error")
+		})
+		var actual interface{} = err
+		var expect interface{} = fmt.Errorf("expected error")
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`kocha.SessionMiddleware.Process(app, c, func) => %#v; want %#v`, actual, expect)
 		}
-		actual := c.Session
-		expected := make(kocha.Session)
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+		actual = c.Session
+		expect = make(kocha.Session)
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf("Expect %v, but %v", expect, actual)
 		}
 	}()
 
@@ -144,16 +185,21 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
 		m := &kocha.SessionMiddleware{}
-		if err := m.Before(app, c); err != nil {
-			t.Fatal(err)
+		err = m.Process(app, c, func() error {
+			return fmt.Errorf("expected error")
+		})
+		var actual interface{} = err
+		var expect interface{} = fmt.Errorf("expected error")
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`kocha.SessionMiddlware.Process(app, c, func) => %#v; want %#v`, actual, expect)
 		}
-		actual := c.Session
-		expected := kocha.Session{
+		actual = c.Session
+		expect = kocha.Session{
 			kocha.SessionExpiresKey: "1383820443",
 			"brown fox":             "lazy dog",
 		}
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %v, but %v", expected, actual)
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf("Expect %v, but %v", expect, actual)
 		}
 	}()
 }
@@ -176,8 +222,10 @@ func TestSessionMiddleware_After(t *testing.T) {
 	app.Config.Session.SessionExpires = time.Duration(1) * time.Second
 	app.Config.Session.CookieExpires = time.Duration(2) * time.Second
 	m := &kocha.SessionMiddleware{}
-	if err := m.After(app, c); err != nil {
-		t.Fatal(err)
+	if err := m.Process(app, c, func() error {
+		return nil
+	}); err != nil {
+		t.Error(err)
 	}
 	var (
 		actual   interface{} = c.Session
@@ -251,13 +299,23 @@ func TestFlashMiddleware_Before_withNilSession(t *testing.T) {
 	app := kocha.NewTestApp()
 	m := &kocha.FlashMiddleware{}
 	c := &kocha.Context{Session: nil}
-	if err := m.Before(app, c); err != nil {
-		t.Fatal(err)
+	err := m.Process(app, c, func() error {
+		actual := c.Flash
+		expect := kocha.Flash(nil)
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`FlashMiddleware.Process(app, c, func) => %#v; want %#v`, actual, expect)
+		}
+		return fmt.Errorf("expected error")
+	})
+	var actual interface{} = err
+	var expect interface{} = fmt.Errorf("expected error")
+	if !reflect.DeepEqual(actual, expect) {
+		t.Errorf(`kocha.FlashMiddleware.Process(app, c, func) => %#v; want %#v`, actual, expect)
 	}
-	var actual interface{} = c.Flash
-	var expected interface{} = kocha.Flash(nil)
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf(`FlashMiddleware.Before(app, c) => %#v; want %#v`, actual, expected)
+	actual = c.Flash
+	expect = kocha.Flash(nil)
+	if !reflect.DeepEqual(actual, expect) {
+		t.Errorf(`FlashMiddleware.Process(app, c, func) => %#v; want %#v`, actual, expect)
 	}
 }
 
@@ -265,49 +323,49 @@ func TestFlashMiddleware(t *testing.T) {
 	app := kocha.NewTestApp()
 	m := &kocha.FlashMiddleware{}
 	c := &kocha.Context{Session: make(kocha.Session)}
-	if err := m.Before(app, c); err != nil {
-		t.Fatal(err)
-	}
-	var actual interface{} = c.Flash.Len()
-	var expected interface{} = 0
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf(`FlashMiddleware.Before(app, c); c.Flash.Len() => %#v; want %#v`, actual, expected)
-	}
-
-	c.Flash.Set("test_param", "abc")
-	if err := m.After(app, c); err != nil {
-		t.Fatal(err)
-	}
-	c.Flash = nil
-	if err := m.Before(app, c); err != nil {
-		t.Fatal(err)
-	}
-	actual = c.Flash.Len()
-	expected = 1
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf(`FlashMiddleware.After(app, c) then Before(app, c); c.Flash.Len() => %#v; want %#v`, actual, expected)
-	}
-	actual = c.Flash.Get("test_param")
-	expected = "abc"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf(`FlashMiddleware.After(app, c) then Before(app, c); c.Flash.Get("test_param") => %#v; want %#v`, actual, expected)
+	if err := m.Process(app, c, func() error {
+		actual := c.Flash.Len()
+		expect := 0
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`FlashMiddleware.Process(app, c, func); c.Flash.Len() => %#v; want %#v`, actual, expect)
+		}
+		c.Flash.Set("test_param", "abc")
+		return nil
+	}); err != nil {
+		t.Error(err)
 	}
 
-	if err := m.After(app, c); err != nil {
-		t.Fatal(err)
-	}
 	c.Flash = nil
-	if err := m.Before(app, c); err != nil {
-		t.Fatal(err)
+	if err := m.Process(app, c, func() error {
+		var actual interface{} = c.Flash.Len()
+		var expected interface{} = 1
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf(`FlashMiddleware.Process(app, c, func) then Process(app, c, func); c.Flash.Len() => %#v; want %#v`, actual, expected)
+		}
+		actual = c.Flash.Get("test_param")
+		expected = "abc"
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf(`FlashMiddleware.Process(app, c, func) then Process(app, c, func); c.Flash.Get("test_param") => %#v; want %#v`, actual, expected)
+		}
+		return nil
+	}); err != nil {
+		t.Error(err)
 	}
-	actual = c.Flash.Len()
-	expected = 0
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf(`FlashMiddleware.After(app, c) then Before(app, c); emulated redirect; c.Flash.Len() => %#v; want %#v`, actual, expected)
-	}
-	actual = c.Flash.Get("test_param")
-	expected = ""
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf(`FlashMiddleware.After(app, c) then Before(app, c); emulated redirect; c.Flash.Get("test_param") => %#v; want %#v`, actual, expected)
+
+	c.Flash = nil
+	if err := m.Process(app, c, func() error {
+		var actual interface{} = c.Flash.Len()
+		var expected interface{} = 0
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf(`FlashMiddleware.Process(app, c, func) then Process(app, c, func); emulated redirect; c.Flash.Len() => %#v; want %#v`, actual, expected)
+		}
+		actual = c.Flash.Get("test_param")
+		expected = ""
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf(`FlashMiddleware.Process(app, c, func) then Process(app, c, func); emulated redirect; c.Flash.Get("test_param") => %#v; want %#v`, actual, expected)
+		}
+		return nil
+	}); err != nil {
+		t.Error(err)
 	}
 }

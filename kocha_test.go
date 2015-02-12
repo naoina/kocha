@@ -286,12 +286,12 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		app.Config.Middlewares = []kocha.Middleware{m} // all default middlewares are override
 		app.ServeHTTP(w, req)
 		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusOK) {
-			t.Errorf("Expect %v, but %v", http.StatusInternalServerError, http.StatusOK)
+		if !reflect.DeepEqual(status, http.StatusInternalServerError) {
+			t.Errorf("Expect %v, but %v", http.StatusInternalServerError, status)
 		}
 
 		actual := w.Body.String()
-		expect := "This is layout\nThis is root\n\n"
+		expect := "This is layout\n500 error\n\n"
 		if !reflect.DeepEqual(actual, expect) {
 			t.Errorf(`GET / with TestPanicInAfterMiddleware => %#v; want => %#v`, actual, expect)
 		}
@@ -337,32 +337,31 @@ type TestMiddleware struct {
 	called *[]string
 }
 
-func (m *TestMiddleware) Before(app *kocha.Application, c *kocha.Context) error {
+func (m *TestMiddleware) Process(app *kocha.Application, c *kocha.Context, next func() error) error {
 	*m.called = append(*m.called, "before"+m.id)
-	return nil
-}
-
-func (m *TestMiddleware) After(app *kocha.Application, c *kocha.Context) error {
+	if err := next(); err != nil {
+		return err
+	}
 	*m.called = append(*m.called, "after"+m.id)
 	return nil
 }
 
 type TestPanicInBeforeMiddleware struct{}
 
-func (m *TestPanicInBeforeMiddleware) Before(app *kocha.Application, c *kocha.Context) error {
+func (m *TestPanicInBeforeMiddleware) Process(app *kocha.Application, c *kocha.Context, next func() error) error {
 	panic("before")
-	return nil
-}
-func (m *TestPanicInBeforeMiddleware) After(app *kocha.Application, c *kocha.Context) error {
+	if err := next(); err != nil {
+		return err
+	}
 	return nil
 }
 
 type TestPanicInAfterMiddleware struct{}
 
-func (m *TestPanicInAfterMiddleware) Before(app *kocha.Application, c *kocha.Context) error {
-	return nil
-}
-func (m *TestPanicInAfterMiddleware) After(app *kocha.Application, c *kocha.Context) error {
+func (m *TestPanicInAfterMiddleware) Process(app *kocha.Application, c *kocha.Context, next func() error) error {
+	if err := next(); err != nil {
+		return err
+	}
 	panic("after")
 	return nil
 }

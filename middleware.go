@@ -12,14 +12,23 @@ import (
 
 // Middleware is the interface that middleware.
 type Middleware interface {
-	Before(app *Application, c *Context) error
-	After(app *Application, c *Context) error
+	Process(app *Application, c *Context, next func() error) error
 }
 
 // Session processing middleware.
 type SessionMiddleware struct{}
 
-func (m *SessionMiddleware) Before(app *Application, c *Context) (err error) {
+func (m *SessionMiddleware) Process(app *Application, c *Context, next func() error) error {
+	if err := m.before(app, c); err != nil {
+		return err
+	}
+	if err := next(); err != nil {
+		return err
+	}
+	return m.after(app, c)
+}
+
+func (m *SessionMiddleware) before(app *Application, c *Context) (err error) {
 	defer func() {
 		switch err.(type) {
 		case ErrSession:
@@ -55,7 +64,7 @@ func (m *SessionMiddleware) Before(app *Application, c *Context) (err error) {
 	return nil
 }
 
-func (m *SessionMiddleware) After(app *Application, c *Context) (err error) {
+func (m *SessionMiddleware) after(app *Application, c *Context) (err error) {
 	expires, _ := expiresFromDuration(app.Config.Session.SessionExpires)
 	c.Session[SessionExpiresKey] = strconv.FormatInt(expires.Unix(), 10)
 	cookie := newSessionCookie(app, c)
@@ -70,7 +79,17 @@ func (m *SessionMiddleware) After(app *Application, c *Context) (err error) {
 // Flash messages processing middleware.
 type FlashMiddleware struct{}
 
-func (m *FlashMiddleware) Before(app *Application, c *Context) error {
+func (m *FlashMiddleware) Process(app *Application, c *Context, next func() error) error {
+	if err := m.before(app, c); err != nil {
+		return err
+	}
+	if err := next(); err != nil {
+		return err
+	}
+	return m.after(app, c)
+}
+
+func (m *FlashMiddleware) before(app *Application, c *Context) error {
 	if c.Session == nil {
 		app.Logger.Error("kocha: FlashMiddleware hasn't been added after SessionMiddleware; it cannot be used")
 		return nil
@@ -87,7 +106,7 @@ func (m *FlashMiddleware) Before(app *Application, c *Context) error {
 	return nil
 }
 
-func (m *FlashMiddleware) After(app *Application, c *Context) error {
+func (m *FlashMiddleware) after(app *Application, c *Context) error {
 	if c.Session == nil {
 		return nil
 	}
@@ -106,16 +125,14 @@ func (m *FlashMiddleware) After(app *Application, c *Context) error {
 // Request logging middleware.
 type RequestLoggingMiddleware struct{}
 
-func (m *RequestLoggingMiddleware) Before(app *Application, c *Context) error {
-	return nil
-}
-
-func (m *RequestLoggingMiddleware) After(app *Application, c *Context) error {
-	app.Logger.With(log.Fields{
-		"method":   c.Request.Method,
-		"uri":      c.Request.RequestURI,
-		"protocol": c.Request.Proto,
-		"status":   c.Response.StatusCode,
-	}).Info()
-	return nil
+func (m *RequestLoggingMiddleware) Process(app *Application, c *Context, next func() error) error {
+	defer func() {
+		app.Logger.With(log.Fields{
+			"method":   c.Request.Method,
+			"uri":      c.Request.RequestURI,
+			"protocol": c.Request.Proto,
+			"status":   c.Response.StatusCode,
+		}).Info()
+	}()
+	return next()
 }
