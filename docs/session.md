@@ -79,27 +79,30 @@ If you want to do it, please implements session store that use server-side stora
 
 ## Configuration <a id="Configuration"></a>
 
-General session settings are `AppConfig.Session` in `config/app.go`.
+General session settings are `AppConfig.Middlewares.SessionMiddleware` in `config/app.go`.
 
 {% raw %}
 ```go
 // Session settings
-Session: kocha.SessionConfig{
-    Name: "appname_session",
-    Store: &kocha.SessionCookieStore{
-        // AUTO-GENERATED Random keys. DO NOT EDIT.
-        SecretKey:  "......",
-        SigningKey: "......",
+Middlewares: []kocha.Middleware{
+    ......
+    &kocha.SessionMiddleware{
+        Name: "appname_session",
+        Store: &kocha.SessionCookieStore{
+            // AUTO-GENERATED Random keys. DO NOT EDIT.
+            SecretKey:  "......",
+            SigningKey: "......",
+        },
+
+        // Expiration of session cookie, in seconds, from now.
+        // Persistent if -1, For not specify, set 0.
+        CookieExpires: time.Duration(90) * time.Hour * 24,
+
+        // Expiration of session data, in seconds, from now.
+        // Perssitent if -1, For not specify, set 0.
+        SessionExpires: time.Duration(90) * time.Hour * 24,
+        HttpOnly:       false,
     },
-
-    // Expiration of session cookie, in seconds, from now.
-    // Persistent if -1, For not specify, set 0.
-    CookieExpires: time.Duration(90) * time.Hour * 24,
-
-    // Expiration of session data, in seconds, from now.
-    // Perssitent if -1, For not specify, set 0.
-    SessionExpires: time.Duration(90) * time.Hour * 24,
-    HttpOnly:       false,
 },
 ```
 {% endraw %}
@@ -111,6 +114,7 @@ If you don't want to use the session, please remove `kocha.SessionMiddleware` fr
 If you want other session store that not provided by Kocha, you can implement your own session store.
 
 1. Implements the [SessionStore]({{ site.godoc }}#SessionStore) interface.
+1. (Optional) Implements the [Validator]({{ site.godoc }}#Validator) interface to validate the session store.
 1. It specify to `AppConfig.Store` in `config/app.go`.
 
 Also, see source of [SessionCookieStore]({{ site.godoc }}#SessionCookieStore) for examples.

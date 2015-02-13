@@ -18,6 +18,7 @@ A middleware is pre/post processor of a request.
 ## Implement the middleware <a id="Implement-the-middleware"></a>
 
 1. Implements the [Middleware]({{ site.godoc }}#Middleware) interface.
+1. (Optional) Implements the [Validator]({{ site.godoc }}#Validator) interface to validate the middleware.
 1. It adds to the `AppConfig.Middlewares` in `config/app.go`.
 
 Middleware interface definition is following:
