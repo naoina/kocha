@@ -10,14 +10,6 @@ import (
 	"github.com/naoina/kocha"
 )
 
-func Test_Constants(t *testing.T) {
-	actual := kocha.SessionExpiresKey
-	expected := "_kocha._sess._expires"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-}
-
 func TestSession(t *testing.T) {
 	sess := make(kocha.Session)
 	key := "test_key"

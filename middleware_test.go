@@ -149,8 +149,9 @@ func TestPanicRecoverMiddleware(t *testing.T) {
 
 func newTestSessionMiddleware(store kocha.SessionStore) *kocha.SessionMiddleware {
 	return &kocha.SessionMiddleware{
-		Name:  "test_session",
-		Store: store,
+		Name:       "test_session",
+		Store:      store,
+		ExpiresKey: "test.expires.key",
 	}
 }
 
@@ -240,13 +241,13 @@ func TestSessionMiddleware_Before(t *testing.T) {
 	func() {
 		app := kocha.NewTestApp()
 		store := kocha.NewTestSessionCookieStore()
+		m := newTestSessionMiddleware(store)
 		sess := make(kocha.Session)
-		sess[kocha.SessionExpiresKey] = "invalid format"
+		sess[m.ExpiresKey] = "invalid format"
 		value, err := store.Save(sess)
 		if err != nil {
 			t.Fatal(err)
 		}
-		m := newTestSessionMiddleware(store)
 		cookie := &http.Cookie{
 			Name:  m.Name,
 			Value: value,
@@ -277,13 +278,13 @@ func TestSessionMiddleware_Before(t *testing.T) {
 	func() {
 		app := kocha.NewTestApp()
 		store := kocha.NewTestSessionCookieStore()
+		m := newTestSessionMiddleware(store)
 		sess := make(kocha.Session)
-		sess[kocha.SessionExpiresKey] = "1383820442"
+		sess[m.ExpiresKey] = "1383820442"
 		value, err := store.Save(sess)
 		if err != nil {
 			t.Fatal(err)
 		}
-		m := newTestSessionMiddleware(store)
 		cookie := &http.Cookie{
 			Name:  m.Name,
 			Value: value,
@@ -313,14 +314,14 @@ func TestSessionMiddleware_Before(t *testing.T) {
 	func() {
 		app := kocha.NewTestApp()
 		store := kocha.NewTestSessionCookieStore()
+		m := newTestSessionMiddleware(store)
 		sess := make(kocha.Session)
-		sess[kocha.SessionExpiresKey] = "1383820443"
+		sess[m.ExpiresKey] = "1383820443"
 		sess["brown fox"] = "lazy dog"
 		value, err := store.Save(sess)
 		if err != nil {
 			t.Fatal(err)
 		}
-		m := newTestSessionMiddleware(store)
 		cookie := &http.Cookie{
 			Name:  m.Name,
 			Value: value,
@@ -337,8 +338,8 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		}
 		actual = c.Session
 		expect = kocha.Session{
-			kocha.SessionExpiresKey: "1383820443",
-			"brown fox":             "lazy dog",
+			m.ExpiresKey: "1383820443",
+			"brown fox":  "lazy dog",
 		}
 		if !reflect.DeepEqual(actual, expect) {
 			t.Errorf("Expect %v, but %v", expect, actual)
@@ -372,14 +373,14 @@ func TestSessionMiddleware_After(t *testing.T) {
 	var (
 		actual   interface{} = c.Session
 		expected interface{} = kocha.Session{
-			kocha.SessionExpiresKey: "1383820444", // + time.Duration(1) * time.Second
+			m.ExpiresKey: "1383820444", // + time.Duration(1) * time.Second
 		}
 	)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
 
-	c.Session[kocha.SessionExpiresKey] = "1383820444"
+	c.Session[m.ExpiresKey] = "1383820444"
 	value, err := m.Store.Save(c.Session)
 	if err != nil {
 		t.Fatal(err)
@@ -484,6 +485,25 @@ func TestSessionMiddleware_Validate(t *testing.T) {
 		expect := v.expect
 		if !reflect.DeepEqual(actual, expect) {
 			t.Errorf(`kocha.SessionMiddleware.Validate() with %#v => %#v; want %#v`, v.m, actual, expect)
+		}
+	}
+
+	for _, v := range []struct {
+		m      *kocha.SessionMiddleware
+		expect string
+	}{
+		{&kocha.SessionMiddleware{}, "_kocha._sess._expires"},
+		{&kocha.SessionMiddleware{ExpiresKey: "test.expires.key"}, "test.expires.key"},
+	} {
+		v.m.Name = "test_session"
+		v.m.Store = &NullSessionStore{}
+		if err := v.m.Validate(); err != nil {
+			t.Error(err)
+		}
+		actual := v.m.ExpiresKey
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`kocha.SessionMiddleware.Validate(); ExpiresKey => %#v; want %#v`, actual, expect)
 		}
 	}
 }

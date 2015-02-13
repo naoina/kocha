@@ -28,10 +28,6 @@ type SessionStore interface {
 // Session represents a session data store.
 type Session map[string]string
 
-const (
-	SessionExpiresKey = "_kocha._sess._expires"
-)
-
 // Get gets a value associated with the given key.
 // If there is the no value associated with the given key, Get returns "".
 func (sess Session) Get(key string) string {

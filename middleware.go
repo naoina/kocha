@@ -17,13 +17,6 @@ type Middleware interface {
 	Process(app *Application, c *Context, next func() error) error
 }
 
-// Validator is the interface to validate the middleware.
-type Validator interface {
-	// Validate validates the middleware.
-	// Validate will be called in initializing the application.
-	Validate() error
-}
-
 // PanicRecoverMiddleware is a middleware to recover a panic where occurred in request sequence.
 type PanicRecoverMiddleware struct{}
 
@@ -68,6 +61,7 @@ type SessionMiddleware struct {
 	// 0 is for persistent.
 	SessionExpires time.Duration
 	HttpOnly       bool
+	ExpiresKey     string
 }
 
 func (m *SessionMiddleware) Process(app *Application, c *Context, next func() error) error {
@@ -90,6 +84,9 @@ func (m *SessionMiddleware) Validate() error {
 	}
 	if m.Name == "" {
 		return fmt.Errorf("kocha: session: Name must be specified")
+	}
+	if m.ExpiresKey == "" {
+		m.ExpiresKey = "_kocha._sess._expires"
 	}
 	return m.Store.Validate()
 }
@@ -117,7 +114,7 @@ func (m *SessionMiddleware) before(app *Application, c *Context) (err error) {
 	if err != nil {
 		return err
 	}
-	expiresStr, ok := sess[SessionExpiresKey]
+	expiresStr, ok := sess[m.ExpiresKey]
 	if !ok {
 		return fmt.Errorf("expires value not found")
 	}
@@ -134,7 +131,7 @@ func (m *SessionMiddleware) before(app *Application, c *Context) (err error) {
 
 func (m *SessionMiddleware) after(app *Application, c *Context) (err error) {
 	expires, _ := m.expiresFromDuration(m.SessionExpires)
-	c.Session[SessionExpiresKey] = strconv.FormatInt(expires.Unix(), 10)
+	c.Session[m.ExpiresKey] = strconv.FormatInt(expires.Unix(), 10)
 	cookie := m.newSessionCookie(app, c)
 	cookie.Value, err = m.Store.Save(c.Session)
 	if err != nil {
