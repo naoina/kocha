@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/naoina/kocha"
@@ -166,13 +165,12 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		{"/user/7", http.StatusOK, "This is layout\nThis is user 7\n\n", "text/html"},
 		{"/2013/07/19/user/naoina", http.StatusOK, "This is layout\nThis is date naoina: 2013-07-19\n\n", "text/html"},
 		{"/missing", http.StatusNotFound, "This is layout\n404 template not found\n\n", "text/html"},
-		{"/error", http.StatusInternalServerError, "This is layout\n500 error\n\n", "text/html"},
 		{"/json", http.StatusOK, "{\n  \"layout\": \"application\",\n  {\"tmpl5\":\"json\"}\n\n}\n", "application/json"},
 		{"/teapot", http.StatusTeapot, "This is layout\nI'm a tea pot\n\n", "text/html"},
-		{"/panic_in_render", http.StatusInternalServerError, "Internal Server Error", "text/plain"},
+		{"/panic_in_render", http.StatusInternalServerError, "Internal Server Error\n", "text/plain; charset=utf-8"},
 		{"/static/robots.txt", http.StatusOK, "# User-Agent: *\n# Disallow: /\n", "text/plain; charset=utf-8"},
 		// This returns 500 Internal Server Error (not 502 BadGateway) because the file 'error/502.html' not found.
-		{"/error_controller_test", http.StatusInternalServerError, "This is layout\n500 error\n\n", "text/html"},
+		{"/error_controller_test", http.StatusInternalServerError, "Internal Server Error\n", "text/plain; charset=utf-8"},
 	} {
 		func() {
 			defer func() {
@@ -207,6 +205,24 @@ func TestApplication_ServeHTTP(t *testing.T) {
 			}
 		}()
 	}
+
+	// test for panic in handler
+	func() {
+		defer func() {
+			actual := recover()
+			expect := "panic test"
+			if !reflect.DeepEqual(actual, expect) {
+				t.Errorf(`GET /error; recover() => %#v; want %#v`, actual, expect)
+			}
+		}()
+		w := httptest.NewRecorder()
+		req, err := http.NewRequest("GET", "/error", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		app := kocha.NewTestApp()
+		app.ServeHTTP(w, req)
+	}()
 
 	// middleware tests
 	func() {
@@ -249,8 +265,10 @@ func TestApplication_ServeHTTP(t *testing.T) {
 
 	func() {
 		defer func() {
-			if err := recover(); err != nil {
-				t.Errorf("Expect don't panic, but panic")
+			actual := recover()
+			expect := "before"
+			if !reflect.DeepEqual(actual, expect) {
+				t.Errorf(`GET /; recover() => %#v; want %#v`, actual, expect)
 			}
 		}()
 		req, err := http.NewRequest("GET", "/", nil)
@@ -262,16 +280,14 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		app.Config.Middlewares = []kocha.Middleware{m} // all default middlewares are override
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, req)
-		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusInternalServerError) {
-			t.Errorf("Expect %v, but %v", http.StatusInternalServerError, status)
-		}
 	}()
 
 	func() {
 		defer func() {
-			if err := recover(); err != nil {
-				t.Errorf("Expect don't panic, but panic")
+			actual := recover()
+			expect := "after"
+			if !reflect.DeepEqual(actual, expect) {
+				t.Errorf(`GET /; recover() => %#v; want %#v`, actual, expect)
 			}
 		}()
 		w := httptest.NewRecorder()
@@ -280,27 +296,9 @@ func TestApplication_ServeHTTP(t *testing.T) {
 			t.Fatal(err)
 		}
 		app := kocha.NewTestApp()
-		var buf bytes.Buffer
-		app.Logger = log.New(&buf, &log.LTSVFormatter{}, app.Config.Logger.Level)
 		m := &TestPanicInAfterMiddleware{}
 		app.Config.Middlewares = []kocha.Middleware{m} // all default middlewares are override
 		app.ServeHTTP(w, req)
-		status := w.Code
-		if !reflect.DeepEqual(status, http.StatusInternalServerError) {
-			t.Errorf("Expect %v, but %v", http.StatusInternalServerError, status)
-		}
-
-		actual := w.Body.String()
-		expect := "This is layout\n500 error\n\n"
-		if !reflect.DeepEqual(actual, expect) {
-			t.Errorf(`GET / with TestPanicInAfterMiddleware => %#v; want => %#v`, actual, expect)
-		}
-
-		logline := strings.SplitN(buf.String(), "\n", 2)[0]
-		contain := "\tmessage:after"
-		if !strings.Contains(logline, contain) {
-			t.Errorf("GET / with TestPanicInAfterMiddleware; log => %#v; want contains => %#v", logline, contain)
-		}
 	}()
 }
 

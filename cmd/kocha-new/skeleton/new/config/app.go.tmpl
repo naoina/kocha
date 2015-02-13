@@ -36,6 +36,7 @@ var (
 
 		// Middlewares.
 		Middlewares: []kocha.Middleware{
+			&kocha.PanicRecoverMiddleware{},
 			&kocha.RequestLoggingMiddleware{},
 			&kocha.SessionMiddleware{},
 			&kocha.FlashMiddleware{},

@@ -208,31 +208,12 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 		App:      app,
 		Errors:   make(map[string][]*ParamError),
 	}
-	var err interface{}
 	defer func() {
-		defer func() {
-			if err := recover(); err != nil {
-				app.logStackAndError(err)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			}
-		}()
-		if err != nil {
-			app.Logger.Error(err)
-		} else if perr := recover(); perr != nil {
-			app.logStackAndError(perr)
-			err = perr
-		}
-		if err != nil {
-			ctx.Response.reset()
-			if err := internalServerErrorController.GET(ctx); err != nil {
-				panic(err)
-			}
-		}
 		if err := ctx.Response.writeTo(w); err != nil {
 			app.Logger.Error(err)
 		}
 	}()
-	err = app.wrapMiddlewares(ctx, func() error {
+	if err := app.wrapMiddlewares(ctx, func() error {
 		if err := ctx.prepareRequest(params); err != nil {
 			return err
 		}
@@ -240,7 +221,11 @@ func (app *Application) render(w http.ResponseWriter, r *http.Request, controlle
 			return err
 		}
 		return handler(ctx)
-	})()
+	})(); err != nil {
+		app.Logger.Error(err)
+		ctx.Response.reset()
+		http.Error(ctx.Response, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
 }
 
 func (app *Application) wrapMiddlewares(c *Context, wrapped func() error) func() error {

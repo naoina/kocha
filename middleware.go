@@ -15,6 +15,34 @@ type Middleware interface {
 	Process(app *Application, c *Context, next func() error) error
 }
 
+// PanicRecoverMiddleware is a middleware to recover a panic where occurred in request sequence.
+type PanicRecoverMiddleware struct{}
+
+func (m *PanicRecoverMiddleware) Process(app *Application, c *Context, next func() error) (err error) {
+	defer func() {
+		defer func() {
+			if perr := recover(); perr != nil {
+				app.logStackAndError(perr)
+				err = fmt.Errorf("%v", perr)
+			}
+		}()
+		if err != nil {
+			app.Logger.Error(err)
+			goto ERROR
+		} else if perr := recover(); perr != nil {
+			app.logStackAndError(perr)
+			goto ERROR
+		}
+		return
+	ERROR:
+		c.Response.reset()
+		if err = internalServerErrorController.GET(c); err != nil {
+			app.logStackAndError(err)
+		}
+	}()
+	return next()
+}
+
 // Session processing middleware.
 type SessionMiddleware struct{}
 

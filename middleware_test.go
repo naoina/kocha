@@ -1,16 +1,151 @@
 package kocha_test
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/log"
 	"github.com/naoina/kocha/util"
 )
+
+func TestPanicRecoverMiddleware(t *testing.T) {
+	test := func(ident string, w *httptest.ResponseRecorder) {
+		var actual interface{} = w.Code
+		var expect interface{} = http.StatusInternalServerError
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`PanicRecoverMiddleware: %s; status => %#v; want %#v`, ident, actual, expect)
+		}
+
+		actual = w.Body.String()
+		expect = "This is layout\n500 error\n\n"
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`PanicRecoverMiddleware: %s => %#v; want %#v`, ident, actual, expect)
+		}
+
+		actual = w.Header().Get("Content-Type")
+		expect = "text/html"
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`PanicRecoverMiddleware: %s; Context-Type => %#v; want %#v`, ident, actual, expect)
+		}
+	}
+
+	func() {
+		req, err := http.NewRequest("GET", "/error", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		app := kocha.NewTestApp()
+		app.Config.Middlewares = []kocha.Middleware{
+			&kocha.PanicRecoverMiddleware{},
+		}
+		var buf bytes.Buffer
+		app.Logger = log.New(&buf, &log.LTSVFormatter{}, app.Config.Logger.Level)
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, req)
+		test(`GET "/error"`, w)
+
+		actual := strings.SplitN(buf.String(), "\n", 2)[0]
+		expect := "\tmessage:panic test"
+		if !strings.Contains(actual, expect) {
+			t.Errorf(`PanicRecoverMiddleware: GET "/error"; log => %#v; want contains => %#v`, actual, expect)
+		}
+	}()
+
+	func() {
+		req, err := http.NewRequest("GET", "/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		app := kocha.NewTestApp()
+		app.Config.Middlewares = []kocha.Middleware{
+			&kocha.PanicRecoverMiddleware{},
+			&TestPanicInBeforeMiddleware{},
+		}
+		var buf bytes.Buffer
+		app.Logger = log.New(&buf, &log.LTSVFormatter{}, app.Config.Logger.Level)
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, req)
+		test(`GET "/"`, w)
+
+		actual := strings.SplitN(buf.String(), "\n", 2)[0]
+		expect := "\tmessage:before"
+		if !strings.Contains(actual, expect) {
+			t.Errorf(`PanicRecoverMiddleware: GET "/error"; log => %#v; want contains => %#v`, actual, expect)
+		}
+	}()
+
+	func() {
+		req, err := http.NewRequest("GET", "/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		app := kocha.NewTestApp()
+		app.Config.Middlewares = []kocha.Middleware{
+			&kocha.PanicRecoverMiddleware{},
+			&TestPanicInAfterMiddleware{},
+		}
+		var buf bytes.Buffer
+		app.Logger = log.New(&buf, &log.LTSVFormatter{}, app.Config.Logger.Level)
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, req)
+		test(`GET "/"`, w)
+
+		actual := strings.SplitN(buf.String(), "\n", 2)[0]
+		expect := "\tmessage:after"
+		if !strings.Contains(actual, expect) {
+			t.Errorf(`PanicRecoverMiddleware: GET "/error"; log => %#v; want contains => %#v`, actual, expect)
+		}
+	}()
+
+	func() {
+		defer func() {
+			actual := recover()
+			expect := "before"
+			if !reflect.DeepEqual(actual, expect) {
+				t.Errorf(`PanicRecoverMiddleware after panic middleware: GET "/" => %#v; want %#v`, actual, expect)
+			}
+		}()
+		req, err := http.NewRequest("GET", "/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		app := kocha.NewTestApp()
+		app.Config.Middlewares = []kocha.Middleware{
+			&TestPanicInBeforeMiddleware{},
+			&kocha.PanicRecoverMiddleware{},
+		}
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, req)
+	}()
+
+	func() {
+		defer func() {
+			actual := recover()
+			expect := "after"
+			if !reflect.DeepEqual(actual, expect) {
+				t.Errorf(`PanicRecoverMiddleware after panic middleware: GET "/" => %#v; want %#v`, actual, expect)
+			}
+		}()
+		req, err := http.NewRequest("GET", "/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		app := kocha.NewTestApp()
+		app.Config.Middlewares = []kocha.Middleware{
+			&TestPanicInAfterMiddleware{},
+			&kocha.PanicRecoverMiddleware{},
+		}
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, req)
+	}()
+}
 
 func TestSessionMiddleware_Before(t *testing.T) {
 	newRequestResponse := func(cookie *http.Cookie) (*kocha.Request, *kocha.Response) {
