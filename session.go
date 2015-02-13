@@ -19,10 +19,6 @@ import (
 type SessionStore interface {
 	Save(sess Session) (key string, err error)
 	Load(key string) (sess Session, err error)
-
-	// Validate calls in boot time.
-	// Validate the session store specific values if you want. But highly recommended.
-	Validate() error
 }
 
 // Session represents a session data store.

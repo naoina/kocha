@@ -88,7 +88,7 @@ func New(config *Config) (*Application, error) {
 	if app.Config.MaxClientBodySize < 1 {
 		config.MaxClientBodySize = DefaultMaxClientBodySize
 	}
-	if err := app.validateSessionConfig(); err != nil {
+	if err := app.validateMiddlewares(); err != nil {
 		return nil, err
 	}
 	if err := app.buildResourceSet(); err != nil {
@@ -183,10 +183,12 @@ func (app *Application) buildLogger() error {
 	return nil
 }
 
-func (app *Application) validateSessionConfig() error {
+func (app *Application) validateMiddlewares() error {
 	for _, m := range app.Config.Middlewares {
-		if middleware, ok := m.(*SessionMiddleware); ok {
-			return middleware.Validate()
+		if v, ok := m.(Validator); ok {
+			if err := v.Validate(); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

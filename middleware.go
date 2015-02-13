@@ -17,6 +17,13 @@ type Middleware interface {
 	Process(app *Application, c *Context, next func() error) error
 }
 
+// Validator is the interface to validate the middleware.
+type Validator interface {
+	// Validate validates the middleware.
+	// Validate will be called in boot-time of the application.
+	Validate() error
+}
+
 // PanicRecoverMiddleware is a middleware to recover a panic where occurred in request sequence.
 type PanicRecoverMiddleware struct{}
 
@@ -88,7 +95,10 @@ func (m *SessionMiddleware) Validate() error {
 	if m.ExpiresKey == "" {
 		m.ExpiresKey = "_kocha._sess._expires"
 	}
-	return m.Store.Validate()
+	if v, ok := m.Store.(Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (m *SessionMiddleware) before(app *Application, c *Context) (err error) {
