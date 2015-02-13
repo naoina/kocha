@@ -38,27 +38,24 @@ var (
 		Middlewares: []kocha.Middleware{
 			&kocha.PanicRecoverMiddleware{},
 			&kocha.RequestLoggingMiddleware{},
-			&kocha.SessionMiddleware{},
-			&kocha.FlashMiddleware{},
-		},
+			&kocha.SessionMiddleware{
+				Name: "{{.appName}}_session",
+				Store: &kocha.SessionCookieStore{
+					// AUTO-GENERATED Random keys. DO NOT EDIT.
+					SecretKey:  {{.secretKey}},
+					SigningKey: {{.signedKey}},
+				},
 
-		// Session settings
-		Session: &kocha.SessionConfig{
-			Name: "{{.appName}}_session",
-			Store: &kocha.SessionCookieStore{
-				// AUTO-GENERATED Random keys. DO NOT EDIT.
-				SecretKey:  {{.secretKey}},
-				SigningKey: {{.signedKey}},
+				// Expiration of session cookie, in seconds, from now.
+				// Persistent if -1, For not specify, set 0.
+				CookieExpires: time.Duration(90) * time.Hour * 24,
+
+				// Expiration of session data, in seconds, from now.
+				// Perssitent if -1, For not specify, set 0.
+				SessionExpires: time.Duration(90) * time.Hour * 24,
+				HttpOnly:       false,
 			},
-
-			// Expiration of session cookie, in seconds, from now.
-			// Persistent if -1, For not specify, set 0.
-			CookieExpires: time.Duration(90) * time.Hour * 24,
-
-			// Expiration of session data, in seconds, from now.
-			// Perssitent if -1, For not specify, set 0.
-			SessionExpires: time.Duration(90) * time.Hour * 24,
-			HttpOnly:       false,
+			&kocha.FlashMiddleware{},
 		},
 
 		MaxClientBodySize: 1024 * 1024 * 10, // 10MB

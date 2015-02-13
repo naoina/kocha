@@ -11,45 +11,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
-	"time"
 
-	"github.com/naoina/kocha/util"
 	"github.com/ugorji/go/codec"
 )
-
-// SessionConfig represents a configuration of session.
-type SessionConfig struct {
-	// Name of cookie (key)
-	Name string
-
-	// Implementation of session store
-	Store SessionStore
-
-	// Expiration of session cookie, in seconds, from now. (not session expiration)
-	// 0 is for persistent.
-	CookieExpires time.Duration
-
-	// Expiration of session data, in seconds, from now. (not cookie expiration)
-	// 0 is for persistent.
-	SessionExpires time.Duration
-	HttpOnly       bool
-}
-
-func (config *SessionConfig) Validate() error {
-	if config == nil {
-		return nil
-	}
-	if config.Name == "" {
-		return fmt.Errorf("kocha: session: %T.Name must be specify", *config)
-	}
-	if config.Store != nil {
-		if err := config.Store.Validate(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 // SessionStore is the interface that session store.
 type SessionStore interface {
@@ -90,33 +54,6 @@ func (sess Session) Clear() {
 	for k, _ := range sess {
 		delete(sess, k)
 	}
-}
-
-func newSessionCookie(app *Application, c *Context) *http.Cookie {
-	expires, maxAge := expiresFromDuration(app.Config.Session.CookieExpires)
-	return &http.Cookie{
-		Name:     app.Config.Session.Name,
-		Value:    "",
-		Path:     "/",
-		Expires:  expires,
-		MaxAge:   maxAge,
-		Secure:   c.Request.IsSSL(),
-		HttpOnly: app.Config.Session.HttpOnly,
-	}
-}
-
-func expiresFromDuration(d time.Duration) (expires time.Time, maxAge int) {
-	switch d {
-	case -1:
-		// persistent
-		expires = util.Now().UTC().AddDate(20, 0, 0)
-	case 0:
-		expires = time.Time{}
-	default:
-		expires = util.Now().UTC().Add(d)
-		maxAge = int(d.Seconds())
-	}
-	return expires, maxAge
 }
 
 type ErrSession struct {

@@ -186,16 +186,10 @@ func (app *Application) buildLogger() error {
 func (app *Application) validateSessionConfig() error {
 	for _, m := range app.Config.Middlewares {
 		if middleware, ok := m.(*SessionMiddleware); ok {
-			if app.Config.Session == nil {
-				return fmt.Errorf("kocha: session: Because %T is nil, %T cannot be used", app.Config, *middleware)
-			}
-			if app.Config.Session.Store == nil {
-				return fmt.Errorf("kocha: session: Because %T.Store is nil, %T cannot be used", *app.Config, *middleware)
-			}
-			return nil
+			return middleware.Validate()
 		}
 	}
-	return app.Config.Session.Validate()
+	return nil
 }
 
 func (app *Application) render(w http.ResponseWriter, r *http.Request, controller Controller, handler requestHandler, params denco.Params) {
@@ -246,16 +240,15 @@ func (app *Application) logStackAndError(err interface{}) {
 
 // Config represents a application-scope configuration.
 type Config struct {
-	Addr              string         // listen address, DefaultHttpAddr if empty.
-	AppPath           string         // root path of the application.
-	AppName           string         // name of the application.
-	DefaultLayout     string         // name of the default layout.
-	Template          *Template      // template config.
-	RouteTable        RouteTable     // routing config.
-	Middlewares       []Middleware   // middlewares.
-	Session           *SessionConfig // session config.
-	Logger            *LoggerConfig  // logger config.
-	MaxClientBodySize int64          // maximum size of request body, DefaultMaxClientBodySize if 0
+	Addr              string        // listen address, DefaultHttpAddr if empty.
+	AppPath           string        // root path of the application.
+	AppName           string        // name of the application.
+	DefaultLayout     string        // name of the default layout.
+	Template          *Template     // template config.
+	RouteTable        RouteTable    // routing config.
+	Middlewares       []Middleware  // middlewares.
+	Logger            *LoggerConfig // logger config.
+	MaxClientBodySize int64         // maximum size of request body, DefaultMaxClientBodySize if 0
 
 	ResourceSet ResourceSet
 }

@@ -147,6 +147,13 @@ func TestPanicRecoverMiddleware(t *testing.T) {
 	}()
 }
 
+func newTestSessionMiddleware(store kocha.SessionStore) *kocha.SessionMiddleware {
+	return &kocha.SessionMiddleware{
+		Name:  "test_session",
+		Store: store,
+	}
+}
+
 func TestSessionMiddleware_Before(t *testing.T) {
 	newRequestResponse := func(cookie *http.Cookie) (*kocha.Request, *kocha.Response) {
 		r, err := http.NewRequest("GET", "/", nil)
@@ -172,7 +179,7 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		app := kocha.NewTestApp()
 		req, res := newRequestResponse(nil)
 		c := &kocha.Context{Request: req, Response: res}
-		m := &kocha.SessionMiddleware{}
+		m := &kocha.SessionMiddleware{Store: &NullSessionStore{}}
 		err := m.Process(app, c, func() error {
 			actual := c.Session
 			expected := make(kocha.Session)
@@ -202,13 +209,13 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		m := newTestSessionMiddleware(store)
 		cookie := &http.Cookie{
-			Name:  app.Config.Session.Name,
+			Name:  m.Name,
 			Value: value,
 		}
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
-		m := &kocha.SessionMiddleware{}
 		err = m.Process(app, c, func() error {
 			actual := c.Session
 			expected := make(kocha.Session)
@@ -239,13 +246,13 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		m := newTestSessionMiddleware(store)
 		cookie := &http.Cookie{
-			Name:  app.Config.Session.Name,
+			Name:  m.Name,
 			Value: value,
 		}
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
-		m := &kocha.SessionMiddleware{}
 		err = m.Process(app, c, func() error {
 			actual := c.Session
 			expect := make(kocha.Session)
@@ -276,13 +283,13 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		m := newTestSessionMiddleware(store)
 		cookie := &http.Cookie{
-			Name:  app.Config.Session.Name,
+			Name:  m.Name,
 			Value: value,
 		}
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
-		m := &kocha.SessionMiddleware{}
 		err = m.Process(app, c, func() error {
 			actual := c.Session
 			expected := make(kocha.Session)
@@ -313,13 +320,13 @@ func TestSessionMiddleware_Before(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		m := newTestSessionMiddleware(store)
 		cookie := &http.Cookie{
-			Name:  app.Config.Session.Name,
+			Name:  m.Name,
 			Value: value,
 		}
 		req, res := newRequestResponse(cookie)
 		c := &kocha.Context{Request: req, Response: res}
-		m := &kocha.SessionMiddleware{}
 		err = m.Process(app, c, func() error {
 			return fmt.Errorf("expected error")
 		})
@@ -354,9 +361,9 @@ func TestSessionMiddleware_After(t *testing.T) {
 	req, res := &kocha.Request{Request: r}, &kocha.Response{ResponseWriter: w}
 	c := &kocha.Context{Request: req, Response: res}
 	c.Session = make(kocha.Session)
-	app.Config.Session.SessionExpires = time.Duration(1) * time.Second
-	app.Config.Session.CookieExpires = time.Duration(2) * time.Second
-	m := &kocha.SessionMiddleware{}
+	m := &kocha.SessionMiddleware{Store: &NullSessionStore{}}
+	m.SessionExpires = time.Duration(1) * time.Second
+	m.CookieExpires = time.Duration(2) * time.Second
 	if err := m.Process(app, c, func() error {
 		return nil
 	}); err != nil {
@@ -373,30 +380,30 @@ func TestSessionMiddleware_After(t *testing.T) {
 	}
 
 	c.Session[kocha.SessionExpiresKey] = "1383820444"
-	value, err := app.Config.Session.Store.Save(c.Session)
+	value, err := m.Store.Save(c.Session)
 	if err != nil {
 		t.Fatal(err)
 	}
 	c1 := res.Cookies()[0]
 	c2 := &http.Cookie{
-		Name:     app.Config.Session.Name,
+		Name:     m.Name,
 		Value:    value,
 		Path:     "/",
-		Expires:  util.Now().UTC().Add(app.Config.Session.CookieExpires),
+		Expires:  util.Now().UTC().Add(m.CookieExpires),
 		MaxAge:   2,
 		Secure:   false,
-		HttpOnly: app.Config.Session.HttpOnly,
+		HttpOnly: m.HttpOnly,
 	}
 	actual = c1.Name
 	expected = c2.Name
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
-	actual, err = app.Config.Session.Store.Load(c1.Value)
+	actual, err = m.Store.Load(c1.Value)
 	if err != nil {
 		t.Error(err)
 	}
-	expected, err = app.Config.Session.Store.Load(c2.Value)
+	expected, err = m.Store.Load(c2.Value)
 	if err != nil {
 		t.Error(err)
 	}
@@ -427,6 +434,57 @@ func TestSessionMiddleware_After(t *testing.T) {
 	expected = c2.HttpOnly
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+type ValidateTestSessionStore struct{ validated bool }
+
+func (s *ValidateTestSessionStore) Save(sess kocha.Session) (string, error) { return "", nil }
+func (s *ValidateTestSessionStore) Load(key string) (kocha.Session, error)  { return nil, nil }
+func (s *ValidateTestSessionStore) Validate() error {
+	s.validated = true
+	return fmt.Errorf("session store validate error")
+}
+
+type NullSessionStore struct{}
+
+func (s *NullSessionStore) Save(sess kocha.Session) (string, error) {
+	return "", nil
+}
+
+func (s *NullSessionStore) Load(key string) (kocha.Session, error) {
+	return nil, nil
+}
+
+func (s *NullSessionStore) Validate() error {
+	return nil
+}
+
+func TestSessionMiddleware_Validate(t *testing.T) {
+	for _, v := range []struct {
+		m      *kocha.SessionMiddleware
+		expect interface{}
+	}{
+		{(*kocha.SessionMiddleware)(nil), fmt.Errorf("kocha: session: middleware is nil")},
+		{&kocha.SessionMiddleware{}, fmt.Errorf("kocha: session: because Store is nil, session cannot be used")},
+		{&kocha.SessionMiddleware{
+			Store: &ValidateTestSessionStore{},
+		}, fmt.Errorf("kocha: session: Name must be specified")},
+		{&kocha.SessionMiddleware{Name: "test_session"}, fmt.Errorf("kocha: session: because Store is nil, session cannot be used")},
+		{&kocha.SessionMiddleware{
+			Name:  "test_session",
+			Store: &ValidateTestSessionStore{},
+		}, fmt.Errorf("session store validate error")},
+		{&kocha.SessionMiddleware{
+			Name:  "test_session",
+			Store: &NullSessionStore{},
+		}, nil},
+	} {
+		actual := v.m.Validate()
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`kocha.SessionMiddleware.Validate() with %#v => %#v; want %#v`, v.m, actual, expect)
+		}
 	}
 }
 

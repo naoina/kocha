@@ -18,54 +18,6 @@ func Test_Constants(t *testing.T) {
 	}
 }
 
-func Test_SessionConfig_Validate(t *testing.T) {
-	newSessionConfig := func() *kocha.SessionConfig {
-		return &kocha.SessionConfig{
-			Name: "testname",
-		}
-	}
-
-	var config *kocha.SessionConfig
-	if err := config.Validate(); err != nil {
-		t.Errorf("Expect valid, but error returned: %v", err)
-	}
-
-	config = newSessionConfig()
-	if err := config.Validate(); err != nil {
-		t.Errorf("Expect valid, but error returned: %v", err)
-	}
-
-	config = newSessionConfig()
-	config.Name = ""
-	if err := config.Validate(); err == nil {
-		t.Errorf("Expect invalid, but no error returned")
-	}
-
-	config = newSessionConfig()
-	config.Store = nil
-	if err := config.Validate(); err != nil {
-		t.Errorf("Expect valid, but error returned: %v", err)
-	}
-
-	store := &ValidateTestSessionStore{}
-	config.Store = store
-	if err := config.Validate(); err == nil {
-		t.Errorf("Expect invalid, but no error returned")
-	}
-	if !store.validated {
-		t.Errorf("Expect Validate() is called, but wasn't called")
-	}
-}
-
-type ValidateTestSessionStore struct{ validated bool }
-
-func (s *ValidateTestSessionStore) Save(sess kocha.Session) (string, error) { return "", nil }
-func (s *ValidateTestSessionStore) Load(key string) (kocha.Session, error)  { return nil, nil }
-func (s *ValidateTestSessionStore) Validate() error {
-	s.validated = true
-	return fmt.Errorf("")
-}
-
 func TestSession(t *testing.T) {
 	sess := make(kocha.Session)
 	key := "test_key"

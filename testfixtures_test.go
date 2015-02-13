@@ -79,11 +79,7 @@ func NewTestApp() *Application {
 		Logger: &LoggerConfig{
 			Writer: ioutil.Discard,
 		},
-		Middlewares: []Middleware{},
-		Session: &SessionConfig{
-			Name:  "test_session",
-			Store: NewTestSessionCookieStore(),
-		},
+		Middlewares:       []Middleware{},
 		MaxClientBodySize: DefaultMaxClientBodySize,
 	}
 	app, err := New(config)

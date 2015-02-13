@@ -3,7 +3,9 @@ package kocha
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/naoina/kocha/log"
 	"github.com/naoina/kocha/util"
@@ -13,6 +15,13 @@ import (
 // Middleware is the interface that middleware.
 type Middleware interface {
 	Process(app *Application, c *Context, next func() error) error
+}
+
+// Validator is the interface to validate the middleware.
+type Validator interface {
+	// Validate validates the middleware.
+	// Validate will be called in initializing the application.
+	Validate() error
 }
 
 // PanicRecoverMiddleware is a middleware to recover a panic where occurred in request sequence.
@@ -43,8 +52,23 @@ func (m *PanicRecoverMiddleware) Process(app *Application, c *Context, next func
 	return next()
 }
 
-// Session processing middleware.
-type SessionMiddleware struct{}
+// SessionMiddleware is a middleware to process a session.
+type SessionMiddleware struct {
+	// Name of cookie (key)
+	Name string
+
+	// Implementation of session store
+	Store SessionStore
+
+	// Expiration of session cookie, in seconds, from now. (not session expiration)
+	// 0 is for persistent.
+	CookieExpires time.Duration
+
+	// Expiration of session data, in seconds, from now. (not cookie expiration)
+	// 0 is for persistent.
+	SessionExpires time.Duration
+	HttpOnly       bool
+}
 
 func (m *SessionMiddleware) Process(app *Application, c *Context, next func() error) error {
 	if err := m.before(app, c); err != nil {
@@ -54,6 +78,20 @@ func (m *SessionMiddleware) Process(app *Application, c *Context, next func() er
 		return err
 	}
 	return m.after(app, c)
+}
+
+// Validate validates configuration of the session.
+func (m *SessionMiddleware) Validate() error {
+	if m == nil {
+		return fmt.Errorf("kocha: session: middleware is nil")
+	}
+	if m.Store == nil {
+		return fmt.Errorf("kocha: session: because Store is nil, session cannot be used")
+	}
+	if m.Name == "" {
+		return fmt.Errorf("kocha: session: Name must be specified")
+	}
+	return m.Store.Validate()
 }
 
 func (m *SessionMiddleware) before(app *Application, c *Context) (err error) {
@@ -69,11 +107,11 @@ func (m *SessionMiddleware) before(app *Application, c *Context) (err error) {
 		}
 		err = nil
 	}()
-	cookie, err := c.Request.Cookie(app.Config.Session.Name)
+	cookie, err := c.Request.Cookie(m.Name)
 	if err != nil {
 		return NewErrSession("new session")
 	}
-	sess, err := app.Config.Session.Store.Load(cookie.Value)
+	sess, err := m.Store.Load(cookie.Value)
 	if err != nil {
 		return err
 	}
@@ -93,15 +131,42 @@ func (m *SessionMiddleware) before(app *Application, c *Context) (err error) {
 }
 
 func (m *SessionMiddleware) after(app *Application, c *Context) (err error) {
-	expires, _ := expiresFromDuration(app.Config.Session.SessionExpires)
+	expires, _ := m.expiresFromDuration(m.SessionExpires)
 	c.Session[SessionExpiresKey] = strconv.FormatInt(expires.Unix(), 10)
-	cookie := newSessionCookie(app, c)
-	cookie.Value, err = app.Config.Session.Store.Save(c.Session)
+	cookie := m.newSessionCookie(app, c)
+	cookie.Value, err = m.Store.Save(c.Session)
 	if err != nil {
 		return err
 	}
 	c.Response.SetCookie(cookie)
 	return nil
+}
+
+func (m *SessionMiddleware) newSessionCookie(app *Application, c *Context) *http.Cookie {
+	expires, maxAge := m.expiresFromDuration(m.CookieExpires)
+	return &http.Cookie{
+		Name:     m.Name,
+		Value:    "",
+		Path:     "/",
+		Expires:  expires,
+		MaxAge:   maxAge,
+		Secure:   c.Request.IsSSL(),
+		HttpOnly: m.HttpOnly,
+	}
+}
+
+func (m *SessionMiddleware) expiresFromDuration(d time.Duration) (expires time.Time, maxAge int) {
+	switch d {
+	case -1:
+		// persistent
+		expires = util.Now().UTC().AddDate(20, 0, 0)
+	case 0:
+		expires = time.Time{}
+	default:
+		expires = util.Now().UTC().Add(d)
+		maxAge = int(d.Seconds())
+	}
+	return expires, maxAge
 }
 
 // Flash messages processing middleware.
