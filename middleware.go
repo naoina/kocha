@@ -97,6 +97,8 @@ func (m *SessionMiddleware) Validate() error {
 func (m *SessionMiddleware) before(app *Application, c *Context) (err error) {
 	defer func() {
 		switch err.(type) {
+		case nil:
+			// do nothing.
 		case ErrSession:
 			app.Logger.Info(err)
 		default:
