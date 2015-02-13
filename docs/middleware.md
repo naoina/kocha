@@ -26,8 +26,7 @@ Middleware interface definition is following:
 {% raw %}
 ```go
 type Middleware interface {
-	Before(app *Application, c *Context) error
-	After(app *Application, c *Context) error
+	Process(app *Application, c *Context, next func() error) error
 }
 ```
 {% endraw %}
@@ -37,6 +36,15 @@ type Middleware interface {
 ## Built-in middlewares <a id="Built-in-middlewares"></a>
 
 Kocha provides some middlewares.
+
+### PanicRecoverMiddleware *([godoc]({{ site.godoc }}#PanicRecoverMiddleware))*
+
+PanicRecoverMiddleware recovers a panic where occurred in request sequence.
+To recover the all panics, PanicRecoverMiddleware to be set to first of middlewares.
+
+### FormMiddleware *([godoc]({{ site.godoc }}#FormMiddleware))*
+
+FormMiddleware parses form data from query string and/or request body. (both `application/x-www-form-urlencoded` and `multipart/form-data`)
 
 ### SessionMiddleware *([godoc]({{ site.godoc }}#SessionMiddleware))*
 
@@ -50,3 +58,8 @@ This middleware depends on SessionMiddleware.
 ### RequestLoggingMiddleware *([godoc]({{ site.godoc }}#RequestLoggingMiddleware))*
 
 RequestLoggingMiddleware will output an access log.
+
+### DispatchMiddleware *([godoc]({{ site.godoc }}#DispatchMiddleware))*
+
+DispatchMiddleware dispatches a handler from request URL.
+Also DispatchMiddleware should be set to last of middlewares because doesn't call other middlewares after DispatchMiddleware.
