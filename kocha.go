@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
-	"github.com/naoina/denco"
 	"github.com/naoina/kocha/log"
 	"github.com/naoina/miyabi"
 )
@@ -108,14 +107,40 @@ func New(config *Config) (*Application, error) {
 
 // ServeHTTP implements the http.Handler.ServeHTTP.
 func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	controller, handler, params, found := app.Router.dispatch(r)
-	if !found {
-		controller = &ErrorController{
-			StatusCode: http.StatusNotFound,
-		}
-		handler = controller.GET
+	c := &Context{
+		Layout:   app.Config.DefaultLayout,
+		Data:     map[interface{}]interface{}{},
+		Request:  newRequest(r),
+		Response: newResponse(),
+		App:      app,
+		Errors:   make(map[string][]*ParamError),
 	}
-	app.render(w, r, controller, handler, params)
+	defer func() {
+		if err := c.Response.writeTo(w); err != nil {
+			app.Logger.Error(err)
+		}
+	}()
+	if err := app.wrapMiddlewares(c, func() error {
+		controller, handler, params, found := app.Router.dispatch(r)
+		if !found {
+			controller = &ErrorController{
+				StatusCode: http.StatusNotFound,
+			}
+			handler = controller.GET
+		}
+		c.Name = reflect.TypeOf(controller).Elem().Name()
+		if err := c.prepareRequest(params); err != nil {
+			return err
+		}
+		if err := c.prepareParams(); err != nil {
+			return err
+		}
+		return handler(c)
+	})(); err != nil {
+		app.Logger.Error(err)
+		c.Response.reset()
+		http.Error(c.Response, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
 }
 
 // Invoke invokes newFunc.
@@ -192,36 +217,6 @@ func (app *Application) validateMiddlewares() error {
 		}
 	}
 	return nil
-}
-
-func (app *Application) render(w http.ResponseWriter, r *http.Request, controller Controller, handler requestHandler, params denco.Params) {
-	ctx := &Context{
-		Name:     reflect.TypeOf(controller).Elem().Name(),
-		Layout:   app.Config.DefaultLayout,
-		Data:     map[interface{}]interface{}{},
-		Request:  newRequest(r),
-		Response: newResponse(),
-		App:      app,
-		Errors:   make(map[string][]*ParamError),
-	}
-	defer func() {
-		if err := ctx.Response.writeTo(w); err != nil {
-			app.Logger.Error(err)
-		}
-	}()
-	if err := app.wrapMiddlewares(ctx, func() error {
-		if err := ctx.prepareRequest(params); err != nil {
-			return err
-		}
-		if err := ctx.prepareParams(); err != nil {
-			return err
-		}
-		return handler(ctx)
-	})(); err != nil {
-		app.Logger.Error(err)
-		ctx.Response.reset()
-		http.Error(ctx.Response, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-	}
 }
 
 func (app *Application) wrapMiddlewares(c *Context, wrapped func() error) func() error {

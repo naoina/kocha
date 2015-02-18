@@ -300,6 +300,41 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		app.Config.Middlewares = []kocha.Middleware{m} // all default middlewares are override
 		app.ServeHTTP(w, req)
 	}()
+
+	// test for rewrite request url by middleware.
+	func() {
+		defer func() {
+			if err := recover(); err != nil {
+				t.Errorf("GET / with TestRewriteURLPathMiddleware has been panicked => %#v; want no panic", err)
+			}
+		}()
+		w := httptest.NewRecorder()
+		req, err := http.NewRequest("GET", "/error", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		app := kocha.NewTestApp()
+		m := &TestRewriteURLPathMiddleware{rewritePath: "/"}
+		app.Config.Middlewares = []kocha.Middleware{m}
+		app.ServeHTTP(w, req)
+		var actual interface{} = w.Code
+		var expect interface{} = http.StatusOK
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`GET "/" with TestRewriteURLPathMiddleware status => %#v; want %#v`, actual, expect)
+		}
+
+		actual = w.Body.String()
+		expect = "This is layout\nThis is root\n\n"
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`GET "/" with TestRewriteURLPathMiddleware => %#v; want %#v`, actual, expect)
+		}
+
+		actual = w.Header().Get("Content-Type")
+		expect = "text/html"
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`GET "/" with TestRewriteURLPathMiddleware Context-Type => %#v; want %#v`, actual, expect)
+		}
+	}()
 }
 
 func TestApplication_ServeHTTP_withPOST(t *testing.T) {
@@ -362,6 +397,15 @@ func (m *TestPanicInAfterMiddleware) Process(app *kocha.Application, c *kocha.Co
 	}
 	panic("after")
 	return nil
+}
+
+type TestRewriteURLPathMiddleware struct {
+	rewritePath string
+}
+
+func (m *TestRewriteURLPathMiddleware) Process(app *kocha.Application, c *kocha.Context, next func() error) error {
+	c.Request.URL.Path = m.rewritePath
+	return next()
 }
 
 type testUnit struct {
