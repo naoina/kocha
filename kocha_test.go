@@ -338,6 +338,7 @@ func TestApplication_ServeHTTP(t *testing.T) {
 }
 
 func TestApplication_ServeHTTP_withPOST(t *testing.T) {
+	// plain.
 	func() {
 		values := url.Values{}
 		values.Set("name", "naoina")
@@ -357,9 +358,36 @@ func TestApplication_ServeHTTP_withPOST(t *testing.T) {
 		}
 
 		actual = w.Body.String()
-		expected = "This is layout\nmap[params:map[name:[naoina] type:[human]]]\n\n"
+		expected = "This is layout\nmap[params:map[]]\n\n"
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("POST /post_test body => %#v, want %#v", actual, expected)
+		}
+	}()
+
+	// with FormMiddleware.
+	func() {
+		values := url.Values{}
+		values.Set("name", "naoina")
+		values.Add("type", "human")
+		req, err := http.NewRequest("POST", "/post_test", bytes.NewBufferString(values.Encode()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		app := kocha.NewTestApp()
+		app.Config.Middlewares = []kocha.Middleware{&kocha.FormMiddleware{}}
+		w := httptest.NewRecorder()
+		app.ServeHTTP(w, req)
+		var actual interface{} = w.Code
+		var expect interface{} = http.StatusOK
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf("POST /post_test status => %#v, want %#v", actual, expect)
+		}
+
+		actual = w.Body.String()
+		expect = "This is layout\nmap[params:map[name:[naoina] type:[human]]]\n\n"
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf("POST /post_test body => %#v, want %#v", actual, expect)
 		}
 	}()
 }

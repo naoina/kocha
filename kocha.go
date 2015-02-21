@@ -129,11 +129,11 @@ func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			handler = controller.GET
 		}
 		c.Name = reflect.TypeOf(controller).Elem().Name()
-		if err := c.prepareRequest(params); err != nil {
-			return err
+		if c.Params == nil {
+			c.Params = c.newParams()
 		}
-		if err := c.prepareParams(); err != nil {
-			return err
+		for _, param := range params {
+			c.Params.Add(param.Name, param.Value)
 		}
 		return handler(c)
 	})(); err != nil {

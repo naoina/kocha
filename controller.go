@@ -14,7 +14,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/naoina/denco"
 	"github.com/naoina/kocha/util"
 )
 
@@ -398,20 +397,11 @@ func (c *Context) setFormatFromContentTypeIfNotExists() error {
 	return nil
 }
 
-func (c *Context) prepareRequest(params denco.Params) error {
-	c.Request.Body = http.MaxBytesReader(c.Response, c.Request.Body, c.App.Config.MaxClientBodySize)
-	if err := c.Request.ParseMultipartForm(c.App.Config.MaxClientBodySize); err != nil && err != http.ErrNotMultipart {
-		return err
+func (c *Context) newParams() *Params {
+	if c.Request.Form == nil {
+		c.Request.Form = url.Values{}
 	}
-	for _, param := range params {
-		c.Request.Form.Add(param.Name, param.Value)
-	}
-	return nil
-}
-
-func (c *Context) prepareParams() error {
-	c.Params = newParams(c, c.Request.Form, "")
-	return nil
+	return newParams(c, c.Request.Form, "")
 }
 
 func (c *Context) errorWithLine(err error) error {

@@ -38,6 +38,7 @@ var (
 		Middlewares: []kocha.Middleware{
 			&kocha.PanicRecoverMiddleware{},
 			&kocha.RequestLoggingMiddleware{},
+			&kocha.FormMiddleware{},
 			&kocha.SessionMiddleware{
 				Name: "{{.appName}}_session",
 				Store: &kocha.SessionCookieStore{

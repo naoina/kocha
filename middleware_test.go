@@ -3,6 +3,8 @@ package kocha_test
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -144,6 +146,54 @@ func TestPanicRecoverMiddleware(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, req)
+	}()
+}
+
+func TestFormMiddleware(t *testing.T) {
+	doTest := func(body io.Reader, contentType string) {
+		app := kocha.NewTestApp()
+		r, err := http.NewRequest("POST", "/?q=test&t=jp", body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r.Header.Set("Content-Type", contentType)
+		req, res := &kocha.Request{Request: r}, &kocha.Response{ResponseWriter: httptest.NewRecorder()}
+		c := &kocha.Context{
+			Request:  req,
+			Response: res,
+		}
+		m := &kocha.FormMiddleware{}
+		if err := m.Process(app, c, func() error {
+			var actual interface{} = c.Params.Encode()
+			var expect interface{} = "f=bob&n=alice&q=test&t=jp"
+			if !reflect.DeepEqual(actual, expect) {
+				t.Errorf(`FormMiddleware.Process(app, c, func); c.Params => %#v; want %#v`, actual, expect)
+			}
+			return nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// test with x-www-form-urlencoded
+	func() {
+		doTest(bytes.NewBufferString("n=alice&f=bob"), "application/x-www-form-urlencoded")
+	}()
+
+	// test with multipart/form-data
+	func() {
+		var body bytes.Buffer
+		w := multipart.NewWriter(&body)
+		for _, v := range [][2]string{
+			{"n", "alice"},
+			{"f", "bob"},
+		} {
+			if err := w.WriteField(v[0], v[1]); err != nil {
+				t.Fatal(err)
+			}
+		}
+		w.Close()
+		doTest(&body, w.FormDataContentType())
 	}()
 }
 

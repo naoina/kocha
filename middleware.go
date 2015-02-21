@@ -52,6 +52,19 @@ func (m *PanicRecoverMiddleware) Process(app *Application, c *Context, next func
 	return next()
 }
 
+// FormMiddleware is a middleware to parse a form data from query string and/or request body.
+type FormMiddleware struct{}
+
+// Process implements the Middleware interface.
+func (m *FormMiddleware) Process(app *Application, c *Context, next func() error) error {
+	c.Request.Body = http.MaxBytesReader(c.Response, c.Request.Body, app.Config.MaxClientBodySize)
+	if err := c.Request.ParseMultipartForm(app.Config.MaxClientBodySize); err != nil && err != http.ErrNotMultipart {
+		return err
+	}
+	c.Params = c.newParams()
+	return next()
+}
+
 // SessionMiddleware is a middleware to process a session.
 type SessionMiddleware struct {
 	// Name of cookie (key)
