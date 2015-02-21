@@ -46,6 +46,7 @@ func TestPanicRecoverMiddleware(t *testing.T) {
 		app := kocha.NewTestApp()
 		app.Config.Middlewares = []kocha.Middleware{
 			&kocha.PanicRecoverMiddleware{},
+			&kocha.DispatchMiddleware{},
 		}
 		var buf bytes.Buffer
 		app.Logger = log.New(&buf, &log.LTSVFormatter{}, app.Config.Logger.Level)
@@ -69,6 +70,7 @@ func TestPanicRecoverMiddleware(t *testing.T) {
 		app.Config.Middlewares = []kocha.Middleware{
 			&kocha.PanicRecoverMiddleware{},
 			&TestPanicInBeforeMiddleware{},
+			&kocha.DispatchMiddleware{},
 		}
 		var buf bytes.Buffer
 		app.Logger = log.New(&buf, &log.LTSVFormatter{}, app.Config.Logger.Level)
@@ -92,6 +94,7 @@ func TestPanicRecoverMiddleware(t *testing.T) {
 		app.Config.Middlewares = []kocha.Middleware{
 			&kocha.PanicRecoverMiddleware{},
 			&TestPanicInAfterMiddleware{},
+			&kocha.DispatchMiddleware{},
 		}
 		var buf bytes.Buffer
 		app.Logger = log.New(&buf, &log.LTSVFormatter{}, app.Config.Logger.Level)
@@ -122,6 +125,7 @@ func TestPanicRecoverMiddleware(t *testing.T) {
 		app.Config.Middlewares = []kocha.Middleware{
 			&TestPanicInBeforeMiddleware{},
 			&kocha.PanicRecoverMiddleware{},
+			&kocha.DispatchMiddleware{},
 		}
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, req)
@@ -143,6 +147,7 @@ func TestPanicRecoverMiddleware(t *testing.T) {
 		app.Config.Middlewares = []kocha.Middleware{
 			&TestPanicInAfterMiddleware{},
 			&kocha.PanicRecoverMiddleware{},
+			&kocha.DispatchMiddleware{},
 		}
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, req)

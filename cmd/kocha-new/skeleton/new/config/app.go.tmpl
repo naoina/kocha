@@ -57,6 +57,7 @@ var (
 				HttpOnly:       false,
 			},
 			&kocha.FlashMiddleware{},
+			&kocha.DispatchMiddleware{},
 		},
 
 		MaxClientBodySize: 1024 * 1024 * 10, // 10MB

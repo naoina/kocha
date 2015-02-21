@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/build"
-	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -50,7 +49,7 @@ func newRouter(rt RouteTable) (*Router, error) {
 	return router, nil
 }
 
-func (router *Router) dispatch(req *http.Request) (controller Controller, handler requestHandler, params denco.Params, found bool) {
+func (router *Router) dispatch(req *Request) (controller Controller, handler requestHandler, params denco.Params, found bool) {
 	path := util.NormPath(req.URL.Path)
 	data, params, found := router.forward.Lookup(path)
 	if !found {

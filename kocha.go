@@ -25,6 +25,10 @@ const (
 	StaticDir = "public"
 )
 
+var nullMiddlewareNext = func() error {
+	return nil
+}
+
 // Run starts Kocha app.
 // This will launch the HTTP server by using github.com/naoina/miyabi.
 // If you want to use other HTTP server that compatible with net/http such as
@@ -120,23 +124,7 @@ func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			app.Logger.Error(err)
 		}
 	}()
-	if err := app.wrapMiddlewares(c, func() error {
-		controller, handler, params, found := app.Router.dispatch(r)
-		if !found {
-			controller = &ErrorController{
-				StatusCode: http.StatusNotFound,
-			}
-			handler = controller.GET
-		}
-		c.Name = reflect.TypeOf(controller).Elem().Name()
-		if c.Params == nil {
-			c.Params = c.newParams()
-		}
-		for _, param := range params {
-			c.Params.Add(param.Name, param.Value)
-		}
-		return handler(c)
-	})(); err != nil {
+	if err := app.wrapMiddlewares(c)(); err != nil {
 		app.Logger.Error(err)
 		c.Response.reset()
 		http.Error(c.Response, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -219,7 +207,8 @@ func (app *Application) validateMiddlewares() error {
 	return nil
 }
 
-func (app *Application) wrapMiddlewares(c *Context, wrapped func() error) func() error {
+func (app *Application) wrapMiddlewares(c *Context) func() error {
+	wrapped := nullMiddlewareNext
 	for i := len(app.Config.Middlewares) - 1; i >= 0; i-- {
 		f, next := app.Config.Middlewares[i].Process, wrapped
 		wrapped = func() error {

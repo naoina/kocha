@@ -53,6 +53,7 @@ var (
 				SessionExpires: time.Duration(90) * time.Hour * 24,
 				HttpOnly:       false,
 			},
+			&kocha.DispatchMiddleware{},
 		},
 
 		MaxClientBodySize: 1024 * 1024 * 10, // 10MB

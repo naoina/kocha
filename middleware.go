@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -250,4 +251,27 @@ func (m *RequestLoggingMiddleware) Process(app *Application, c *Context, next fu
 		}).Info()
 	}()
 	return next()
+}
+
+// DispatchMiddleware is a middleware to dispatch handler.
+// DispatchMiddleware should be set to last of middlewares because doesn't call other middlewares after DispatchMiddleware.
+type DispatchMiddleware struct{}
+
+// Process implements the Middleware interface.
+func (m *DispatchMiddleware) Process(app *Application, c *Context, next func() error) error {
+	controller, handler, params, found := app.Router.dispatch(c.Request)
+	if !found {
+		controller = &ErrorController{
+			StatusCode: http.StatusNotFound,
+		}
+		handler = controller.GET
+	}
+	c.Name = reflect.TypeOf(controller).Elem().Name()
+	if c.Params == nil {
+		c.Params = c.newParams()
+	}
+	for _, param := range params {
+		c.Params.Add(param.Name, param.Value)
+	}
+	return handler(c)
 }

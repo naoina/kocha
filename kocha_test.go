@@ -234,7 +234,7 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		var called []string
 		m1 := &TestMiddleware{t: t, id: "A", called: &called}
 		m2 := &TestMiddleware{t: t, id: "B", called: &called}
-		app.Config.Middlewares = []kocha.Middleware{m1, m2} // all default middlewares are override
+		app.Config.Middlewares = []kocha.Middleware{m1, m2, &kocha.DispatchMiddleware{}} // all default middlewares are override
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, req)
 
@@ -277,7 +277,7 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		}
 		app := kocha.NewTestApp()
 		m := &TestPanicInBeforeMiddleware{}
-		app.Config.Middlewares = []kocha.Middleware{m} // all default middlewares are override
+		app.Config.Middlewares = []kocha.Middleware{m, &kocha.DispatchMiddleware{}} // all default middlewares are override
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, req)
 	}()
@@ -297,7 +297,7 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		}
 		app := kocha.NewTestApp()
 		m := &TestPanicInAfterMiddleware{}
-		app.Config.Middlewares = []kocha.Middleware{m} // all default middlewares are override
+		app.Config.Middlewares = []kocha.Middleware{m, &kocha.DispatchMiddleware{}} // all default middlewares are override
 		app.ServeHTTP(w, req)
 	}()
 
@@ -315,7 +315,7 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		}
 		app := kocha.NewTestApp()
 		m := &TestRewriteURLPathMiddleware{rewritePath: "/"}
-		app.Config.Middlewares = []kocha.Middleware{m}
+		app.Config.Middlewares = []kocha.Middleware{m, &kocha.DispatchMiddleware{}}
 		app.ServeHTTP(w, req)
 		var actual interface{} = w.Code
 		var expect interface{} = http.StatusOK
@@ -375,7 +375,7 @@ func TestApplication_ServeHTTP_withPOST(t *testing.T) {
 		}
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		app := kocha.NewTestApp()
-		app.Config.Middlewares = []kocha.Middleware{&kocha.FormMiddleware{}}
+		app.Config.Middlewares = []kocha.Middleware{&kocha.FormMiddleware{}, &kocha.DispatchMiddleware{}}
 		w := httptest.NewRecorder()
 		app.ServeHTTP(w, req)
 		var actual interface{} = w.Code

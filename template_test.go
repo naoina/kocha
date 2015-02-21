@@ -352,6 +352,9 @@ func TestTemplateDelims(t *testing.T) {
 				},
 			},
 		},
+		Middlewares: []kocha.Middleware{
+			&kocha.DispatchMiddleware{},
+		},
 		Logger: &kocha.LoggerConfig{
 			Writer: ioutil.Discard,
 		},

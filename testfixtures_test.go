@@ -79,7 +79,7 @@ func NewTestApp() *Application {
 		Logger: &LoggerConfig{
 			Writer: ioutil.Discard,
 		},
-		Middlewares:       []Middleware{},
+		Middlewares:       []Middleware{&DispatchMiddleware{}},
 		MaxClientBodySize: DefaultMaxClientBodySize,
 	}
 	app, err := New(config)
