@@ -179,7 +179,7 @@ func (c *Context) Render(data interface{}) error {
 	}
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, c); err != nil {
-		return c.errorWithLine(err)
+		return fmt.Errorf("%s: %v", t.Name(), err)
 	}
 	if err := c.render(&buf); err != nil {
 		return c.errorWithLine(err)
@@ -264,7 +264,7 @@ func (c *Context) RenderError(statusCode int, data interface{}) error {
 	}
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, c); err != nil {
-		return c.errorWithLine(err)
+		return fmt.Errorf("%s: %v", t.Name(), err)
 	}
 	if err := c.render(&buf); err != nil {
 		return c.errorWithLine(err)
