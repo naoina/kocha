@@ -28,25 +28,28 @@ func TestTemplate_FuncMap_in_withInvalidType(t *testing.T) {
 func TestTemplate_FuncMap_in(t *testing.T) {
 	app := kocha.NewTestApp()
 	funcMap := template.FuncMap(app.Template.FuncMap)
-	tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{in . "a"}}`))
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, []string{"b", "a", "c"}); err != nil {
-		panic(err)
-	}
-	actual := buf.String()
-	expected := "true"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %q, but %q", expected, actual)
-	}
-
-	buf.Reset()
-	if err := tmpl.Execute(&buf, []string{"ab", "b", "c"}); err != nil {
-		panic(err)
-	}
-	actual = buf.String()
-	expected = "false"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %q, but %q", expected, actual)
+	for _, v := range []struct {
+		Arr    interface{}
+		Sep    interface{}
+		expect string
+		err    error
+	}{
+		{[]string{"b", "a", "c"}, "a", "true", nil},
+		{[]string{"ab", "b", "c"}, "a", "false", nil},
+		{nil, "a", "", fmt.Errorf("valid types are slice, array and string, got `invalid'")},
+	} {
+		buf.Reset()
+		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{in .Arr .Sep}}`))
+		err := tmpl.Execute(&buf, v)
+		if !strings.HasSuffix(fmt.Sprint(err), fmt.Sprint(v.err)) {
+			t.Errorf(`{{in %#v %#v}}; error has "%v"; want "%v"`, v.Arr, v.Sep, err, v.err)
+		}
+		actual := buf.String()
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`{{in %#v %#v}} => %#v; want %#v`, v.Arr, v.Sep, actual, expect)
+		}
 	}
 }
 

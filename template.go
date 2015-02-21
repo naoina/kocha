@@ -218,7 +218,7 @@ func (t *Template) in(a, b interface{}) (bool, error) {
 			}
 		}
 	default:
-		return false, fmt.Errorf("invalid type %v: valid types are slice, array and string", v.Type().Name())
+		return false, fmt.Errorf("valid types are slice, array and string, got `%s'", v.Kind())
 	}
 	return false, nil
 }
