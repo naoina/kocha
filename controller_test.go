@@ -1,6 +1,7 @@
 package kocha_test
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
@@ -11,9 +12,11 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/naoina/kocha"
+	"github.com/naoina/kocha/log"
 )
 
 func TestMimeTypeFormats(t *testing.T) {
@@ -425,100 +428,67 @@ func TestContext_RenderText(t *testing.T) {
 }
 
 func TestContext_RenderError(t *testing.T) {
-	c := newTestContext("testctrlr", "")
-	w := httptest.NewRecorder()
-	c.Response = &kocha.Response{ResponseWriter: w}
-	if err := c.RenderError(http.StatusInternalServerError, nil); err != nil {
-		t.Fatal(err)
-	}
-	buf, err := ioutil.ReadAll(w.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var actual interface{} = string(buf)
-	var expected interface{} = "500 error\n"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %q, but %q", expected, actual)
-	}
-	actual = c.Response.StatusCode
-	expected = http.StatusInternalServerError
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-
-	c = newTestContext("testctrlr", "")
-	w = httptest.NewRecorder()
-	c.Response = &kocha.Response{ResponseWriter: w}
-	if err := c.RenderError(http.StatusBadRequest, nil); err != nil {
-		t.Fatal(err)
-	}
-	buf, err = ioutil.ReadAll(w.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	actual = string(buf)
-	expected = "400 error\n"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %q, but %q", expected, actual)
-	}
-	actual = c.Response.StatusCode
-	expected = http.StatusBadRequest
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-
-	c = newTestContext("testctrlr", "")
-	w = httptest.NewRecorder()
-	c.Response.ResponseWriter = w
-	c.Response.ContentType = "application/json"
-	if err := c.RenderError(http.StatusInternalServerError, nil); err != nil {
-		t.Fatal(err)
-	}
-	buf, err = ioutil.ReadAll(w.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	actual = string(buf)
-	expected = `{"error":500}` + "\n"
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %q, but %q", expected, actual)
-	}
-	actual = c.Response.StatusCode
-	expected = http.StatusInternalServerError
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-
-	func() {
-		c = newTestContext("testctrlr", "")
-		c.Response.ContentType = "unknown/content-type"
-		actual := c.RenderError(http.StatusInternalServerError, nil)
-		_, file, line, _ := runtime.Caller(0)
-		expect := fmt.Errorf("%s:%d: kocha: unknown Content-Type: unknown/content-type", file, line-1)
-		if !reflect.DeepEqual(actual, expect) {
-			t.Errorf(`kocha.RenderError(%#v, %#v, %#v) => %#v; want %#v`, c, http.StatusInternalServerError, nil, actual, expect)
+	for _, v := range []struct {
+		status      int
+		contentType string
+		expect      string
+	}{
+		{http.StatusInternalServerError, "text/html", "500 error\n"},
+		{http.StatusBadRequest, "text/html", "400 error\n"},
+		{http.StatusInternalServerError, "application/json", "{\"error\":500}\n"},
+		{http.StatusTeapot, "text/html", http.StatusText(http.StatusTeapot)},
+	} {
+		c := newTestContext("testctrlr", "")
+		w := httptest.NewRecorder()
+		c.Response = &kocha.Response{ResponseWriter: w}
+		c.Response.ContentType = v.contentType
+		if err := c.RenderError(nil, v.status, nil); err != nil {
+			t.Fatal(err)
 		}
-	}()
+		buf, err := ioutil.ReadAll(w.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var actual interface{} = string(buf)
+		var expect interface{} = v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`Context.RenderError(%#v, %#v, %#v) => %#v; want %#v`, nil, v.status, nil, actual, expect)
+		}
 
-	c = newTestContext("testctrlr", "")
-	w = httptest.NewRecorder()
-	c.Response = &kocha.Response{ResponseWriter: w}
-	if err := c.RenderError(http.StatusTeapot, nil); err != nil {
-		t.Fatal(err)
+		actual = c.Response.StatusCode
+		expect = v.status
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`Context.RenderError(%#v, %#v, %#v); HTTP status => %#v; want %#v`, nil, v.status, nil, actual, expect)
+		}
 	}
-	buf, err = ioutil.ReadAll(w.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	actual = string(buf)
-	expected = http.StatusText(http.StatusTeapot)
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
-	}
-	actual = c.Response.StatusCode
-	expected = http.StatusTeapot
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Expect %v, but %v", expected, actual)
+
+	for _, v := range []struct {
+		err         error
+		contentType string
+		expect      error
+	}{
+		{nil, "unknown/content-type", fmt.Errorf("kocha: unknown Content-Type: unknown/content-type")},
+		{fmt.Errorf("expected error"), "unknown/content-type", fmt.Errorf("kocha: unknown Content-Type: unknown/content-type")},
+	} {
+		c := newTestContext("testctrlr", "")
+		var buf bytes.Buffer
+		c.App.Logger = log.New(&buf, c.App.Config.Logger.Formatter, c.App.Config.Logger.Level)
+		c.Response.ContentType = v.contentType
+		var actual interface{} = c.RenderError(v.err, http.StatusInternalServerError, nil)
+		_, file, line, _ := runtime.Caller(0)
+		line--
+		var expect interface{} = fmt.Errorf("%s:%d: %v", file, line, v.expect)
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`Context.RenderError(%#v, %#v, %#v) => %#v; want %#v`, nil, http.StatusInternalServerError, nil, actual, expect)
+		}
+
+		func() {
+			actual := buf.String()
+			expect := fmt.Sprintf("message:%s:%d: %v", file, line, v.err)
+			if v.err != nil && !strings.Contains(actual, expect) {
+				t.Errorf(`Context.RenderError(%#v, %#v, %#v); log => %#v; want %#v`, v.err, http.StatusInternalServerError, nil, actual, expect)
+			}
+		}()
 	}
 }
 
