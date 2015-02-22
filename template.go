@@ -85,6 +85,7 @@ func (t *Template) buildFuncMap() (*Template, error) {
 		"raw":             t.raw,
 		"invoke_template": t.invokeTemplate,
 		"flash":           t.flash,
+		"join":            t.join,
 	}
 	for name, fn := range t.FuncMap {
 		m[name] = fn
@@ -263,6 +264,25 @@ func (t *Template) invokeTemplate(unit Unit, tmplName, defTmplName string, ctx .
 // This is a shorthand for {{.Flash.Get "success"}} in template.
 func (t *Template) flash(c *Context, key string) string {
 	return c.Flash.Get(key)
+}
+
+// join is for "join" template function.
+func (t *Template) join(a interface{}, sep string) (string, error) {
+	v := reflect.ValueOf(a)
+	switch v.Kind() {
+	case reflect.Slice, reflect.Array:
+		// do nothing.
+	default:
+		return "", fmt.Errorf("valid types of first argument are slice or array, got `%s'", v.Kind())
+	}
+	if v.Len() == 0 {
+		return "", nil
+	}
+	buf := append(make([]byte, 0, v.Len()*2-1), fmt.Sprint(v.Index(0).Interface())...)
+	for i := 1; i < v.Len(); i++ {
+		buf = append(append(buf, sep...), fmt.Sprint(v.Index(i).Interface())...)
+	}
+	return string(buf), nil
 }
 
 func (t *Template) readPartialTemplate(name string, c *Context) (template.HTML, error) {

@@ -284,6 +284,38 @@ func TestTemplateFuncMap_flash(t *testing.T) {
 	}
 }
 
+func TestTemplateFuncMap_join(t *testing.T) {
+	app := kocha.NewTestApp()
+	funcMap := template.FuncMap(app.Template.FuncMap)
+	tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{join .Arr .Sep}}`))
+	var buf bytes.Buffer
+	for _, v := range []struct {
+		Arr    interface{}
+		Sep    string
+		expect string
+	}{
+		{[]int{1, 2, 3}, "&", "1&amp;2&amp;3"},
+		{[2]uint{12, 34}, " and ", "12 and 34"},
+		{[]string{"alice", "bob", "carol"}, ", ", "alice, bob, carol"},
+		{[]string(nil), "|", ""},
+		{[]bool{}, " or ", ""},
+		{[]interface{}{"1", 2, "three", uint32(4)}, "-", "1-2-three-4"},
+		{[]string{"あ", "い", "う", "え", "お"}, "_", "あ_い_う_え_お"},
+		{[]string{"a", "b", "c"}, "∧", "a∧b∧c"},
+	} {
+		buf.Reset()
+		if err := tmpl.Execute(&buf, v); err != nil {
+			t.Error(err)
+			continue
+		}
+		actual := buf.String()
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`{{join %#v %#v}} => %#v; want %#v`, v.Arr, v.Sep, actual, expect)
+		}
+	}
+}
+
 func TestTemplate_Get(t *testing.T) {
 	app := kocha.NewTestApp()
 	func() {
