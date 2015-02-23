@@ -14,6 +14,17 @@ type Formatter interface {
 	Format(w io.Writer, entry *Entry) error
 }
 
+// RawFormatter is a formatter that doesn't format.
+// RawFormatter doesn't output the almost fields of the entry except the
+// Message.
+type RawFormatter struct{}
+
+// Format outputs entry.Message.
+func (f *RawFormatter) Format(w io.Writer, entry *Entry) error {
+	_, err := io.WriteString(w, entry.Message)
+	return err
+}
+
 // LTSVFormatter is the formatter of Labeled Tab-separated Values.
 // See http://ltsv.org/ for more details.
 type LTSVFormatter struct {

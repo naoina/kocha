@@ -9,6 +9,40 @@ import (
 	"github.com/naoina/kocha/log"
 )
 
+func TestRawFormatter_Format(t *testing.T) {
+	now := time.Now()
+	for _, v := range []struct {
+		entry  *log.Entry
+		expect string
+	}{
+		{&log.Entry{
+			Level:   log.DEBUG,
+			Time:    now,
+			Message: "test_raw_log1",
+			Fields: log.Fields{
+				"first":  1,
+				"second": "2",
+				"third":  "san",
+			},
+		}, "test_raw_log1"},
+		{&log.Entry{
+			Message: "test_raw_log2",
+			Level:   log.INFO,
+		}, "test_raw_log2"},
+	} {
+		var buf bytes.Buffer
+		formatter := &log.RawFormatter{}
+		if err := formatter.Format(&buf, v.entry); err != nil {
+			t.Errorf(`RawFormatter.Format(&buf, %#v) => %#v; want %#v`, v.entry, err, nil)
+		}
+		actual := buf.String()
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`RawFormatter.Format(&buf, %#v) => %#v; want %#v`, v.entry, actual, expect)
+		}
+	}
+}
+
 func TestLTSVFormatter_Format(t *testing.T) {
 	now := time.Now()
 	for _, v := range []struct {
