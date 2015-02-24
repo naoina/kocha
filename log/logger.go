@@ -3,9 +3,13 @@ package log
 import (
 	"bytes"
 	"io"
+	"os"
 	"sort"
 	"sync"
 	"sync/atomic"
+
+	"github.com/mattn/go-colorable"
+	"github.com/mattn/go-isatty"
 )
 
 // Logger is the interface that logger.
@@ -129,21 +133,34 @@ type Logger interface {
 
 // New creates a new Logger.
 func New(out io.Writer, formatter Formatter, level Level) Logger {
-	return &logger{
-		out:       out,
-		formatter: formatter,
-		level:     level,
+	l := &logger{
+		out:         out,
+		formatter:   formatter,
+		formatFuncs: plainFormats,
+		level:       level,
 	}
+	if w, ok := out.(*os.File); ok && isatty.IsTerminal(w.Fd()) {
+		switch w {
+		case os.Stdout:
+			l.out = colorable.NewColorableStdout()
+			l.formatFuncs = coloredFormats
+		case os.Stderr:
+			l.out = colorable.NewColorableStderr()
+			l.formatFuncs = coloredFormats
+		}
+	}
+	return l
 }
 
 // logger implements the Logger interface.
 type logger struct {
-	out       io.Writer
-	formatter Formatter
-	level     Level
-	fields    Fields
-	buf       bytes.Buffer
-	mu        sync.Mutex
+	out         io.Writer
+	formatter   Formatter
+	formatFuncs [7]formatFunc
+	level       Level
+	fields      Fields
+	buf         bytes.Buffer
+	mu          sync.Mutex
 }
 
 func (l *logger) Debug(v ...interface{}) {
@@ -296,6 +313,37 @@ var levels = [...]string{
 
 func (l Level) String() string {
 	return levels[l]
+}
+
+type formatFunc func(f Formatter, w io.Writer, entry *Entry) error
+
+func makeFormat(esc string) formatFunc {
+	return func(f Formatter, w io.Writer, entry *Entry) error {
+		io.WriteString(w, esc)
+		err := f.Format(w, entry)
+		io.WriteString(w, "\x1b[0m")
+		return err
+	}
+}
+
+var coloredFormats = [...]formatFunc{
+	Formatter.Format,       // NONE
+	Formatter.Format,       // DEBUG
+	Formatter.Format,       // INFO
+	makeFormat("\x1b[33m"), // WARN
+	makeFormat("\x1b[31m"), // ERROR
+	makeFormat("\x1b[31m"), // FATAL
+	makeFormat("\x1b[31m"), // PANIC
+}
+
+var plainFormats = [...]formatFunc{
+	Formatter.Format, // NONE
+	Formatter.Format, // DEBUG
+	Formatter.Format, // INFO
+	Formatter.Format, // WARN
+	Formatter.Format, // ERROR
+	Formatter.Format, // FATAL
+	Formatter.Format, // PANIC
 }
 
 // Fields represents the key-value pairs in a log Entry.

@@ -156,7 +156,11 @@ func (l *entryLogger) Output(level Level, message string) {
 	l.entry.Time = util.Now()
 	l.entry.Message = message
 	l.logger.buf.Reset()
-	if err := l.logger.formatter.Format(&l.logger.buf, l.entry); err != nil {
+	format := Formatter.Format
+	if int(level) < len(l.logger.formatFuncs) {
+		format = l.logger.formatFuncs[level]
+	}
+	if err := format(l.logger.formatter, &l.logger.buf, l.entry); err != nil {
 		fmt.Fprintf(os.Stderr, "kocha: log: %v\n", err)
 	}
 	l.logger.buf.WriteByte('\n')
