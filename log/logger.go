@@ -301,20 +301,6 @@ const (
 	PANIC
 )
 
-var levels = [...]string{
-	"NONE",
-	"DEBUG",
-	"INFO",
-	"WARN",
-	"ERROR",
-	"FATAL",
-	"PANIC",
-}
-
-func (l Level) String() string {
-	return levels[l]
-}
-
 type formatFunc func(f Formatter, w io.Writer, entry *Entry) error
 
 func makeFormat(esc string) formatFunc {
