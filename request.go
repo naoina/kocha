@@ -35,3 +35,8 @@ func (r *Request) Scheme() string {
 func (r *Request) IsSSL() bool {
 	return r.Scheme() == "https"
 }
+
+// IsXHR returns whether the XHR request.
+func (r *Request) IsXHR() bool {
+	return r.Header.Get("X-Requested-With") == "XMLHttpRequest"
+}

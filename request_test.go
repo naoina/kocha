@@ -1,6 +1,7 @@
 package kocha_test
 
 import (
+	"net/http"
 	"os"
 	"reflect"
 	"testing"
@@ -72,5 +73,25 @@ func TestRequest_IsSSL(t *testing.T) {
 	expected = true
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
+	}
+}
+
+func TestRequest_IsXHR(t *testing.T) {
+	r, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := &kocha.Request{Request: r}
+	actual := req.IsXHR()
+	expect := false
+	if !reflect.DeepEqual(actual, expect) {
+		t.Errorf(`Request.IsXHR() => %#v; want %#v`, actual, expect)
+	}
+
+	req.Request.Header.Set("X-Requested-With", "XMLHttpRequest")
+	actual = req.IsXHR()
+	expect = true
+	if !reflect.DeepEqual(actual, expect) {
+		t.Errorf(`Request.IsXHR() with "X-Requested-With: XMLHttpRequest" header => %#v; want %#v`, actual, expect)
 	}
 }
