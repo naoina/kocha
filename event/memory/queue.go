@@ -63,7 +63,3 @@ func (q *MemoryQueue) Stop() {
 	q.done <- struct{}{}
 	<-q.exit
 }
-
-func init() {
-	event.RegisterQueue("memory", &MemoryQueue{})
-}

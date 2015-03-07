@@ -27,5 +27,6 @@ func TestMemoryQueue(t *testing.T) {
 }
 
 func init() {
+	event.RegisterQueue("memory", &MemoryQueue{})
 	event.Start()
 }
