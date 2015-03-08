@@ -2,22 +2,22 @@ package memory
 
 import "github.com/naoina/kocha/event"
 
-// MemoryQueue implements the Queue interface.
+// EventQueue implements the Queue interface.
 // This doesn't require the external storages such as Redis.
-// Note that MemoryQueue isn't persistent, this means that queued data may be
+// Note that EventQueue isn't persistent, this means that queued data may be
 // lost by crash, shutdown or status of not running.
 // If you want to do use a persistent queue, please use another Queue
 // implementation that supports persistence.
 // Also queue won't be shared between different servers but will be shared
 // between other workers in same server.
-type MemoryQueue struct {
+type EventQueue struct {
 	c    chan string
 	done chan struct{}
 	exit chan struct{}
 }
 
-// New returns a new MemoryQueue.
-func (q *MemoryQueue) New(n int) event.Queue {
+// New returns a new EventQueue.
+func (q *EventQueue) New(n int) event.Queue {
 	if q.c == nil {
 		q.c = make(chan string, n)
 	}
@@ -27,7 +27,7 @@ func (q *MemoryQueue) New(n int) event.Queue {
 	if q.exit == nil {
 		q.exit = make(chan struct{})
 	}
-	return &MemoryQueue{
+	return &EventQueue{
 		c:    q.c,
 		done: q.done,
 		exit: q.exit,
@@ -35,13 +35,13 @@ func (q *MemoryQueue) New(n int) event.Queue {
 }
 
 // Enqueue adds data to queue.
-func (q *MemoryQueue) Enqueue(data string) error {
+func (q *EventQueue) Enqueue(data string) error {
 	q.c <- data
 	return nil
 }
 
 // Dequeue returns the data that fetch from queue.
-func (q *MemoryQueue) Dequeue() (data string, err error) {
+func (q *EventQueue) Dequeue() (data string, err error) {
 	select {
 	case data = <-q.c:
 		return data, nil
@@ -54,7 +54,7 @@ func (q *MemoryQueue) Dequeue() (data string, err error) {
 }
 
 // Stop wait for Dequeue to complete then will stop a queue.
-func (q *MemoryQueue) Stop() {
+func (q *EventQueue) Stop() {
 	defer func() {
 		q.c = nil
 		q.done = nil
