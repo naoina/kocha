@@ -173,7 +173,7 @@ func (c *Context) Render(data interface{}) error {
 	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
 		return c.errorWithLine(err)
 	}
-	t, err := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, c.Format)
+	t, err := c.App.Template.Get(c.Layout, c.Name, c.Format)
 	if err != nil {
 		return c.errorWithLine(err)
 	}
@@ -258,7 +258,7 @@ func (c *Context) RenderError(err error, statusCode int, data interface{}) error
 	}
 	c.Response.StatusCode = statusCode
 	c.Name = errorTemplateName(statusCode)
-	t, err := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, c.Format)
+	t, err := c.App.Template.Get(c.Layout, c.Name, c.Format)
 	if err != nil {
 		c.Response.ContentType = "text/plain"
 		if err := c.render(bytes.NewReader([]byte(http.StatusText(statusCode)))); err != nil {

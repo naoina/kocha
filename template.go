@@ -37,10 +37,10 @@ type Template struct {
 }
 
 // Get gets a parsed template.
-func (t *Template) Get(appName, layout, name, format string) (*template.Template, error) {
+func (t *Template) Get(layout, name, format string) (*template.Template, error) {
 	var r *template.Template
 	name = util.ToSnakeCase(name)
-	tmpl := t.m[appName][format]
+	tmpl := t.m[t.app.Config.AppName][format]
 	if tmpl == nil {
 		goto ErrNotFound
 	}
@@ -54,7 +54,7 @@ func (t *Template) Get(appName, layout, name, format string) (*template.Template
 	}
 	return r, nil
 ErrNotFound:
-	return nil, fmt.Errorf("kocha: template not found: %s:%s/%s.%s", appName, layout, name, format)
+	return nil, fmt.Errorf("kocha: template not found: %s:%s/%s.%s", t.app.Config.AppName, layout, name, format)
 }
 
 func (t *Template) build(app *Application) (*Template, error) {
@@ -194,7 +194,7 @@ func (t *Template) relativePath(targpath string) string {
 }
 
 func (t *Template) yield(c *Context) (template.HTML, error) {
-	tmpl, err := t.Get(t.app.Config.AppName, "", c.Name, c.Format)
+	tmpl, err := t.Get("", c.Name, c.Format)
 	if err != nil {
 		return "", err
 	}
@@ -286,7 +286,7 @@ func (t *Template) join(a interface{}, sep string) (string, error) {
 }
 
 func (t *Template) readPartialTemplate(name string, c *Context) (template.HTML, error) {
-	tmpl, err := t.Get(t.app.Config.AppName, "", name, "html")
+	tmpl, err := t.Get("", name, "html")
 	if err != nil {
 		return "", err
 	}
