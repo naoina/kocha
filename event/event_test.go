@@ -1,4 +1,4 @@
-package event
+package event_test
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/naoina/kocha/event"
 )
 
 const (
@@ -19,7 +21,7 @@ type fakeQueue struct {
 	done chan struct{}
 }
 
-func (q *fakeQueue) New(n int) Queue {
+func (q *fakeQueue) New(n int) event.Queue {
 	return q
 }
 
@@ -33,44 +35,62 @@ func (q *fakeQueue) Dequeue() (string, error) {
 	case data := <-q.c:
 		return data, nil
 	case <-q.done:
-		return "", nil
+		return "", event.ErrDone
 	}
 }
 
 func (q *fakeQueue) Stop() {
 	stopped = append(stopped, struct{}{})
-	q.done <- struct{}{}
+	close(q.done)
 }
 
-func TestAddHandler(t *testing.T) {
+func TestDefaultEvent(t *testing.T) {
+	actual := event.DefaultEvent
+	expect := event.New()
+	if !reflect.DeepEqual(actual, expect) {
+		t.Errorf(`DefaultEvent => %#v; want %#v`, actual, expect)
+	}
+}
+
+func TestEvent_AddHandler(t *testing.T) {
+	e := event.New()
+	e.RegisterQueue(queueName, &fakeQueue{c: make(chan string), done: make(chan struct{})})
+
 	handlerName := "testAddHandler"
-	if err := AddHandler(handlerName, "unknownQueue", func(args ...interface{}) error {
-		return nil
-	}); err == nil {
-		t.Errorf("AddHandler(%q, %q, func) => nil, want error", handlerName, "unknownQueue")
-	}
-	if err := AddHandler(handlerName, queueName, func(args ...interface{}) error {
-		return nil
-	}); err != nil {
-		t.Errorf("AddHandler(%q, %q, func) => %#v, want nil", handlerName, queueName, err)
-	}
-	if err := AddHandler(handlerName, queueName, func(args ...interface{}) error {
-		return nil
-	}); err != nil {
-		t.Errorf("AddHandler(%q, %q, func) => %#v, want nil", handlerName, queueName, err)
+	for _, v := range []struct {
+		queueName string
+		expect    error
+	}{
+		{"unknownQueue", fmt.Errorf("kocha: event: queue `unknownQueue' isn't registered")},
+		{queueName, nil},
+		{queueName, nil}, // testcase for override.
+	} {
+		actual := e.AddHandler(handlerName, v.queueName, func(args ...interface{}) error {
+			return nil
+		})
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf("AddHandler(%q, %q, func) => %#v, want %#v", handlerName, v.queueName, actual, expect)
+		}
 	}
 }
 
-func TestTrigger(t *testing.T) {
+func TestEvent_Trigger(t *testing.T) {
+	e := event.New()
+	e.RegisterQueue(queueName, &fakeQueue{c: make(chan string), done: make(chan struct{})})
+	e.Start()
+	defer e.Stop()
+
 	handlerName := "unknownHandler"
-	if err := Trigger(handlerName); err == nil {
-		t.Errorf("Trigger(%q) => nil, want error", handlerName)
+	var expect interface{} = fmt.Errorf("kocha: event: handler `unknownHandler' isn't added")
+	if err := e.Trigger(handlerName); err == nil {
+		t.Errorf("Trigger(%q) => %#v, want %#v", handlerName, err, expect)
 	}
 
 	handlerName = "testTrigger"
 	var actual string
 	timer := make(chan struct{})
-	if err := AddHandler(handlerName, queueName, func(args ...interface{}) error {
+	if err := e.AddHandler(handlerName, queueName, func(args ...interface{}) error {
 		defer func() {
 			timer <- struct{}{}
 		}()
@@ -80,8 +100,8 @@ func TestTrigger(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i := 1; i <= 2; i++ {
-		if err := Trigger(handlerName); err != nil {
-			t.Errorf("Trigger(%q) => %#v, want nil", handlerName, err)
+		if err := e.Trigger(handlerName); err != nil {
+			t.Errorf("Trigger(%#v) => %#v, want nil", handlerName, err)
 		}
 		select {
 		case <-timer:
@@ -96,7 +116,7 @@ func TestTrigger(t *testing.T) {
 
 	handlerName = "testTriggerWithArgs"
 	actual = ""
-	if err := AddHandler(handlerName, queueName, func(args ...interface{}) error {
+	if err := e.AddHandler(handlerName, queueName, func(args ...interface{}) error {
 		defer func() {
 			timer <- struct{}{}
 		}()
@@ -106,7 +126,7 @@ func TestTrigger(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i := 1; i <= 2; i++ {
-		if err := Trigger(handlerName, 1, true, "arg"); err != nil {
+		if err := e.Trigger(handlerName, 1, true, "arg"); err != nil {
 			t.Errorf("Trigger(%q) => %#v, want nil", handlerName, err)
 		}
 		select {
@@ -124,7 +144,7 @@ func TestTrigger(t *testing.T) {
 	actual = ""
 	actual2 := ""
 	timer2 := make(chan struct{})
-	if err := AddHandler(handlerName, queueName, func(args ...interface{}) error {
+	if err := e.AddHandler(handlerName, queueName, func(args ...interface{}) error {
 		defer func() {
 			timer <- struct{}{}
 		}()
@@ -133,7 +153,7 @@ func TestTrigger(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := AddHandler(handlerName, queueName, func(args ...interface{}) error {
+	if err := e.AddHandler(handlerName, queueName, func(args ...interface{}) error {
 		defer func() {
 			timer2 <- struct{}{}
 		}()
@@ -143,7 +163,7 @@ func TestTrigger(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i := 1; i <= 2; i++ {
-		if err := Trigger(handlerName); err != nil {
+		if err := e.Trigger(handlerName); err != nil {
 			t.Errorf("Trigger(%q) => %#v, want nil", handlerName, err)
 		}
 		select {
@@ -167,14 +187,38 @@ func TestTrigger(t *testing.T) {
 	}
 }
 
-func TestStop(t *testing.T) {
+func TestEvent_RegisterQueue(t *testing.T) {
+	e := event.New()
+	for _, v := range []struct {
+		name   string
+		queue  event.Queue
+		expect error
+	}{
+		{"test_queue", nil, fmt.Errorf("kocha: event: Register queue is nil")},
+		{"test_queue", &fakeQueue{}, nil},
+		{"test_queue", &fakeQueue{}, fmt.Errorf("kocha: event: Register queue `test_queue' is already registered")},
+	} {
+		actual := e.RegisterQueue(v.name, v.queue)
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`Event.RegisterQueue(%q, %#v) => %#v; want %#v`, v.name, v.queue, actual, expect)
+		}
+	}
+}
+
+func TestEvent_Stop(t *testing.T) {
+	e := event.New()
+	e.RegisterQueue(queueName, &fakeQueue{c: make(chan string), done: make(chan struct{})})
+	e.Start()
+	defer e.Stop()
+
 	stopped = nil
 	actual := len(stopped)
 	expected := 0
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("len(stopped) before Stop => %#v, want %#v", actual, expected)
 	}
-	Stop()
+	e.Stop()
 	actual = len(stopped)
 	expected = 1
 	if !reflect.DeepEqual(actual, expected) {
@@ -182,26 +226,27 @@ func TestStop(t *testing.T) {
 	}
 }
 
-func TestErrorHandler(t *testing.T) {
+func TestEvent_ErrorHandler(t *testing.T) {
+	e := event.New()
+	e.RegisterQueue(queueName, &fakeQueue{c: make(chan string), done: make(chan struct{})})
+	e.Start()
+	defer e.Stop()
+
 	handlerName := "testErrorHandler"
 	expected := fmt.Errorf("testErrorHandlerError")
-	if err := AddHandler(handlerName, queueName, func(args ...interface{}) error {
+	if err := e.AddHandler(handlerName, queueName, func(args ...interface{}) error {
 		return expected
 	}); err != nil {
 		t.Fatal(err)
 	}
-	origErrorHandler := ErrorHandler
-	defer func() {
-		ErrorHandler = origErrorHandler
-	}()
 	called := make(chan struct{})
-	ErrorHandler = func(err interface{}) {
+	e.ErrorHandler = func(err interface{}) {
 		if !reflect.DeepEqual(err, expected) {
 			t.Errorf("ErrorHandler called with %#v, want %#v", err, expected)
 		}
 		called <- struct{}{}
 	}
-	if err := Trigger(handlerName); err != nil {
+	if err := e.Trigger(handlerName); err != nil {
 		t.Fatal(err)
 	}
 	select {
@@ -209,9 +254,4 @@ func TestErrorHandler(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Errorf("ErrorHandler hasn't been called within 3 seconds")
 	}
-}
-
-func init() {
-	RegisterQueue(queueName, &fakeQueue{c: make(chan string), done: make(chan struct{})})
-	Start()
 }
