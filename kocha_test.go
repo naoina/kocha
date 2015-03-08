@@ -110,6 +110,31 @@ func TestNew(t *testing.T) {
 			t.Errorf("Expect %v, but %v", 20131108, config.MaxClientBodySize)
 		}
 	}()
+
+	// test for event.
+	func() {
+		config := newConfig()
+		app, err := kocha.New(config)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var actual interface{} = app.Event
+		var expect interface{} = (*kocha.Event)(nil)
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`New(config).Event => %#v; want %#v`, actual, expect)
+		}
+
+		config.Event = &kocha.Event{}
+		app, err = kocha.New(config)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual = app.Event
+		expect = config.Event
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`New(config).Event => %#v; want %#v`, actual, expect)
+		}
+	}()
 }
 
 func TestNew_buildLogger(t *testing.T) {

@@ -54,6 +54,8 @@ func Run(config *Config) error {
 		Addr:    config.Addr,
 		Handler: app,
 	}
+	app.Event.e.Start()
+	defer app.Event.e.Stop()
 	return server.ListenAndServe()
 }
 
@@ -71,6 +73,9 @@ type Application struct {
 
 	// Logger is an application logger.
 	Logger log.Logger
+
+	// Event is an interface of the event system.
+	Event *Event
 
 	// ResourceSet is set of resource of an application.
 	ResourceSet ResourceSet
@@ -104,6 +109,9 @@ func New(config *Config) (*Application, error) {
 		return nil, err
 	}
 	if err := app.buildLogger(); err != nil {
+		return nil, err
+	}
+	if err := app.buildEvent(); err != nil {
 		return nil, err
 	}
 	return app, nil
@@ -196,6 +204,15 @@ func (app *Application) buildLogger() error {
 	return nil
 }
 
+func (app *Application) buildEvent() error {
+	e, err := app.Config.Event.build(app)
+	if err != nil {
+		return err
+	}
+	app.Event = e
+	return nil
+}
+
 func (app *Application) validateMiddlewares() error {
 	for _, m := range app.Config.Middlewares {
 		if v, ok := m.(Validator); ok {
@@ -234,6 +251,7 @@ type Config struct {
 	RouteTable        RouteTable    // routing config.
 	Middlewares       []Middleware  // middlewares.
 	Logger            *LoggerConfig // logger config.
+	Event             *Event        // event config.
 	MaxClientBodySize int64         // maximum size of request body, DefaultMaxClientBodySize if 0
 
 	ResourceSet ResourceSet
