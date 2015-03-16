@@ -442,7 +442,7 @@ func TestContext_RenderError(t *testing.T) {
 		w := httptest.NewRecorder()
 		c.Response = &kocha.Response{ResponseWriter: w}
 		c.Response.ContentType = v.contentType
-		if err := c.RenderError(nil, v.status, nil); err != nil {
+		if err := c.RenderError(v.status, nil, nil); err != nil {
 			t.Fatal(err)
 		}
 		buf, err := ioutil.ReadAll(w.Body)
@@ -452,13 +452,13 @@ func TestContext_RenderError(t *testing.T) {
 		var actual interface{} = string(buf)
 		var expect interface{} = v.expect
 		if !reflect.DeepEqual(actual, expect) {
-			t.Errorf(`Context.RenderError(%#v, %#v, %#v) => %#v; want %#v`, nil, v.status, nil, actual, expect)
+			t.Errorf(`Context.RenderError(%#v, %#v, %#v) => %#v; want %#v`, v.status, nil, nil, actual, expect)
 		}
 
 		actual = c.Response.StatusCode
 		expect = v.status
 		if !reflect.DeepEqual(actual, expect) {
-			t.Errorf(`Context.RenderError(%#v, %#v, %#v); HTTP status => %#v; want %#v`, nil, v.status, nil, actual, expect)
+			t.Errorf(`Context.RenderError(%#v, %#v, %#v); HTTP status => %#v; want %#v`, v.status, nil, nil, actual, expect)
 		}
 	}
 
@@ -474,19 +474,19 @@ func TestContext_RenderError(t *testing.T) {
 		var buf bytes.Buffer
 		c.App.Logger = log.New(&buf, c.App.Config.Logger.Formatter, c.App.Config.Logger.Level)
 		c.Response.ContentType = v.contentType
-		var actual interface{} = c.RenderError(v.err, http.StatusInternalServerError, nil)
+		var actual interface{} = c.RenderError(http.StatusInternalServerError, v.err, nil)
 		_, file, line, _ := runtime.Caller(0)
 		line--
 		var expect interface{} = fmt.Errorf("%s:%d: %v", file, line, v.expect)
 		if !reflect.DeepEqual(actual, expect) {
-			t.Errorf(`Context.RenderError(%#v, %#v, %#v) => %#v; want %#v`, nil, http.StatusInternalServerError, nil, actual, expect)
+			t.Errorf(`Context.RenderError(%#v, %#v, %#v) => %#v; want %#v`, http.StatusInternalServerError, nil, nil, actual, expect)
 		}
 
 		func() {
 			actual := buf.String()
 			expect := fmt.Sprintf("message:%s:%d: %v", file, line, v.err)
 			if v.err != nil && !strings.Contains(actual, expect) {
-				t.Errorf(`Context.RenderError(%#v, %#v, %#v); log => %#v; want %#v`, v.err, http.StatusInternalServerError, nil, actual, expect)
+				t.Errorf(`Context.RenderError(%#v, %#v, %#v); log => %#v; want %#v`, http.StatusInternalServerError, v.err, nil, actual, expect)
 			}
 		}()
 	}

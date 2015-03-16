@@ -67,32 +67,32 @@ type DefaultController struct {
 
 // GET implements Getter interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) GET(c *Context) error {
-	return c.RenderError(nil, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil, nil)
 }
 
 // POST implements Poster interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) POST(c *Context) error {
-	return c.RenderError(nil, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil, nil)
 }
 
 // PUT implements Putter interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) PUT(c *Context) error {
-	return c.RenderError(nil, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil, nil)
 }
 
 // DELETE implements Deleter interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) DELETE(c *Context) error {
-	return c.RenderError(nil, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil, nil)
 }
 
 // HEAD implements Header interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) HEAD(c *Context) error {
-	return c.RenderError(nil, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil, nil)
 }
 
 // PATCH implements Patcher interface that renders the HTTP 405 Method Not Allowed.
 func (dc *DefaultController) PATCH(c *Context) error {
-	return c.RenderError(nil, http.StatusMethodNotAllowed, nil)
+	return c.RenderError(http.StatusMethodNotAllowed, nil, nil)
 }
 
 type mimeTypeFormats map[string]string
@@ -245,7 +245,7 @@ func (c *Context) RenderText(content string) error {
 // try to retrieve the template file "errors/500.xml".
 // If failed to retrieve the template file, it returns result of text with statusCode.
 // Also ContentType set to "text/html" if not specified.
-func (c *Context) RenderError(err error, statusCode int, data interface{}) error {
+func (c *Context) RenderError(statusCode int, err error, data interface{}) error {
 	if err != nil {
 		c.App.Logger.Error(c.errorWithLine(err))
 	}
@@ -300,7 +300,7 @@ func (c *Context) SendFile(path string) error {
 			path = filepath.Join(c.App.Config.AppPath, StaticDir, path)
 		}
 		if _, err := os.Stat(path); err != nil {
-			if err := c.RenderError(nil, http.StatusNotFound, nil); err != nil {
+			if err := c.RenderError(http.StatusNotFound, nil, nil); err != nil {
 				return c.errorWithLine(err)
 			}
 			return nil
@@ -420,7 +420,7 @@ type StaticServe struct {
 func (ss *StaticServe) GET(c *Context) error {
 	path, err := url.Parse(c.Params.Get("path"))
 	if err != nil {
-		return c.RenderError(err, http.StatusBadRequest, nil)
+		return c.RenderError(http.StatusBadRequest, err, nil)
 	}
 	return c.SendFile(path.Path)
 }
@@ -437,5 +437,5 @@ type ErrorController struct {
 }
 
 func (ec *ErrorController) GET(c *Context) error {
-	return c.RenderError(nil, ec.StatusCode, nil)
+	return c.RenderError(ec.StatusCode, nil, nil)
 }
