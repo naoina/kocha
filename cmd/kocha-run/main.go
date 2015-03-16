@@ -46,7 +46,7 @@ func (c *runCommand) Run(args []string) error {
 	if runtime.GOOS == "windows" {
 		execName += ".exe"
 	}
-	if err := util.PrintSettingEnv(); err != nil {
+	if err := util.PrintEnv(); err != nil {
 		return err
 	}
 	cmd, err := execCmd("go", "build", "-o", execName)

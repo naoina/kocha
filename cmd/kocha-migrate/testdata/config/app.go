@@ -13,7 +13,7 @@ import (
 var (
 	AppName   = "testappname"
 	AppConfig = &kocha.Config{
-		Addr:          kocha.SettingEnv("KOCHA_ADDR", "127.0.0.1:9100"),
+		Addr:          kocha.Getenv("KOCHA_ADDR", "127.0.0.1:9100"),
 		AppPath:       rootPath,
 		AppName:       AppName,
 		DefaultLayout: "app",

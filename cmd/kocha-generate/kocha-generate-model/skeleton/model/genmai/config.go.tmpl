@@ -14,8 +14,8 @@ import (
 
 var DatabaseMap = kocha.DatabaseMap{
 	"default": {
-		Driver: kocha.SettingEnv("KOCHA_DB_DRIVER", "sqlite3"),
-		DSN:    kocha.SettingEnv("KOCHA_DB_DSN", filepath.Join("db", "db.sqlite3")),
+		Driver: kocha.Getenv("KOCHA_DB_DRIVER", "sqlite3"),
+		DSN:    kocha.Getenv("KOCHA_DB_DSN", filepath.Join("db", "db.sqlite3")),
 	},
 }
 

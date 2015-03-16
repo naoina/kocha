@@ -383,12 +383,12 @@ func DetectContentTypeByBody(r io.Reader) (contentType string) {
 	return http.DetectContentType(buf)
 }
 
-var settingEnvRegexp = regexp.MustCompile(`\bkocha\.SettingEnv\(\s*(.+?)\s*,\s*(.+?)\s*\)`)
+var settingEnvRegexp = regexp.MustCompile(`\bkocha\.Getenv\(\s*(.+?)\s*,\s*(.+?)\s*\)`)
 
-// FindSettingEnv returns map of environment variables.
+// FindEnv returns map of environment variables.
 // Key of map is key of environment variable, Value of map is value of
 // environment variable.
-func FindSettingEnv() (map[string]string, error) {
+func FindEnv() (map[string]string, error) {
 	pwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
@@ -469,8 +469,8 @@ func GenerateRandomKey(length int) []byte {
 	return result
 }
 
-func PrintSettingEnv() error {
-	env, err := FindSettingEnv()
+func PrintEnv() error {
+	env, err := FindEnv()
 	if err != nil {
 		return err
 	}

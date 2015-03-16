@@ -257,10 +257,10 @@ type Config struct {
 	ResourceSet ResourceSet
 }
 
-// SettingEnv is similar to os.Getenv.
-// However, SettingEnv returns def value if the variable is not present, and
+// Getenv is similar to os.Getenv.
+// However, Getenv returns def value if the variable is not present, and
 // sets def to environment variable.
-func SettingEnv(key, def string) string {
+func Getenv(key, def string) string {
 	env := os.Getenv(key)
 	if env != "" {
 		return env

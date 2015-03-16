@@ -125,7 +125,7 @@ func (c *buildCommand) Run(args []string) error {
 	if err := os.RemoveAll(tmpDir); err != nil {
 		return err
 	}
-	if err := util.PrintSettingEnv(); err != nil {
+	if err := util.PrintEnv(); err != nil {
 		return err
 	}
 	fmt.Printf("build all-in-one binary to %v\n", filepath.Join(dir, execName))

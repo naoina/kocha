@@ -629,12 +629,12 @@ func TestApplication_Invoke(t *testing.T) {
 	}()
 }
 
-func TestSettingEnv(t *testing.T) {
+func TestGetenv(t *testing.T) {
 	func() {
-		actual := kocha.SettingEnv("TEST_KOCHA_ENV", "default value")
+		actual := kocha.Getenv("TEST_KOCHA_ENV", "default value")
 		expected := "default value"
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("SettingEnv(%q, %q) => %q, want %q", "TEST_KOCHA_ENV", "default value", actual, expected)
+			t.Errorf("Getenv(%q, %q) => %q, want %q", "TEST_KOCHA_ENV", "default value", actual, expected)
 		}
 
 		actual = os.Getenv("TEST_KOCHA_ENV")
@@ -647,10 +647,10 @@ func TestSettingEnv(t *testing.T) {
 	func() {
 		os.Setenv("TEST_KOCHA_ENV", "set kocha env")
 		defer os.Clearenv()
-		actual := kocha.SettingEnv("TEST_KOCHA_ENV", "default value")
+		actual := kocha.Getenv("TEST_KOCHA_ENV", "default value")
 		expected := "set kocha env"
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("SettingEnv(%q, %q) => %q, want %q", "TEST_KOCHA_ENV", "default value", actual, expected)
+			t.Errorf("Getenv(%q, %q) => %q, want %q", "TEST_KOCHA_ENV", "default value", actual, expected)
 		}
 
 		actual = os.Getenv("TEST_KOCHA_ENV")
