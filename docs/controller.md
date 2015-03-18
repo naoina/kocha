@@ -139,7 +139,7 @@ Render template (or returns status text) with status code.
 
 ```go
 func (r *Root) GET(c *kocha.Context) error {
-    return c.RenderError(nil, http.StatusBadRequest, nil)
+    return c.RenderError(http.StatusBadRequest, nil, nil)
 }
 ```
 
@@ -149,7 +149,7 @@ The passed error will be logging by `c.App.Logger.Error`.
 ```go
 func (r *Root) GET(c *kocha.Context) error {
     if err := DoSomething(); err != nil {
-        return c.RenderError(err, 500, nil)
+        return c.RenderError(500, err, nil)
     }
 }
 ```
