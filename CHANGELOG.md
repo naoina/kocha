@@ -1,3 +1,33 @@
+# Kocha v0.7.0
+
+This release contains the incompatible changes with previous releases.
+Also the feature freeze until 1.0.0 release.
+
+## New features:
+
+* request: Add Context.Request.IsXHR
+* render: Add Context.Format
+* template: Add `join` template func
+* template: Add `flash` template func
+* template: Template action delimiters now can be changed
+* log: Add RawFormatter
+* misc: Add ErrorWithLine
+
+## Incompatible changes:
+
+* cli: Move to `cmd` directory
+* template: `{{define "content"}}` on each templates are no longer required
+* template: Suffix of template file changed to .tmpl
+* render: kocha.Render* back to kocha.Context.Render* and signatures are changed
+* kocha: Rename SettingEnv to Getenv
+* middleware: Several features are now implemented as the middlewares
+* middleware: Change interface signature
+
+## Other changes:
+
+* log: Output to console will be coloring
+* Some bugfix
+
 # Kocha v0.6.1
 
 ## Changes
