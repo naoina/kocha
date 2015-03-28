@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
@@ -470,14 +471,23 @@ func GenerateRandomKey(length int) []byte {
 }
 
 func PrintEnv() error {
-	env, err := FindEnv()
+	envMap, err := FindEnv()
 	if err != nil {
 		return err
 	}
+	envKeys := make([]string, 0, len(envMap))
+	for k := range envMap {
+		envKeys = append(envKeys, k)
+	}
+	sort.Strings(envKeys)
 	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "NOTE: You can be setting for your app by using following environment variables at the time of launching the app:\n")
-	for key, value := range env {
-		fmt.Fprintf(&buf, "%4s%v=%v\n", "", key, strconv.Quote(value))
+	fmt.Fprintf(&buf, "kocha: you can be setting for your app by the following environment variables at the time of launching the app:\n\n")
+	for _, k := range envKeys {
+		v := os.Getenv(k)
+		if v == "" {
+			v = envMap[k]
+		}
+		fmt.Fprintf(&buf, "%4s%v=%v\n", "", k, strconv.Quote(v))
 	}
 	fmt.Println(buf.String())
 	return nil
