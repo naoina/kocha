@@ -1,12 +1,31 @@
-package kocha_test
+package kocha
 
 import (
 	"net/http"
 	"reflect"
 	"testing"
-
-	"github.com/naoina/kocha"
 )
+
+func TestRequest_RemoteAddr(t *testing.T) {
+	for _, v := range []struct {
+		header string
+		value  string
+		expect string
+	}{
+		{"X-Forwarded-For", "192.168.0.1", "192.168.0.1"},
+		{"X-Forwarded-For", "192.168.0.1, 192.168.0.2, 192.168.0.3", "192.168.0.3"},
+		{"X-Forwarded-For", "", "127.0.0.1"},
+	} {
+		r := &http.Request{Header: make(http.Header), RemoteAddr: "127.0.0.1:12345"}
+		r.Header.Set(v.header, v.value)
+		req := newRequest(r)
+		actual := req.RemoteAddr
+		expect := v.expect
+		if !reflect.DeepEqual(actual, expect) {
+			t.Errorf(`Request.RemoteAddr with "%v: %v" => %#v; want %#v`, v.header, v.value, actual, expect)
+		}
+	}
+}
 
 func TestRequest_Scheme(t *testing.T) {
 	for _, v := range []struct {
@@ -20,7 +39,7 @@ func TestRequest_Scheme(t *testing.T) {
 		{"X-Forwarded-Proto", "gopher", "gopher"},
 		{"X-Forwarded-Proto", "https, http, file", "https"},
 	} {
-		req := &kocha.Request{Request: &http.Request{Header: make(http.Header)}}
+		req := &Request{Request: &http.Request{Header: make(http.Header)}}
 		req.Header.Set(v.header, v.value)
 		actual := req.Scheme()
 		expect := v.expect
@@ -31,7 +50,7 @@ func TestRequest_Scheme(t *testing.T) {
 }
 
 func TestRequest_IsSSL(t *testing.T) {
-	req := &kocha.Request{Request: &http.Request{Header: make(http.Header)}}
+	req := &Request{Request: &http.Request{Header: make(http.Header)}}
 	actual := req.IsSSL()
 	expected := false
 	if !reflect.DeepEqual(actual, expected) {
@@ -51,7 +70,7 @@ func TestRequest_IsXHR(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req := &kocha.Request{Request: r}
+	req := &Request{Request: r}
 	actual := req.IsXHR()
 	expect := false
 	if !reflect.DeepEqual(actual, expect) {

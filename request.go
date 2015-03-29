@@ -1,6 +1,7 @@
 package kocha
 
 import (
+	"net"
 	"net/http"
 	"strings"
 )
@@ -8,12 +9,16 @@ import (
 // Request represents a request.
 type Request struct {
 	*http.Request
+
+	// RemoteAddr is similar to http.Request.RemoteAddr, but IP only.
+	RemoteAddr string
 }
 
 // newRequest returns a new Request that given a *http.Request.
 func newRequest(req *http.Request) *Request {
 	return &Request{
-		Request: req,
+		Request:    req,
+		RemoteAddr: remoteAddr(req),
 	}
 }
 
@@ -38,4 +43,15 @@ func (r *Request) IsSSL() bool {
 // IsXHR returns whether the XHR request.
 func (r *Request) IsXHR() bool {
 	return r.Header.Get("X-Requested-With") == "XMLHttpRequest"
+}
+
+func remoteAddr(r *http.Request) string {
+	if addr := r.Header.Get("X-Forwarded-For"); addr != "" {
+		return strings.TrimSpace(addr[strings.LastIndex(addr, ",")+1:])
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }
