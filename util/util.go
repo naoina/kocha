@@ -448,8 +448,11 @@ func FindAppDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dstBasePath := filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src")
-	return filepath.ToSlash(dir)[len(dstBasePath)+1:], nil
+	bp, err := filepath.EvalSymlinks(filepath.Join(filepath.SplitList(build.Default.GOPATH)[0], "src"))
+	if err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(dir)[len(bp)+1:], nil
 }
 
 // IsUnexportedField returns whether the field is unexported.
