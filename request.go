@@ -2,7 +2,6 @@ package kocha
 
 import (
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -21,12 +20,12 @@ func newRequest(req *http.Request) *Request {
 // Scheme returns current scheme of HTTP connection.
 func (r *Request) Scheme() string {
 	switch {
-	case os.Getenv("HTTPS") == "on", os.Getenv("HTTP_X_FORWARDED_SSL") == "on":
+	case r.Header.Get("Https") == "on", r.Header.Get("X-Forwarded-Ssl") == "on":
 		return "https"
-	case os.Getenv("HTTP_X_FORWARDED_SCHEME") != "":
-		return os.Getenv("HTTP_X_FORWARDED_SCHEME")
-	case os.Getenv("HTTP_X_FORWARDED_PROTO") != "":
-		return strings.Split(os.Getenv("HTTP_X_FORWARDED_PROTO"), ",")[0]
+	case r.Header.Get("X-Forwarded-Scheme") != "":
+		return r.Header.Get("X-Forwarded-Scheme")
+	case r.Header.Get("X-Forwarded-Proto") != "":
+		return strings.Split(r.Header.Get("X-Forwarded-Proto"), ",")[0]
 	}
 	return "http"
 }
