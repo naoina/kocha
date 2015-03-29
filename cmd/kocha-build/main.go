@@ -119,7 +119,17 @@ func (c *buildCommand) Run(args []string) error {
 	if err := execCmd("go", "run", builderFilePath); err != nil {
 		return err
 	}
-	if err := execCmd("go", "build", "-o", execName, mainFilePath); err != nil {
+	execArgs := []string{"build", "-o", execName}
+	// On Linux, works fine. On Windows, doesn't work.
+	// On other platforms, not tested.
+	if runtime.GOOS == "linux" {
+		execArgs = append(execArgs, "-ldflags", `-extldflags "-static"`)
+	}
+	if runtime.GOARCH == "amd64" {
+		execArgs = append(execArgs, "-race")
+	}
+	execArgs = append(execArgs, mainFilePath)
+	if err := execCmd("go", execArgs...); err != nil {
 		return err
 	}
 	if err := os.RemoveAll(tmpDir); err != nil {

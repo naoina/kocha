@@ -49,7 +49,11 @@ func (c *runCommand) Run(args []string) error {
 	if err := util.PrintEnv(); err != nil {
 		return err
 	}
-	cmd, err := execCmd("go", "build", "-o", execName)
+	execArgs := []string{"build", "-o", execName}
+	if runtime.GOARCH == "amd64" {
+		execArgs = append(execArgs, "-race")
+	}
+	cmd, err := execCmd("go", execArgs...)
 	if err != nil {
 		return err
 	}
