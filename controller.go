@@ -176,11 +176,15 @@ func (c *Context) Render(data interface{}) error {
 	if err != nil {
 		return c.errorWithLine(err)
 	}
-	var buf bytes.Buffer
-	if err := t.Execute(&buf, c); err != nil {
+	buf := bufPool.Get().(*bytes.Buffer)
+	defer func() {
+		buf.Reset()
+		bufPool.Put(buf)
+	}()
+	if err := t.Execute(buf, c); err != nil {
 		return fmt.Errorf("%s: %v", t.Name(), err)
 	}
-	if err := c.render(&buf); err != nil {
+	if err := c.render(buf); err != nil {
 		return c.errorWithLine(err)
 	}
 	return nil
@@ -265,11 +269,15 @@ func (c *Context) RenderError(statusCode int, err error, data interface{}) error
 		}
 		return nil
 	}
-	var buf bytes.Buffer
-	if err := t.Execute(&buf, c); err != nil {
+	buf := bufPool.Get().(*bytes.Buffer)
+	defer func() {
+		buf.Reset()
+		bufPool.Put(buf)
+	}()
+	if err := t.Execute(buf, c); err != nil {
 		return fmt.Errorf("%s: %v", t.Name(), err)
 	}
-	if err := c.render(&buf); err != nil {
+	if err := c.render(buf); err != nil {
 		return c.errorWithLine(err)
 	}
 	return nil

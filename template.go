@@ -197,8 +197,12 @@ func (t *Template) yield(c *Context) (template.HTML, error) {
 	if err != nil {
 		return "", err
 	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, c); err != nil {
+	buf := bufPool.Get().(*bytes.Buffer)
+	defer func() {
+		buf.Reset()
+		bufPool.Put(buf)
+	}()
+	if err := tmpl.Execute(buf, c); err != nil {
 		return "", err
 	}
 	return template.HTML(buf.String()), nil
@@ -289,8 +293,12 @@ func (t *Template) readPartialTemplate(name string, c *Context) (template.HTML, 
 	if err != nil {
 		return "", err
 	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, c); err != nil {
+	buf := bufPool.Get().(*bytes.Buffer)
+	defer func() {
+		buf.Reset()
+		bufPool.Put(buf)
+	}()
+	if err := tmpl.Execute(buf, c); err != nil {
 		return "", err
 	}
 	return template.HTML(buf.String()), nil

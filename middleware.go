@@ -229,8 +229,12 @@ func (m *FlashMiddleware) after(app *Application, c *Context) error {
 		delete(c.Session, "_flash")
 		return nil
 	}
-	var buf bytes.Buffer
-	if err := codec.NewEncoder(&buf, codecHandler).Encode(c.Flash); err != nil {
+	buf := bufPool.Get().(*bytes.Buffer)
+	defer func() {
+		buf.Reset()
+		bufPool.Put(buf)
+	}()
+	if err := codec.NewEncoder(buf, codecHandler).Encode(c.Flash); err != nil {
 		return fmt.Errorf("kocha: flash: unexpected error in encode process: %v", err)
 	}
 	c.Session["_flash"] = buf.String()

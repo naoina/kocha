@@ -79,8 +79,12 @@ var codecHandler = &codec.MsgpackHandle{}
 // Save saves and returns the key of session cookie.
 // Actually, key is session cookie data itself.
 func (store *SessionCookieStore) Save(sess Session) (key string, err error) {
-	var buf bytes.Buffer
-	if err := codec.NewEncoder(&buf, codecHandler).Encode(sess); err != nil {
+	buf := bufPool.Get().(*bytes.Buffer)
+	defer func() {
+		buf.Reset()
+		bufPool.Put(buf)
+	}()
+	if err := codec.NewEncoder(buf, codecHandler).Encode(sess); err != nil {
 		return "", err
 	}
 	encrypted, err := store.encrypt(buf.Bytes())

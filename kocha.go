@@ -1,6 +1,7 @@
 package kocha
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"os"
@@ -25,9 +26,17 @@ const (
 	StaticDir = "public"
 )
 
-var nullMiddlewareNext = func() error {
-	return nil
-}
+var (
+	nullMiddlewareNext = func() error {
+		return nil
+	}
+
+	bufPool = &sync.Pool{
+		New: func() interface{} {
+			return new(bytes.Buffer)
+		},
+	}
+)
 
 // Run starts Kocha app.
 // This will launch the HTTP server by using github.com/naoina/miyabi.
