@@ -382,7 +382,7 @@ func TestTemplateDelims(t *testing.T) {
 		},
 		RouteTable: []*kocha.Route{
 			{
-				Name: "root",
+				Name: "another_delims",
 				Path: "/",
 				Controller: &kocha.FixtureAnotherDelimsTestCtrl{
 					Ctx: "test_other_delims_ctx",

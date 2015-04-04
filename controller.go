@@ -121,7 +121,7 @@ func (m mimeTypeFormats) Del(mimeType string) {
 
 // Context represents a context of each request.
 type Context struct {
-	Name     string       // controller name.
+	Name     string       // route name of the controller.
 	Layout   string       // layout name.
 	Format   string       // format of response.
 	Data     interface{}  // data for template.

@@ -39,7 +39,6 @@ type Template struct {
 // Get gets a parsed template.
 func (t *Template) Get(layout, name, format string) (*template.Template, error) {
 	var r *template.Template
-	name = util.ToSnakeCase(name)
 	tmpl := t.m[t.app.Config.AppName][format]
 	if tmpl == nil {
 		goto ErrNotFound

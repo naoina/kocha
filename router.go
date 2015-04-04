@@ -49,15 +49,15 @@ func newRouter(rt RouteTable) (*Router, error) {
 	return router, nil
 }
 
-func (router *Router) dispatch(req *Request) (controller Controller, handler requestHandler, params denco.Params, found bool) {
+func (router *Router) dispatch(req *Request) (name string, controller Controller, handler requestHandler, params denco.Params, found bool) {
 	path := util.NormPath(req.URL.Path)
 	data, params, found := router.forward.Lookup(path)
 	if !found {
-		return nil, nil, nil, false
+		return "", nil, nil, nil, false
 	}
 	route := data.(*Route)
 	handler, found = route.dispatch(req.Method)
-	return route.Controller, handler, params, found
+	return route.Name, route.Controller, handler, params, found
 }
 
 // buildForward builds forward router.

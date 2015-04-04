@@ -200,7 +200,7 @@ func TestApplication_ServeHTTP(t *testing.T) {
 		func() {
 			defer func() {
 				if err := recover(); err != nil {
-					t.Errorf(`GET %#v is panicked; want no panic`, v.uri)
+					t.Errorf(`GET %#v is panicked; want no panic; %v`, v.uri, err)
 				}
 			}()
 			w := httptest.NewRecorder()

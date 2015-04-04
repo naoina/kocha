@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -259,14 +258,14 @@ type DispatchMiddleware struct{}
 
 // Process implements the Middleware interface.
 func (m *DispatchMiddleware) Process(app *Application, c *Context, next func() error) error {
-	controller, handler, params, found := app.Router.dispatch(c.Request)
+	name, controller, handler, params, found := app.Router.dispatch(c.Request)
 	if !found {
 		controller = &ErrorController{
 			StatusCode: http.StatusNotFound,
 		}
 		handler = controller.GET
 	}
-	c.Name = reflect.TypeOf(controller).Elem().Name()
+	c.Name = name
 	if c.Params == nil {
 		c.Params = c.newParams()
 	}
