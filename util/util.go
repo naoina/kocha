@@ -25,8 +25,9 @@ import (
 	"go/build"
 	"go/format"
 
-	"github.com/daviddengcn/go-colortext"
 	"github.com/jessevdk/go-flags"
+	"github.com/mattn/go-colorable"
+	"github.com/mattn/go-isatty"
 	"github.com/naoina/go-stringutil"
 )
 
@@ -40,6 +41,8 @@ var (
 
 	// for test.
 	ImportDir = build.ImportDir
+
+	printColor = func(_, format string, a ...interface{}) { fmt.Printf(format, a...) }
 )
 
 func ToCamelCase(s string) string {
@@ -175,41 +178,41 @@ func confirmOverwrite(dstPath string) bool {
 	}
 }
 
-func PrintGreen(s string, a ...interface{}) {
-	printColor(ct.Green, s, a...)
+func makePrintColor(w io.Writer, color, format string, a ...interface{}) {
+	fmt.Fprintf(w, "\x1b[%s;1m", color)
+	fmt.Fprintf(w, format, a...)
+	fmt.Fprint(w, "\x1b[0m")
 }
 
-func printColor(color ct.Color, format string, a ...interface{}) {
-	ct.ChangeColor(color, true, ct.None, false)
-	fmt.Printf(format, a...)
-	ct.ResetColor()
+func PrintGreen(s string, a ...interface{}) {
+	printColor("32", s, a...)
 }
 
 func PrintIdentical(path string) {
-	printPathStatus(ct.Blue, "identical", path)
+	printPathStatus("34", "identical", path) // Blue.
 }
 
 func PrintConflict(path string) {
-	printPathStatus(ct.Red, "conflict", path)
+	printPathStatus("31", "conflict", path) // Red.
 }
 
 func PrintSkip(path string) {
-	printPathStatus(ct.Cyan, "skip", path)
+	printPathStatus("36", "skip", path) // Cyan.
 }
 
 func PrintOverwrite(path string) {
-	printPathStatus(ct.Cyan, "overwrite", path)
+	printPathStatus("36", "overwrite", path) // Cyan.
 }
 
 func PrintCreate(path string) {
-	printPathStatus(ct.Green, "create", path)
+	printPathStatus("32", "create", path) // Green.
 }
 
 func PrintCreateDirectory(path string) {
-	printPathStatus(ct.Green, "create directory", path)
+	printPathStatus("32", "create directory", path) // Green.
 }
 
-func printPathStatus(color ct.Color, message, s string) {
+func printPathStatus(color, message, s string) {
 	printColor(color, "%20s", message)
 	fmt.Println("", s)
 }
@@ -475,5 +478,16 @@ func RunCommand(cmd Commander) {
 			fmt.Fprint(os.Stderr, cmd.Usage())
 		}
 		os.Exit(1)
+	}
+}
+
+func init() {
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		w := colorable.NewColorableStdout()
+		printColor = func(color, format string, a ...interface{}) {
+			fmt.Fprintf(w, "\x1b[%s;1m", color)
+			fmt.Fprintf(w, format, a...)
+			fmt.Fprint(w, "\x1b[0m")
+		}
 	}
 }
