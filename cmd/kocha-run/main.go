@@ -49,42 +49,51 @@ func (c *runCommand) Run(args []string) error {
 	if err := util.PrintEnv(); err != nil {
 		return err
 	}
-	execArgs := []string{"build", "-o", execName}
-	if runtime.GOARCH == "amd64" {
-		execArgs = append(execArgs, "-race")
-	}
-	cmd, err := execCmd("go", execArgs...)
-	if err != nil {
-		return err
-	}
-	if err := cmd.Wait(); err == nil {
-		cmd, err = execCmd(filepath.Join(basedir, execName))
-		if err != nil {
-			cmd.Process.Kill()
-			return err
-		}
-	}
+	fmt.Println("Starting...")
+	var cmd *exec.Cmd
 	for {
+		if cmd != nil {
+			if err := cmd.Process.Signal(miyabi.ShutdownSignal); err != nil {
+				cmd.Process.Kill()
+			}
+			if err := cmd.Wait(); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+		}
+		newCmd, err := runApp(basedir, execName)
+		if err != nil {
+			fmt.Fprint(os.Stderr, err)
+		}
+		fmt.Println()
+		cmd = newCmd
 		if err := watchApp(basedir, execName); err != nil {
 			if err := cmd.Process.Signal(miyabi.ShutdownSignal); err != nil {
 				cmd.Process.Kill()
 			}
 			return err
 		}
-		fmt.Printf("Reloading...\n\n")
-		c, err := execCmd("go", "build", "-o", execName)
-		if err != nil {
-			return err
-		}
-		if err := c.Wait(); err != nil {
-			c.Process.Kill()
-			return err
-		}
-		if err := cmd.Process.Signal(miyabi.RestartSignal); err != nil {
-			cmd.Process.Kill()
-			return err
-		}
+		fmt.Println("\nRestarting...")
 	}
+}
+
+func runApp(basedir, execName string) (*exec.Cmd, error) {
+	execArgs := []string{"build", "-o", execName}
+	if runtime.GOARCH == "amd64" {
+		execArgs = append(execArgs, "-race")
+	}
+	c, err := execCmd("go", execArgs...)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.Wait(); err != nil {
+		c.Process.Kill()
+		return nil, err
+	}
+	c, err = execCmd(filepath.Join(basedir, execName))
+	if err != nil {
+		c.Process.Kill()
+	}
+	return c, err
 }
 
 func watchApp(basedir, execName string) error {
