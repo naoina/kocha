@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,8 +14,6 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
-
-	"github.com/naoina/kocha/util"
 )
 
 // Controller is the interface that the request controller.
@@ -312,9 +311,13 @@ func (c *Context) SendFile(path string) error {
 		defer f.Close()
 		file = f
 	}
-	c.Response.ContentType = util.DetectContentTypeByExt(path)
+	c.Response.ContentType = mime.TypeByExtension(filepath.Ext(path))
 	if c.Response.ContentType == "" {
-		c.Response.ContentType = util.DetectContentTypeByBody(file)
+		ct, err := c.detectContentTypeByBody(file)
+		if err != nil {
+			return err
+		}
+		c.Response.ContentType = ct
 	}
 	if err := c.render(file); err != nil {
 		return c.errorWithLine(err)
@@ -351,6 +354,22 @@ func (c *Context) render(r io.Reader) error {
 	c.Response.WriteHeader(c.Response.StatusCode)
 	_, err := io.Copy(c.Response, r)
 	return err
+}
+
+func (c *Context) detectContentTypeByBody(r io.Reader) (string, error) {
+	buf := make([]byte, 512)
+	if n, err := io.ReadFull(r, buf); err != nil {
+		if err != io.EOF && err != io.ErrUnexpectedEOF {
+			return "", err
+		}
+		buf = buf[:n]
+	}
+	if rs, ok := r.(io.Seeker); ok {
+		if _, err := rs.Seek(0, os.SEEK_SET); err != nil {
+			return "", err
+		}
+	}
+	return http.DetectContentType(buf), nil
 }
 
 func (c *Context) setContentTypeIfNotExists(contentType string) {

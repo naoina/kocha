@@ -9,8 +9,6 @@ import (
 	htmltemplate "html/template"
 	"io"
 	"io/ioutil"
-	"mime"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -95,10 +93,6 @@ const (
 	fileStatusIdentical
 )
 
-func PanicOnError(usager usager, format string, a ...interface{}) {
-	panic(Error{usager, fmt.Sprintf(format, a...)})
-}
-
 func CopyTemplate(srcPath, dstPath string, data map[string]interface{}) error {
 	tmpl, err := template.ParseFiles(srcPath)
 	if err != nil {
@@ -181,28 +175,8 @@ func confirmOverwrite(dstPath string) bool {
 	}
 }
 
-func PrintRed(s string, a ...interface{}) {
-	printColor(ct.Red, s, a...)
-}
-
 func PrintGreen(s string, a ...interface{}) {
 	printColor(ct.Green, s, a...)
-}
-
-func PrintYellow(s string, a ...interface{}) {
-	printColor(ct.Yellow, s, a...)
-}
-
-func PrintBlue(s string, a ...interface{}) {
-	printColor(ct.Blue, s, a...)
-}
-
-func PrintMagenta(s string, a ...interface{}) {
-	printColor(ct.Magenta, s, a...)
-}
-
-func PrintCyan(s string, a ...interface{}) {
-	printColor(ct.Cyan, s, a...)
 }
 
 func printColor(color ct.Color, format string, a ...interface{}) {
@@ -229,10 +203,6 @@ func PrintOverwrite(path string) {
 
 func PrintCreate(path string) {
 	printPathStatus(ct.Green, "create", path)
-}
-
-func PrintExist(path string) {
-	printPathStatus(ct.Blue, "exist", path)
 }
 
 func PrintCreateDirectory(path string) {
@@ -359,29 +329,6 @@ func Gunzip(gz string) string {
 		panic(err)
 	}
 	return string(result)
-}
-
-// Get Content-Type by extension of filename.
-func DetectContentTypeByExt(path string) (contentType string) {
-	ext := filepath.Ext(path)
-	return mime.TypeByExtension(ext)
-}
-
-// Get Content-Type by content body
-func DetectContentTypeByBody(r io.Reader) (contentType string) {
-	buf := make([]byte, 512)
-	if n, err := io.ReadFull(r, buf); err != nil {
-		if err != io.EOF && err != io.ErrUnexpectedEOF {
-			panic(err)
-		}
-		buf = buf[:n]
-	}
-	if rs, ok := r.(io.Seeker); ok {
-		if _, err := rs.Seek(0, os.SEEK_SET); err != nil {
-			panic(err)
-		}
-	}
-	return http.DetectContentType(buf)
 }
 
 var settingEnvRegexp = regexp.MustCompile(`\bkocha\.Getenv\(\s*(.+?)\s*,\s*(.+?)\s*\)`)
