@@ -461,6 +461,7 @@ func (c *Context) reset() {
 }
 
 func (c *Context) reuse() {
+	c.Params.reuse()
 	contextPool.Put(c)
 }
 

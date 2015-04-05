@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/naoina/kocha/util"
@@ -18,6 +19,12 @@ import (
 var (
 	ErrInvalidFormat        = errors.New("invalid format")
 	ErrUnsupportedFieldType = errors.New("unsupported field type")
+
+	paramsPool = &sync.Pool{
+		New: func() interface{} {
+			return &Params{}
+		},
+	}
 )
 
 // ParamError indicates that a field has error.
@@ -60,11 +67,11 @@ type Params struct {
 }
 
 func newParams(c *Context, values url.Values, prefix string) *Params {
-	return &Params{
-		c:      c,
-		Values: values,
-		prefix: prefix,
-	}
+	p := paramsPool.Get().(*Params)
+	p.c = c
+	p.Values = values
+	p.prefix = prefix
+	return p
 }
 
 // From returns a new Params that has prefix made from given name and children.
@@ -189,4 +196,10 @@ func (params *Params) parse(fv interface{}, vStr string) (value interface{}, err
 		return nil, err
 	}
 	return value, nil
+}
+
+func (params *Params) reuse() {
+	if params != nil {
+		paramsPool.Put(params)
+	}
 }
