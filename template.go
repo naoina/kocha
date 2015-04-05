@@ -25,6 +25,12 @@ type TemplatePathInfo struct {
 	Paths []string // directory paths of the template files.
 }
 
+type templateKey struct {
+	appName string
+	name    string
+	format  string
+}
+
 // Template represents the templates information.
 type Template struct {
 	PathInfo   TemplatePathInfo // information of location of template paths.
@@ -32,28 +38,27 @@ type Template struct {
 	LeftDelim  string           // left action delimiter.
 	RightDelim string           // right action delimiter.
 
-	m   templateMap
+	m   map[templateKey]*template.Template
 	app *Application
 }
 
 // Get gets a parsed template.
 func (t *Template) Get(layout, name, format string) (*template.Template, error) {
-	var r *template.Template
-	tmpl := t.m[t.app.Config.AppName][format]
-	if tmpl == nil {
-		goto ErrNotFound
-	}
+	var templateName string
 	if layout != "" {
-		r = tmpl.Lookup(filepath.Join(LayoutDir, layout) + "." + format)
+		templateName = filepath.Join(LayoutDir, layout)
 	} else {
-		r = tmpl.Lookup(name + "." + format)
+		templateName = name
 	}
-	if r == nil {
-		goto ErrNotFound
+	tmpl, exists := t.m[templateKey{
+		appName: t.app.Config.AppName,
+		name:    templateName,
+		format:  format,
+	}]
+	if !exists {
+		return nil, fmt.Errorf("kocha: template not found: %s:%s/%s.%s", t.app.Config.AppName, layout, name, format)
 	}
-	return r, nil
-ErrNotFound:
-	return nil, fmt.Errorf("kocha: template not found: %s:%s/%s.%s", t.app.Config.AppName, layout, name, format)
+	return tmpl, nil
 }
 
 func (t *Template) build(app *Application) (*Template, error) {
@@ -116,22 +121,17 @@ func (t *Template) buildTemplateMap() (*Template, error) {
 		}
 		t.app.ResourceSet.Add("_kocha_template_paths", templatePaths)
 	}
-	templateSet := templateMap{
-		info.Name: make(map[string]*template.Template),
-	}
+	t.m = map[templateKey]*template.Template{}
 	for appName, templates := range templatePaths {
-		if err := t.buildAppTemplateSet(templateSet[appName], templates); err != nil {
+		if err := t.buildAppTemplateSet(t.m, appName, templates); err != nil {
 			return nil, err
 		}
 	}
-	t.m = templateSet
 	return t, nil
 }
 
 // TemplateFuncMap is an alias of templete.FuncMap.
 type TemplateFuncMap template.FuncMap
-
-type templateMap map[string]map[string]*template.Template
 
 func (t *Template) collectTemplatePaths(templatePaths map[string]map[string]string, templateDir string) error {
 	return filepath.Walk(templateDir, func(path string, info os.FileInfo, err error) error {
@@ -154,7 +154,7 @@ func (t *Template) collectTemplatePaths(templatePaths map[string]map[string]stri
 	})
 }
 
-func (t *Template) buildAppTemplateSet(appTemplateSet map[string]*template.Template, templates map[string]map[string]string) error {
+func (t *Template) buildAppTemplateSet(m map[templateKey]*template.Template, appName string, templates map[string]map[string]string) error {
 	for ext, templateInfos := range templates {
 		tmpl := template.New("")
 		for _, path := range templateInfos {
@@ -181,7 +181,13 @@ func (t *Template) buildAppTemplateSet(appTemplateSet map[string]*template.Templ
 				return err
 			}
 		}
-		appTemplateSet[ext] = tmpl
+		for _, t := range tmpl.Templates() {
+			m[templateKey{
+				appName: appName,
+				name:    strings.TrimSuffix(t.Name(), "."+ext),
+				format:  ext,
+			}] = t
+		}
 	}
 	return nil
 }
