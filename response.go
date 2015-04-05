@@ -4,13 +4,23 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 )
 
-var _ http.ResponseWriter = &Response{}
+var (
+	_ http.ResponseWriter = &Response{}
+
+	responsePool = &sync.Pool{
+		New: func() interface{} {
+			return &Response{}
+		},
+	}
+)
 
 // Response represents a response.
 type Response struct {
 	http.ResponseWriter
+
 	ContentType string
 	StatusCode  int
 
@@ -20,8 +30,10 @@ type Response struct {
 
 // newResponse returns a new Response that responds to rw.
 func newResponse() *Response {
-	r := &Response{}
+	r := responsePool.Get().(*Response)
 	r.reset()
+	r.ContentType = ""
+	r.cookies = r.cookies[:0]
 	return r
 }
 
@@ -44,6 +56,7 @@ func (r *Response) writeTo(w http.ResponseWriter) error {
 	}
 	w.WriteHeader(r.resp.Code)
 	_, err := io.Copy(w, r.resp.Body)
+	responsePool.Put(r)
 	return err
 }
 
