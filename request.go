@@ -4,7 +4,14 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 )
+
+var requestPool = &sync.Pool{
+	New: func() interface{} {
+		return &Request{}
+	},
+}
 
 // Request represents a request.
 type Request struct {
@@ -16,10 +23,10 @@ type Request struct {
 
 // newRequest returns a new Request that given a *http.Request.
 func newRequest(req *http.Request) *Request {
-	return &Request{
-		Request:    req,
-		RemoteAddr: remoteAddr(req),
-	}
+	r := requestPool.Get().(*Request)
+	r.Request = req
+	r.RemoteAddr = remoteAddr(req)
+	return r
 }
 
 // Scheme returns current scheme of HTTP connection.
@@ -43,6 +50,10 @@ func (r *Request) IsSSL() bool {
 // IsXHR returns whether the XHR request.
 func (r *Request) IsXHR() bool {
 	return r.Header.Get("X-Requested-With") == "XMLHttpRequest"
+}
+
+func (r *Request) reuse() {
+	requestPool.Put(r)
 }
 
 func remoteAddr(r *http.Request) string {
