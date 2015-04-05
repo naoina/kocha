@@ -57,6 +57,9 @@ ErrNotFound:
 }
 
 func (t *Template) build(app *Application) (*Template, error) {
+	if t == nil {
+		t = &Template{}
+	}
 	t.app = app
 	if t.LeftDelim == "" {
 		t.LeftDelim = "{{"
