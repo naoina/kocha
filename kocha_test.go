@@ -118,19 +118,20 @@ func TestNew(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		var actual interface{} = app.Event
-		var expect interface{} = (*kocha.Event)(nil)
-		if !reflect.DeepEqual(actual, expect) {
-			t.Errorf(`New(config).Event => %#v; want %#v`, actual, expect)
+		var actual interface{} = app.Event.WorkersPerQueue
+		if actual == nil {
+			t.Errorf(`New(config).Event => %#v; want not nil`, actual)
 		}
 
-		config.Event = &kocha.Event{}
+		config.Event = &kocha.Event{
+			WorkersPerQueue: 100,
+		}
 		app, err = kocha.New(config)
 		if err != nil {
 			t.Fatal(err)
 		}
 		actual = app.Event
-		expect = config.Event
+		var expect interface{} = config.Event
 		if !reflect.DeepEqual(actual, expect) {
 			t.Errorf(`New(config).Event => %#v; want %#v`, actual, expect)
 		}
