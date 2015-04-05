@@ -55,11 +55,6 @@ func (q *EventQueue) Dequeue() (data string, err error) {
 
 // Stop wait for Dequeue to complete then will stop a queue.
 func (q *EventQueue) Stop() {
-	defer func() {
-		q.c = nil
-		q.done = nil
-		q.exit = nil
-	}()
 	q.done <- struct{}{}
 	<-q.exit
 }
