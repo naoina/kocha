@@ -125,9 +125,6 @@ func (c *buildCommand) Run(args []string) error {
 	if runtime.GOOS == "linux" {
 		execArgs = append(execArgs, "-ldflags", `-extldflags "-static"`)
 	}
-	if runtime.GOARCH == "amd64" {
-		execArgs = append(execArgs, "-race")
-	}
 	execArgs = append(execArgs, mainFilePath)
 	if err := execCmd("go", execArgs...); err != nil {
 		return err
