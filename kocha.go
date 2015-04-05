@@ -63,8 +63,8 @@ func Run(config *Config) error {
 		Addr:    config.Addr,
 		Handler: app,
 	}
-	app.Event.e.Start()
-	defer app.Event.e.Stop()
+	app.Event.start()
+	defer app.Event.stop()
 	return server.ListenAndServe()
 }
 

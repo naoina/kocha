@@ -44,7 +44,7 @@ func (e *Event) addHandler(name string, queueName string, handler func(app *Appl
 
 func (e *Event) build(app *Application) (*Event, error) {
 	if e == nil {
-		return nil, nil
+		e = &Event{}
 	}
 	e.e = event.New()
 	for queue, handlerMap := range e.HandlerMap {
@@ -67,4 +67,12 @@ func (e *Event) build(app *Application) (*Event, error) {
 	e.e.SetWorkersPerQueue(n)
 	e.e.ErrorHandler = e.ErrorHandler
 	return e, nil
+}
+
+func (e *Event) start() {
+	e.e.Start()
+}
+
+func (e *Event) stop() {
+	e.e.Stop()
 }
