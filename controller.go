@@ -14,7 +14,14 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync"
 )
+
+var contextPool = &sync.Pool{
+	New: func() interface{} {
+		return &Context{}
+	},
+}
 
 // Controller is the interface that the request controller.
 type Controller interface {
@@ -136,6 +143,12 @@ type Context struct {
 	// A map key is field name, and value is slice of errors.
 	// Errors will be set by Context.Params.Bind().
 	Errors map[string][]*ParamError
+}
+
+func newContext() *Context {
+	c := contextPool.Get().(*Context)
+	c.reset()
+	return c
 }
 
 // ErrorWithLine returns error that added the filename and line to err.
@@ -437,6 +450,18 @@ func (c *Context) newParams() *Params {
 
 func (c *Context) errorWithLine(err error) error {
 	return errorWithLine(err, 3)
+}
+
+func (c *Context) reset() {
+	c.Name = ""
+	c.Format = ""
+	c.Params = nil
+	c.Session = nil
+	c.Flash = nil
+}
+
+func (c *Context) reuse() {
+	contextPool.Put(c)
 }
 
 // StaticServe is generic controller for serve a static file.

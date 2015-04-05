@@ -128,14 +128,14 @@ func New(config *Config) (*Application, error) {
 
 // ServeHTTP implements the http.Handler.ServeHTTP.
 func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	c := &Context{
-		Layout:   app.Config.DefaultLayout,
-		Data:     map[interface{}]interface{}{},
-		Request:  newRequest(r),
-		Response: newResponse(),
-		App:      app,
-		Errors:   make(map[string][]*ParamError),
-	}
+	c := newContext()
+	c.Layout = app.Config.DefaultLayout
+	c.Data = map[interface{}]interface{}{}
+	c.Request = newRequest(r)
+	c.Response = newResponse()
+	c.App = app
+	c.Errors = make(map[string][]*ParamError)
+	defer c.reuse()
 	defer func() {
 		if err := c.Response.writeTo(w); err != nil {
 			app.Logger.Error(err)
