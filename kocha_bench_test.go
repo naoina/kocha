@@ -40,3 +40,14 @@ func BenchmarkServeHTTP(b *testing.B) {
 		app.ServeHTTP(w, req)
 	}
 }
+
+func BenchmarkNew(b *testing.B) {
+	app := kocha.NewTestApp()
+	config := app.Config
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := kocha.New(config); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
