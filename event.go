@@ -48,7 +48,7 @@ func (e *Event) build(app *Application) (*Event, error) {
 	}
 	e.e = event.New()
 	for queue, handlerMap := range e.HandlerMap {
-		queueName := reflect.TypeOf(queue).Name()
+		queueName := reflect.TypeOf(queue).String()
 		if err := e.e.RegisterQueue(queueName, queue); err != nil {
 			return nil, err
 		}
