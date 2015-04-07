@@ -47,13 +47,13 @@ func Test_SplitExt(t *testing.T) {
 	for value, expected := range map[string][]string{
 		"/":               {"/", ""},
 		"/foo":            {"/foo", ""},
-		"/foo.":           {"/foo", ""},
-		"/foo..":          {"/foo.", ""},
-		"/foo.png":        {"/foo", "png"},
-		"/foo/bar.png":    {"/foo/bar", "png"},
-		"foo/bar.jpg":     {"foo/bar", "jpg"},
-		"foo/bar.png.jpg": {"foo/bar.png", "jpg"},
-		"foo.png/bar.jpg": {"foo.png/bar", "jpg"},
+		"/foo.":           {"/foo", "."},
+		"/foo..":          {"/foo.", "."},
+		"/foo.png":        {"/foo", ".png"},
+		"/foo/bar.png":    {"/foo/bar", ".png"},
+		"foo/bar.jpg":     {"foo/bar", ".jpg"},
+		"foo/bar.png.jpg": {"foo/bar.png", ".jpg"},
+		"foo.png/bar.jpg": {"foo.png/bar", ".jpg"},
 	} {
 		var actual [2]string
 		actual[0], actual[1] = SplitExt(value)

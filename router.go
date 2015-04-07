@@ -2,10 +2,6 @@ package kocha
 
 import (
 	"fmt"
-	"go/ast"
-	"go/build"
-	"os"
-	"path/filepath"
 	"reflect"
 
 	"strings"
@@ -18,27 +14,6 @@ import (
 type RouteTable []*Route
 
 func (rt RouteTable) buildRouter() (*Router, error) {
-	router, err := newRouter(rt)
-	if err != nil {
-		return nil, err
-	}
-	for _, route := range rt {
-		info := router.reverse[route.Name]
-		route.paramNames = info.paramNames
-	}
-	return router, nil
-}
-
-// Router represents a router of kocha.
-type Router struct {
-	forward    *denco.Router
-	reverse    map[string]*routeInfo
-	routeTable RouteTable
-	app        *Application
-}
-
-// newRouter returns a new Router.
-func newRouter(rt RouteTable) (*Router, error) {
 	router := &Router{routeTable: rt}
 	if err := router.buildForward(); err != nil {
 		return nil, err
@@ -47,6 +22,13 @@ func newRouter(rt RouteTable) (*Router, error) {
 		return nil, err
 	}
 	return router, nil
+}
+
+// Router represents a router of kocha.
+type Router struct {
+	forward    *denco.Router
+	reverse    map[string]*Route
+	routeTable RouteTable
 }
 
 func (router *Router) dispatch(req *Request) (name string, controller Controller, handler requestHandler, params denco.Params, found bool) {
@@ -67,25 +49,20 @@ func (router *Router) buildForward() error {
 		records[i] = denco.NewRecord(route.Path, route)
 	}
 	router.forward = denco.New()
-	if err := router.forward.Build(records); err != nil {
-		return err
-	}
-	return nil
+	return router.forward.Build(records)
 }
 
 // buildReverse builds reverse router.
 func (router *Router) buildReverse() error {
-	router.reverse = make(map[string]*routeInfo)
+	router.reverse = make(map[string]*Route)
 	for _, route := range router.routeTable {
-		paramNames := route.ParamNames()
-		names := make([]string, len(paramNames))
-		for i := 0; i < len(paramNames); i++ {
-			names[i] = paramNames[i][1:] // truncate the meta character.
-		}
-		router.reverse[route.Name] = &routeInfo{
-			route:         route,
-			rawParamNames: paramNames,
-			paramNames:    names,
+		router.reverse[route.Name] = route
+		for i := 0; i < len(route.Path); i++ {
+			if c := route.Path[i]; c == denco.ParamCharacter || c == denco.WildcardCharacter {
+				next := denco.NextSeparator(route.Path, i+1)
+				route.paramNames = append(route.paramNames, route.Path[i:next])
+				i = next
+			}
 		}
 	}
 	return nil
@@ -93,15 +70,15 @@ func (router *Router) buildReverse() error {
 
 // Reverse returns path of route by name and any params.
 func (router *Router) Reverse(name string, v ...interface{}) (string, error) {
-	info := router.reverse[name]
-	if info == nil {
+	route := router.reverse[name]
+	if route == nil {
 		types := make([]string, len(v))
 		for i, value := range v {
 			types[i] = reflect.TypeOf(value).Name()
 		}
 		return "", fmt.Errorf("kocha: no match route found: %v (%v)", name, strings.Join(types, ", "))
 	}
-	return info.reverse(v...)
+	return route.reverse(v...)
 }
 
 // Route represents a route.
@@ -144,67 +121,24 @@ func (route *Route) dispatch(method string) (handler requestHandler, found bool)
 }
 
 // ParamNames returns names of the path parameters.
-func (route *Route) ParamNames() (names []string) {
-	path := route.Path
-	for i := 0; i < len(route.Path); i++ {
-		if c := path[i]; c == denco.ParamCharacter || c == denco.WildcardCharacter {
-			next := denco.NextSeparator(path, i+1)
-			names = append(names, path[i:next])
-			i = next
-		}
-	}
-	return names
+func (route *Route) ParamNames() []string {
+	return route.paramNames
 }
 
-type routeInfo struct {
-	route         *Route
-	rawParamNames []string
-	paramNames    []string
-}
-
-func (ri *routeInfo) reverse(v ...interface{}) (string, error) {
-	route := ri.route
-	switch vlen, nlen := len(v), len(ri.paramNames); {
+func (r *Route) reverse(v ...interface{}) (string, error) {
+	switch vlen, nlen := len(v), len(r.paramNames); {
 	case vlen < nlen:
-		return "", fmt.Errorf("kocha: too few arguments: %v (controller is %T)", route.Name, route.Controller)
+		return "", fmt.Errorf("kocha: too few arguments: %v (controller is %T)", r.Name, r.Controller)
 	case vlen > nlen:
-		return "", fmt.Errorf("kocha: too many arguments: %v (controller is %T)", route.Name, route.Controller)
+		return "", fmt.Errorf("kocha: too many arguments: %v (controller is %T)", r.Name, r.Controller)
 	case vlen+nlen == 0:
-		return route.Path, nil
+		return r.Path, nil
 	}
 	var oldnew []string
 	for i := 0; i < len(v); i++ {
-		oldnew = append(oldnew, ri.rawParamNames[i], fmt.Sprint(v[i]))
+		oldnew = append(oldnew, r.paramNames[i], fmt.Sprint(v[i]))
 	}
 	replacer := strings.NewReplacer(oldnew...)
-	path := replacer.Replace(route.Path)
+	path := replacer.Replace(r.Path)
 	return util.NormPath(path), nil
-}
-
-func findPkgDir(pkgPath string) (string, error) {
-	var pkgDir string
-	for _, srcDir := range build.Default.SrcDirs() {
-		path, err := filepath.Abs(filepath.Join(srcDir, pkgPath))
-		if err != nil {
-			return "", err
-		}
-		if _, err := os.Stat(path); err == nil {
-			pkgDir = path
-			break
-		}
-	}
-	return pkgDir, nil
-}
-
-func astTypeName(expr ast.Expr) string {
-	switch t := expr.(type) {
-	case *ast.Ident:
-		return t.Name
-	case *ast.SelectorExpr:
-		return fmt.Sprintf("%v.%v", t.X.(*ast.Ident).Name, t.Sel.Name)
-	case *ast.StarExpr:
-		return fmt.Sprintf("*%s", astTypeName(t.X))
-	default:
-		panic(fmt.Errorf("kocha: sorry, unexpected argument type `%T` found. please report this issue.", t))
-	}
 }

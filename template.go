@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -122,8 +122,10 @@ func (t *Template) buildTemplateMap() (*Template, error) {
 		t.app.ResourceSet.Add("_kocha_template_paths", templatePaths)
 	}
 	t.m = map[templateKey]*template.Template{}
+	l := len(t.LeftDelim) + len("$ := .Data") + len(t.RightDelim)
+	buf := bytes.NewBuffer(append(append(append(make([]byte, 0, l), t.LeftDelim...), "$ := .Data"...), t.RightDelim...))
 	for appName, templates := range templatePaths {
-		if err := t.buildAppTemplateSet(t.m, appName, templates); err != nil {
+		if err := t.buildAppTemplateSet(buf, l, t.m, appName, templates); err != nil {
 			return nil, err
 		}
 	}
@@ -154,51 +156,40 @@ func (t *Template) collectTemplatePaths(templatePaths map[string]map[string]stri
 	})
 }
 
-func (t *Template) buildAppTemplateSet(m map[templateKey]*template.Template, appName string, templates map[string]map[string]string) error {
+func (t *Template) buildAppTemplateSet(buf *bytes.Buffer, l int, m map[templateKey]*template.Template, appName string, templates map[string]map[string]string) error {
 	for ext, templateInfos := range templates {
 		tmpl := template.New("")
-		for _, path := range templateInfos {
-			var templateBytes []byte
-			if data := t.app.ResourceSet.Get(fmt.Sprintf("_kocha_%s.%s", path, ext)); data != nil {
+		for name, path := range templateInfos {
+			buf.Truncate(l)
+			if data := t.app.ResourceSet.Get(path); data != nil {
 				if b, ok := data.([]byte); ok {
-					templateBytes = b
+					buf.Write(b)
 				}
-			}
-			if templateBytes == nil {
-				b, err := ioutil.ReadFile(path)
+			} else {
+				f, err := os.Open(path)
 				if err != nil {
 					return err
 				}
-				templateBytes = b
-				t.app.ResourceSet.Add(fmt.Sprintf("_kocha_%s.%s", path, ext), b)
+				_, err = io.Copy(buf, f)
+				f.Close()
+				if err != nil {
+					return err
+				}
+				t.app.ResourceSet.Add(path, buf.Bytes())
 			}
-			name := strings.TrimSuffix(t.relativePath(path), util.TemplateSuffix)
-			content := fmt.Sprint(
-				t.LeftDelim, "$ := .Data", t.RightDelim,
-				string(templateBytes),
-			)
-			if _, err := tmpl.New(name).Delims(t.LeftDelim, t.RightDelim).Funcs(template.FuncMap(t.FuncMap)).Parse(content); err != nil {
+			if _, err := tmpl.New(name).Delims(t.LeftDelim, t.RightDelim).Funcs(template.FuncMap(t.FuncMap)).Parse(buf.String()); err != nil {
 				return err
 			}
 		}
 		for _, t := range tmpl.Templates() {
 			m[templateKey{
 				appName: appName,
-				name:    strings.TrimSuffix(t.Name(), "."+ext),
-				format:  ext,
+				name:    strings.TrimSuffix(t.Name(), ext),
+				format:  ext[1:], // truncate the leading dot.
 			}] = t
 		}
 	}
 	return nil
-}
-
-func (t *Template) relativePath(targpath string) string {
-	for _, basepath := range t.PathInfo.Paths {
-		if p, err := filepath.Rel(basepath, targpath); err == nil {
-			return p
-		}
-	}
-	return targpath
 }
 
 func (t *Template) yield(c *Context) (template.HTML, error) {

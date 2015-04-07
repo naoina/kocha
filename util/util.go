@@ -55,12 +55,11 @@ func ToSnakeCase(s string) string {
 
 // SplitExt returns pair of file name and extension.
 //
-// It will truncated a dot of extension.
-// e.g. When the given path is "path/to/image.png", SplitExt returns ("path/to/image", "png").
+// For example, when the given path is "path/to/image.png", SplitExt returns ("path/to/image", ".png").
 func SplitExt(path string) (name, ext string) {
 	for i := len(path) - 1; i >= 0 && !os.IsPathSeparator(path[i]); i-- {
 		if path[i] == '.' {
-			return path[:i], path[i+1:]
+			return path[:i], path[i:]
 		}
 	}
 	return path, ""

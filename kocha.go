@@ -176,13 +176,9 @@ func (app *Application) Invoke(unit Unit, newFunc func(), defaultFunc func()) {
 	newFunc()
 }
 
-func (app *Application) buildRouter() error {
-	router, err := app.Config.RouteTable.buildRouter()
-	if err != nil {
-		return err
-	}
-	app.Router = router
-	return nil
+func (app *Application) buildRouter() (err error) {
+	app.Router, err = app.Config.RouteTable.buildRouter()
+	return err
 }
 
 func (app *Application) buildResourceSet() error {
@@ -190,13 +186,9 @@ func (app *Application) buildResourceSet() error {
 	return nil
 }
 
-func (app *Application) buildTemplate() error {
-	t, err := app.Config.Template.build(app)
-	if err != nil {
-		return err
-	}
-	app.Template = t
-	return nil
+func (app *Application) buildTemplate() (err error) {
+	app.Template, err = app.Config.Template.build(app)
+	return err
 }
 
 func (app *Application) buildLogger() error {
@@ -213,13 +205,9 @@ func (app *Application) buildLogger() error {
 	return nil
 }
 
-func (app *Application) buildEvent() error {
-	e, err := app.Config.Event.build(app)
-	if err != nil {
-		return err
-	}
-	app.Event = e
-	return nil
+func (app *Application) buildEvent() (err error) {
+	app.Event, err = app.Config.Event.build(app)
+	return err
 }
 
 func (app *Application) validateMiddlewares() error {
