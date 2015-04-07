@@ -262,12 +262,11 @@ type DispatchMiddleware struct{}
 
 // Process implements the Middleware interface.
 func (m *DispatchMiddleware) Process(app *Application, c *Context, next func() error) error {
-	name, controller, handler, params, found := app.Router.dispatch(c.Request)
+	name, handler, params, found := app.Router.dispatch(c.Request)
 	if !found {
-		controller = &ErrorController{
+		handler = (&ErrorController{
 			StatusCode: http.StatusNotFound,
-		}
-		handler = controller.GET
+		}).GET
 	}
 	c.Name = name
 	if c.Params == nil {

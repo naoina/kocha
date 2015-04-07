@@ -31,15 +31,15 @@ type Router struct {
 	routeTable RouteTable
 }
 
-func (router *Router) dispatch(req *Request) (name string, controller Controller, handler requestHandler, params denco.Params, found bool) {
+func (router *Router) dispatch(req *Request) (name string, handler requestHandler, params denco.Params, found bool) {
 	path := util.NormPath(req.URL.Path)
 	data, params, found := router.forward.Lookup(path)
 	if !found {
-		return "", nil, nil, nil, false
+		return "", nil, nil, false
 	}
 	route := data.(*Route)
 	handler, found = route.dispatch(req.Method)
-	return route.Name, route.Controller, handler, params, found
+	return route.Name, handler, params, found
 }
 
 // buildForward builds forward router.
