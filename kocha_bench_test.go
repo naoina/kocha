@@ -41,6 +41,19 @@ func BenchmarkServeHTTP(b *testing.B) {
 	}
 }
 
+func BenchmarkServeHTTP_WithParams(b *testing.B) {
+	app := kocha.NewTestApp()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		req, err := http.NewRequest("GET", "/user/123", nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+		w := newNullResponseWriter()
+		app.ServeHTTP(w, req)
+	}
+}
+
 func BenchmarkNew(b *testing.B) {
 	app := kocha.NewTestApp()
 	config := app.Config
