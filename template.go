@@ -17,6 +17,8 @@ import (
 const (
 	LayoutDir        = "layout"
 	ErrorTemplateDir = "error"
+
+	layoutPath = LayoutDir + string(filepath.Separator)
 )
 
 // TemplatePathInfo represents an information of template paths.
@@ -26,9 +28,10 @@ type TemplatePathInfo struct {
 }
 
 type templateKey struct {
-	appName string
-	name    string
-	format  string
+	appName  string
+	name     string
+	format   string
+	isLayout bool
 }
 
 // Template represents the templates information.
@@ -44,17 +47,17 @@ type Template struct {
 
 // Get gets a parsed template.
 func (t *Template) Get(appName, layout, name, format string) (*template.Template, error) {
-	var templateName string
-	if layout != "" {
-		templateName = filepath.Join(LayoutDir, layout)
-	} else {
-		templateName = name
+	key := templateKey{
+		appName:  appName,
+		format:   format,
+		isLayout: layout != "",
 	}
-	tmpl, exists := t.m[templateKey{
-		appName: appName,
-		name:    templateName,
-		format:  format,
-	}]
+	if key.isLayout {
+		key.name = layout
+	} else {
+		key.name = name
+	}
+	tmpl, exists := t.m[key]
 	if !exists {
 		return nil, fmt.Errorf("kocha: template not found: %s:%s/%s.%s", appName, layout, name, format)
 	}
@@ -182,11 +185,16 @@ func (t *Template) buildAppTemplateSet(buf *bytes.Buffer, l int, m map[templateK
 			}
 		}
 		for _, t := range tmpl.Templates() {
-			m[templateKey{
+			key := templateKey{
 				appName: appName,
 				name:    strings.TrimSuffix(t.Name(), ext),
 				format:  ext[1:], // truncate the leading dot.
-			}] = t
+			}
+			if strings.HasPrefix(key.name, layoutPath) {
+				key.isLayout = true
+				key.name = key.name[len(layoutPath):]
+			}
+			m[key] = t
 		}
 	}
 	return nil
