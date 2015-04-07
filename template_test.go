@@ -329,8 +329,7 @@ func TestTemplate_Get(t *testing.T) {
 			{"appname", "", "testctrlr", "js"},
 			{"appname", "another_layout", "testctrlr", "html"},
 		} {
-			app.Config.AppName = v.appName
-			tmpl, err := app.Template.Get(v.layout, v.ctrlrName, v.format)
+			tmpl, err := app.Template.Get(v.appName, v.layout, v.ctrlrName, v.format)
 			var actual interface{} = err
 			var expect interface{} = nil
 			if !reflect.DeepEqual(actual, expect) {
@@ -352,8 +351,7 @@ func TestTemplate_Get(t *testing.T) {
 			{"testAppName", "app", "test_tmpl1", "xml", fmt.Errorf("kocha: template not found: testAppName:app/test_tmpl1.xml")},
 			{"testAppName", "", "test_tmpl1", "xml", fmt.Errorf("kocha: template not found: testAppName:/test_tmpl1.xml")},
 		} {
-			app.Config.AppName = v.appName
-			tmpl, err := app.Template.Get(v.layout, v.ctrlrName, v.format)
+			tmpl, err := app.Template.Get(v.appName, v.layout, v.ctrlrName, v.format)
 			actual := tmpl
 			expect := (*template.Template)(nil)
 			actualErr := err
