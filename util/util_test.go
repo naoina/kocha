@@ -43,29 +43,6 @@ func (m orderedOutputMap) GoString() string {
 	return fmt.Sprintf("map[string]interface{}{%v}", strings.Join(keys, ", "))
 }
 
-func Test_SplitExt(t *testing.T) {
-	for value, expected := range map[string][]string{
-		"/":               {"/", ""},
-		"/foo":            {"/foo", ""},
-		"/foo.":           {"/foo", "."},
-		"/foo..":          {"/foo.", "."},
-		"/foo.png":        {"/foo", ".png"},
-		"/foo/bar.png":    {"/foo/bar", ".png"},
-		"foo/bar.jpg":     {"foo/bar", ".jpg"},
-		"foo/bar.png.jpg": {"foo/bar.png", ".jpg"},
-		"foo.png/bar.jpg": {"foo.png/bar", ".jpg"},
-	} {
-		var actual [2]string
-		actual[0], actual[1] = SplitExt(value)
-		if !reflect.DeepEqual(actual[0], expected[0]) {
-			t.Errorf("Expect %v, but %v", expected[0], actual[0])
-		}
-		if !reflect.DeepEqual(actual[1], expected[1]) {
-			t.Errorf("Expect %v, but %v", expected[1], actual[1])
-		}
-	}
-}
-
 func Test_NormPath(t *testing.T) {
 	for v, expected := range map[string]string{
 		"/":           "/",

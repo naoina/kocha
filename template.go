@@ -150,7 +150,8 @@ func (t *Template) collectTemplatePaths(templatePaths map[string]map[string]stri
 		if err != nil {
 			return err
 		}
-		name, ext := util.SplitExt(strings.TrimSuffix(baseName, util.TemplateSuffix))
+		name := strings.TrimSuffix(baseName, util.TemplateSuffix)
+		ext := filepath.Ext(name)
 		if _, exists := templatePaths[ext]; !exists {
 			templatePaths[ext] = make(map[string]string)
 		}
@@ -164,9 +165,11 @@ func (t *Template) buildAppTemplateSet(buf *bytes.Buffer, l int, m map[templateK
 		tmpl := template.New("")
 		for name, path := range templateInfos {
 			buf.Truncate(l)
+			var body string
 			if data := t.app.ResourceSet.Get(path); data != nil {
-				if b, ok := data.([]byte); ok {
-					buf.Write(b)
+				if b, ok := data.(string); ok {
+					buf.WriteString(b)
+					body = buf.String()
 				}
 			} else {
 				f, err := os.Open(path)
@@ -178,9 +181,10 @@ func (t *Template) buildAppTemplateSet(buf *bytes.Buffer, l int, m map[templateK
 				if err != nil {
 					return err
 				}
-				t.app.ResourceSet.Add(path, buf.Bytes())
+				body = buf.String()
+				t.app.ResourceSet.Add(path, body)
 			}
-			if _, err := tmpl.New(name).Delims(t.LeftDelim, t.RightDelim).Funcs(template.FuncMap(t.FuncMap)).Parse(buf.String()); err != nil {
+			if _, err := tmpl.New(name).Delims(t.LeftDelim, t.RightDelim).Funcs(template.FuncMap(t.FuncMap)).Parse(body); err != nil {
 				return err
 			}
 		}

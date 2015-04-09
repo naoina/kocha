@@ -53,18 +53,6 @@ func ToSnakeCase(s string) string {
 	return stringutil.ToSnakeCase(s)
 }
 
-// SplitExt returns pair of file name and extension.
-//
-// For example, when the given path is "path/to/image.png", SplitExt returns ("path/to/image", ".png").
-func SplitExt(path string) (name, ext string) {
-	for i := len(path) - 1; i >= 0 && !os.IsPathSeparator(path[i]); i-- {
-		if path[i] == '.' {
-			return path[:i], path[i:]
-		}
-	}
-	return path, ""
-}
-
 func NormPath(p string) string {
 	result := path.Clean(p)
 	// path.Clean() truncate the trailing slash but add it.
