@@ -324,7 +324,7 @@ func TestContext_Render_withMissingTemplateInAppName(t *testing.T) {
 	c.App.Config.AppName = "unknownAppName"
 	actual := c.Render(nil)
 	_, file, line, _ := runtime.Caller(0)
-	expect := fmt.Errorf("%s:%d: kocha: template not found: unknownAppName:/testctrlr.html", file, line-1)
+	expect := fmt.Errorf("%s:%d: kocha: template not found: unknownAppName:testctrlr.html", file, line-1)
 	if !reflect.DeepEqual(actual, expect) {
 		t.Errorf(`kocha.Render(%#v, %#v) => %#v; want %#v`, c, nil, actual, expect)
 	}
@@ -335,7 +335,7 @@ func TestContext_Render_withMissingTemplate(t *testing.T) {
 	c.Name = "unknownctrlr"
 	actual := c.Render(nil)
 	_, file, line, _ := runtime.Caller(0)
-	expect := fmt.Errorf("%s:%d: kocha: template not found: appname:/unknownctrlr.html", file, line-1)
+	expect := fmt.Errorf("%s:%d: kocha: template not found: appname:unknownctrlr.html", file, line-1)
 	if !reflect.DeepEqual(actual, expect) {
 		t.Errorf(`kocha.Render(%#v, %#v) => %#v; want %#v`, c, nil, actual, expect)
 	}

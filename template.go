@@ -34,6 +34,14 @@ type templateKey struct {
 	isLayout bool
 }
 
+func (k templateKey) String() string {
+	p := k.name
+	if k.isLayout {
+		p = filepath.Join(LayoutDir, p)
+	}
+	return fmt.Sprintf("%s:%s.%s", k.appName, p, k.format)
+}
+
 // Template represents the templates information.
 type Template struct {
 	PathInfo   TemplatePathInfo // information of location of template paths.
@@ -59,7 +67,7 @@ func (t *Template) Get(appName, layout, name, format string) (*template.Template
 	}
 	tmpl, exists := t.m[key]
 	if !exists {
-		return nil, fmt.Errorf("kocha: template not found: %s:%s/%s.%s", appName, layout, name, format)
+		return nil, fmt.Errorf("kocha: template not found: %s", key)
 	}
 	return tmpl, nil
 }

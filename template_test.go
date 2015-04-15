@@ -193,7 +193,7 @@ func TestTemplate_FuncMap_invokeTemplate(t *testing.T) {
 		}
 		tmpl := template.Must(template.New("test").Funcs(funcMap).Parse(`{{invoke_template .Data.unit "unknown_tmpl" "unknown_def_tmpl" $}}`))
 		var buf bytes.Buffer
-		if err := tmpl.Execute(&buf, c); !strings.HasSuffix(err.Error(), "template not found: appname:/unknown_def_tmpl.html") {
+		if err := tmpl.Execute(&buf, c); !strings.HasSuffix(err.Error(), "template not found: appname:unknown_def_tmpl.html") {
 			t.Error(err)
 		}
 	}()
@@ -346,10 +346,10 @@ func TestTemplate_Get(t *testing.T) {
 			format    string
 			expectErr error
 		}{
-			{"unknownAppName", "app", "test_tmpl1", "html", fmt.Errorf("kocha: template not found: unknownAppName:app/test_tmpl1.html")},
-			{"testAppName", "app", "unknown_tmpl1", "html", fmt.Errorf("kocha: template not found: testAppName:app/unknown_tmpl1.html")},
-			{"testAppName", "app", "test_tmpl1", "xml", fmt.Errorf("kocha: template not found: testAppName:app/test_tmpl1.xml")},
-			{"testAppName", "", "test_tmpl1", "xml", fmt.Errorf("kocha: template not found: testAppName:/test_tmpl1.xml")},
+			{"unknownAppName", "app", "test_tmpl1", "html", fmt.Errorf("kocha: template not found: unknownAppName:%s", filepath.Join("layout", "app.html"))},
+			{"testAppName", "app", "unknown_tmpl1", "html", fmt.Errorf("kocha: template not found: testAppName:%s", filepath.Join("layout", "app.html"))},
+			{"testAppName", "app", "test_tmpl1", "xml", fmt.Errorf("kocha: template not found: testAppName:%s", filepath.Join("layout", "app.xml"))},
+			{"testAppName", "", "test_tmpl1", "xml", fmt.Errorf("kocha: template not found: testAppName:test_tmpl1.xml")},
 		} {
 			tmpl, err := app.Template.Get(v.appName, v.layout, v.ctrlrName, v.format)
 			actual := tmpl
