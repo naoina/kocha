@@ -404,12 +404,9 @@ func (c *Context) setData(data interface{}) error {
 		return nil
 	}
 	srcType := reflect.TypeOf(data)
-	if srcType.Kind() != reflect.Map {
+	if c.Data == nil || srcType.Kind() != reflect.Map {
 		c.Data = data
 		return nil
-	}
-	if c.Data == nil {
-		c.Data = map[interface{}]interface{}{}
 	}
 	destType := reflect.TypeOf(c.Data)
 	if sk, dk := srcType.Key(), destType.Key(); !sk.AssignableTo(dk) {

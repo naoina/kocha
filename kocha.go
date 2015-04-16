@@ -130,7 +130,6 @@ func New(config *Config) (*Application, error) {
 func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c := newContext()
 	c.Layout = app.Config.DefaultLayout
-	c.Data = map[interface{}]interface{}{}
 	c.Request = newRequest(r)
 	c.Response = newResponse()
 	c.App = app
