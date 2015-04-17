@@ -452,6 +452,7 @@ func (c *Context) errorWithLine(err error) error {
 func (c *Context) reset() {
 	c.Name = ""
 	c.Format = ""
+	c.Data = nil
 	c.Params = nil
 	c.Session = nil
 	c.Flash = nil
