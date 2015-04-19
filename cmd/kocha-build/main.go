@@ -116,7 +116,7 @@ func (c *buildCommand) Run(args []string) error {
 	if runtime.GOOS == "windows" {
 		execName += ".exe"
 	}
-	if err := execCmd("go", "run", builderFilePath); err != nil {
+	if err := execCmdWithHostEnv("go", "run", builderFilePath); err != nil {
 		return err
 	}
 	// To avoid to become a dynamic linked binary.
@@ -152,6 +152,31 @@ func execCmd(cmd string, args ...string) error {
 		return fmt.Errorf("build failed: %v\n%v", err, string(msg))
 	}
 	return nil
+}
+
+func execCmdWithHostEnv(cmd string, args ...string) (err error) {
+	targetGOOS, targetGOARCH := os.Getenv("GOOS"), os.Getenv("GOARCH")
+	for name, env := range map[string]string{
+		"GOOS":   runtime.GOOS,
+		"GOARCH": runtime.GOARCH,
+	} {
+		if err := os.Setenv(name, env); err != nil {
+			return err
+		}
+	}
+	defer func() {
+		for name, env := range map[string]string{
+			"GOOS":   targetGOOS,
+			"GOARCH": targetGOARCH,
+		} {
+			if e := os.Setenv(name, env); e != nil {
+				if err != nil {
+					err = e
+				}
+			}
+		}
+	}()
+	return execCmd(cmd, args...)
 }
 
 func collectResourcePaths(root string) map[string]string {
