@@ -119,7 +119,9 @@ func (c *buildCommand) Run(args []string) error {
 	if err := execCmd("go", "run", builderFilePath); err != nil {
 		return err
 	}
-	execArgs := []string{"build", "-o", execName}
+	// To avoid to become a dynamic linked binary.
+	// See https://github.com/golang/go/issues/9344
+	execArgs := []string{"build", "-o", execName, "-installsuffix", "."}
 	// On Linux, works fine. On Windows, doesn't work.
 	// On other platforms, not tested.
 	if runtime.GOOS == "linux" {
