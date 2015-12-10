@@ -103,7 +103,6 @@ func Test_newCommand_Run(t *testing.T) {
 		filepath.Join("app", "view", "layout", "app.html.tmpl"),
 		filepath.Join("app", "view", "root.html.tmpl"),
 		filepath.Join("config", "app.go"),
-		filepath.Join("config", "routes.go"),
 		filepath.Join("public", "robots.txt"),
 	}
 	sort.Strings(actuals)

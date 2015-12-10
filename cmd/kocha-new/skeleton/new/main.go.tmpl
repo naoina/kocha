@@ -1,12 +1,25 @@
 package main
 
 import (
+	"{{.appPath}}/app/controller"
 	"{{.appPath}}/config"
 
 	"github.com/naoina/kocha"
 )
 
 func main() {
+	config.AppConfig.RouteTable = kocha.RouteTable{
+		{
+			Name:       "root",
+			Path:       "/",
+			Controller: &controller.Root{},
+		},
+		{
+			Name:       "static",
+			Path:       "/*path",
+			Controller: &kocha.StaticServe{},
+		},
+	}
 	if err := kocha.Run(config.AppConfig); err != nil {
 		panic(err)
 	}
