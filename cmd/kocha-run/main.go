@@ -44,7 +44,18 @@ func (c *runCommand) Run(args []string) (err error) {
 		importPath = args[0]
 		basedir, err = util.FindAbsDir(importPath)
 		if err != nil {
-			return err
+			c, err := execCmd("go", "get", "-v", importPath)
+			if err != nil {
+				return err
+			}
+			if err := c.Wait(); err != nil {
+				c.Process.Kill()
+				return err
+			}
+			basedir, err = util.FindAbsDir(importPath)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		basedir, err = os.Getwd()
