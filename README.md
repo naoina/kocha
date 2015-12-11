@@ -13,7 +13,7 @@ A convenient web application framework for [Go](http://golang.org/)
 
 ## Requirement <a id="Requirement"></a>
 
-* Go 1.3 or later
+* Go 1.4 or later
 
 ## Getting started
 
