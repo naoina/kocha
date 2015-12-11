@@ -23,7 +23,7 @@ func (c *runCommand) Name() string {
 }
 
 func (c *runCommand) Usage() string {
-	return fmt.Sprintf(`Usage: %s [OPTIONS]
+	return fmt.Sprintf(`Usage: %s [OPTIONS] [IMPORT_PATH]
 
 Run the your application.
 
@@ -37,16 +37,26 @@ func (c *runCommand) Option() interface{} {
 	return &c.option
 }
 
-func (c *runCommand) Run(args []string) error {
-	basedir, err := os.Getwd()
-	if err != nil {
-		return err
+func (c *runCommand) Run(args []string) (err error) {
+	var basedir string
+	var importPath string
+	if len(args) > 0 {
+		importPath = args[0]
+		basedir, err = util.FindAbsDir(importPath)
+		if err != nil {
+			return err
+		}
+	} else {
+		basedir, err = os.Getwd()
+		if err != nil {
+			return err
+		}
 	}
 	execName := filepath.Base(basedir)
 	if runtime.GOOS == "windows" {
 		execName += ".exe"
 	}
-	if err := util.PrintEnv(); err != nil {
+	if err := util.PrintEnv(basedir); err != nil {
 		return err
 	}
 	fmt.Println("Starting...")
@@ -60,7 +70,7 @@ func (c *runCommand) Run(args []string) error {
 				fmt.Fprintln(os.Stderr, err)
 			}
 		}
-		newCmd, err := runApp(basedir, execName)
+		newCmd, err := runApp(basedir, execName, importPath)
 		if err != nil {
 			fmt.Fprint(os.Stderr, err)
 		}
@@ -76,11 +86,13 @@ func (c *runCommand) Run(args []string) error {
 	}
 }
 
-func runApp(basedir, execName string) (*exec.Cmd, error) {
-	execArgs := []string{"build", "-o", execName}
+func runApp(basedir, execName, importPath string) (*exec.Cmd, error) {
+	execPath := filepath.Join(basedir, execName)
+	execArgs := []string{"build", "-o", execPath}
 	if runtime.GOARCH == "amd64" {
 		execArgs = append(execArgs, "-race")
 	}
+	execArgs = append(execArgs, importPath)
 	c, err := execCmd("go", execArgs...)
 	if err != nil {
 		return nil, err
@@ -89,7 +101,7 @@ func runApp(basedir, execName string) (*exec.Cmd, error) {
 		c.Process.Kill()
 		return nil, err
 	}
-	c, err = execCmd(filepath.Join(basedir, execName))
+	c, err = execCmd(execPath)
 	if err != nil {
 		c.Process.Kill()
 	}

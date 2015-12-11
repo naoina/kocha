@@ -326,13 +326,16 @@ var settingEnvRegexp = regexp.MustCompile(`\bkocha\.Getenv\(\s*(.+?)\s*,\s*(.+?)
 // FindEnv returns map of environment variables.
 // Key of map is key of environment variable, Value of map is value of
 // environment variable.
-func FindEnv() (map[string]string, error) {
-	pwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
+func FindEnv(basedir string) (map[string]string, error) {
+	if basedir == "" {
+		pwd, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+		basedir = pwd
 	}
 	env := make(map[string]string)
-	if err := filepath.Walk(pwd, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(basedir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -392,6 +395,24 @@ func FindAppDir() (string, error) {
 	return filepath.ToSlash(dir)[len(bp)+1:], nil
 }
 
+// FindAbsDir returns an absolute path of importPath in GOPATH.
+// For example, if importPath is "github.com/naoina/myapp",
+// and GOPATH is "/path/to/gopath", FindAbsDir returns
+// "/path/to/gopath/src/github.com/naoina/myapp".
+func FindAbsDir(importPath string) (string, error) {
+	if importPath == "" {
+		return os.Getwd()
+	}
+	dir := filepath.FromSlash(importPath)
+	for _, gopath := range filepath.SplitList(build.Default.GOPATH) {
+		candidate := filepath.Join(gopath, "src", dir)
+		if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("package `%s' not found in GOPATH", importPath)
+}
+
 // IsUnexportedField returns whether the field is unexported.
 // This function is to avoid the bug in versions older than Go1.3.
 // See following links:
@@ -410,8 +431,8 @@ func GenerateRandomKey(length int) []byte {
 	return result
 }
 
-func PrintEnv() error {
-	envMap, err := FindEnv()
+func PrintEnv(basedir string) error {
+	envMap, err := FindEnv(basedir)
 	if err != nil {
 		return err
 	}

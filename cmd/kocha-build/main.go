@@ -30,7 +30,7 @@ func (c *buildCommand) Name() string {
 }
 
 func (c *buildCommand) Usage() string {
-	return fmt.Sprintf(`Usage: %s [OPTIONS]
+	return fmt.Sprintf(`Usage: %s [OPTIONS] [IMPORT_PATH]
 
 Build your application.
 
@@ -46,14 +46,24 @@ func (c *buildCommand) Option() interface{} {
 	return &c.option
 }
 
-func (c *buildCommand) Run(args []string) error {
-	dir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	appDir, err := util.FindAppDir()
-	if err != nil {
-		return err
+func (c *buildCommand) Run(args []string) (err error) {
+	var appDir string
+	var dir string
+	if len(args) > 0 {
+		appDir = args[0]
+		dir, err = util.FindAbsDir(appDir)
+		if err != nil {
+			return err
+		}
+	} else {
+		dir, err = os.Getwd()
+		if err != nil {
+			return err
+		}
+		appDir, err = util.FindAppDir()
+		if err != nil {
+			return err
+		}
 	}
 	appName := filepath.Base(dir)
 	configPkg, err := getPackage(path.Join(appDir, "config"))
@@ -121,7 +131,8 @@ func (c *buildCommand) Run(args []string) error {
 	}
 	// To avoid to become a dynamic linked binary.
 	// See https://github.com/golang/go/issues/9344
-	execArgs := []string{"build", "-o", execName, "-installsuffix", "."}
+	execPath := filepath.Join(dir, execName)
+	execArgs := []string{"build", "-o", execPath, "-installsuffix", "."}
 	// On Linux, works fine. On Windows, doesn't work.
 	// On other platforms, not tested.
 	if runtime.GOOS == "linux" {
@@ -134,10 +145,10 @@ func (c *buildCommand) Run(args []string) error {
 	if err := os.RemoveAll(tmpDir); err != nil {
 		return err
 	}
-	if err := util.PrintEnv(); err != nil {
+	if err := util.PrintEnv(dir); err != nil {
 		return err
 	}
-	fmt.Printf("build all-in-one binary to %v\n", filepath.Join(dir, execName))
+	fmt.Printf("build all-in-one binary to %v\n", execPath)
 	util.PrintGreen("Build successful!\n")
 	return nil
 }
