@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"go/build"
 	"os"
@@ -51,8 +52,8 @@ func (c *newCommand) Run(args []string) error {
 	data := map[string]interface{}{
 		"appName":   filepath.Base(appPath),
 		"appPath":   appPath,
-		"secretKey": fmt.Sprintf("%q", string(util.GenerateRandomKey(32))), // AES-256
-		"signedKey": fmt.Sprintf("%q", string(util.GenerateRandomKey(16))),
+		"secretKey": fmt.Sprintf("%q", base64.StdEncoding.EncodeToString(util.GenerateRandomKey(32))), // AES-256
+		"signedKey": fmt.Sprintf("%q", base64.StdEncoding.EncodeToString(util.GenerateRandomKey(16))),
 	}
 	return filepath.Walk(skeletonDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
