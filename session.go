@@ -6,7 +6,7 @@ import (
 	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha1"
+	"crypto/sha512"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -196,20 +196,20 @@ func (store *SessionCookieStore) sign(src []byte) []byte {
 
 // verify verify signed data and returns unsigned data if valid.
 func (store *SessionCookieStore) verify(src []byte) (unsigned []byte, err error) {
-	if len(src) <= sha1.Size {
+	if len(src) <= sha512.Size256 {
 		return nil, errors.New("kocha: session cookie value too short")
 	}
-	sign := src[:sha1.Size]
-	unsigned = src[sha1.Size:]
+	sign := src[:sha512.Size256]
+	unsigned = src[sha512.Size256:]
 	if !hmac.Equal(store.hash(unsigned), sign) {
 		return nil, errors.New("kocha: session cookie verification failed")
 	}
 	return unsigned, nil
 }
 
-// hash returns hashed data by HMAC-SHA1.
+// hash returns hashed data by HMAC-SHA512/256.
 func (store *SessionCookieStore) hash(src []byte) []byte {
-	hash := hmac.New(sha1.New, []byte(store.SigningKey))
+	hash := hmac.New(sha512.New512_256, []byte(store.SigningKey))
 	hash.Write(src)
 	return hash.Sum(nil)
 }
