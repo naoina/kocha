@@ -1,6 +1,7 @@
 package kocha_test
 
 import (
+	"encoding/base64"
 	"fmt"
 	"reflect"
 	"strings"
@@ -200,8 +201,8 @@ func Test_SessionCookieStore_Validate(t *testing.T) {
 	// tests for validate the key size.
 	for _, keySize := range []int{16, 24, 32} {
 		store := &kocha.SessionCookieStore{
-			SecretKey:  strings.Repeat("a", keySize),
-			SigningKey: "a",
+			SecretKey:  base64.StdEncoding.EncodeToString([]byte(strings.Repeat("a", keySize))),
+			SigningKey: base64.StdEncoding.EncodeToString([]byte("a")),
 		}
 		if err := store.Validate(); err != nil {
 			t.Errorf("Expect key size %v is valid, but returned error: %v", keySize, err)
@@ -210,8 +211,8 @@ func Test_SessionCookieStore_Validate(t *testing.T) {
 	// boundary tests
 	for _, keySize := range []int{15, 17, 23, 25, 31, 33} {
 		store := &kocha.SessionCookieStore{
-			SecretKey:  strings.Repeat("a", keySize),
-			SigningKey: "a",
+			SecretKey:  base64.StdEncoding.EncodeToString([]byte(strings.Repeat("a", keySize))),
+			SigningKey: base64.StdEncoding.EncodeToString([]byte("a")),
 		}
 		if err := store.Validate(); err == nil {
 			t.Errorf("Expect key size %v is invalid, but doesn't returned error", keySize)

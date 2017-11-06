@@ -40,8 +40,8 @@ var (
 				Name: "testappname_session",
 				Store: &kocha.SessionCookieStore{
 					// AUTO-GENERATED Random keys. DO NOT EDIT.
-					SecretKey:  "\xd4(\xd5H`\n\x17\xdbD^Kvk\x1c\xf5\xf7\x99\xf7!\xf7\x88Ll\x94\x9eg\xb5\xf3n#\x81u",
-					SigningKey: "H\xa8\xb2\xa9\xbc\xd5\x18\xd9c~\xf0؉\xb5|\u007f",
+					SecretKey:  "a1uApKUdSnugB7TbvDZ5GfkGEJOUd3qbV0dpJ5Bqmc4=",
+					SigningKey: "jlPLiRWBaLCUg4PJ5u/Ncg==",
 				},
 
 				// Expiration of session cookie, in seconds, from now.

@@ -117,6 +117,16 @@ func (store *SessionCookieStore) Load(key string) (sess Session, err error) {
 
 // Validate validates SecretKey size.
 func (store *SessionCookieStore) Validate() error {
+	b, err := base64.StdEncoding.DecodeString(store.SecretKey)
+	if err != nil {
+		return err
+	}
+	store.SecretKey = string(b)
+	b, err = base64.StdEncoding.DecodeString(store.SigningKey)
+	if err != nil {
+		return err
+	}
+	store.SigningKey = string(b)
 	switch len(store.SecretKey) {
 	case 16, 24, 32:
 		return nil
