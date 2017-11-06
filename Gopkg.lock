@@ -26,22 +26,10 @@
   version = "v0.0.3"
 
 [[projects]]
-  name = "github.com/mattn/go-sqlite3"
-  packages = ["."]
-  revision = "5160b48509cf5c877bc22c11c373f8c7738cdb38"
-  version = "v1.3.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/naoina/denco"
   packages = ["."]
   revision = "a2656d3ed566ac9912ba18fcfc942c562d9463c7"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/naoina/genmai"
-  packages = ["."]
-  revision = "78583835e1e41e3938e1ddfffd7101f8ad27fae0"
 
 [[projects]]
   name = "github.com/naoina/go-stringutil"
@@ -63,12 +51,6 @@
 
 [[projects]]
   branch = "master"
-  name = "golang.org/x/net"
-  packages = ["context"]
-  revision = "01c190206fbdffa42f334f4b2bf2220f50e64920"
-
-[[projects]]
-  branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
   revision = "8eb05f94d449fdf134ec24630ce69ada5b469c1c"
@@ -82,6 +64,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "20c00d522bdedbbfcb52cc94fbdb709b572f06ec21786e47a2e42e09410575e8"
+  inputs-digest = "a1d6c269fb27357132476f1ecd2d63036ce26661bc195d0ccb9e0ff936489b34"
   solver-name = "gps-cdcl"
   solver-version = 1
