@@ -130,19 +130,16 @@ func (store *SessionCookieStore) encrypt(buf []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// padding for CBC
-	rem := (aes.BlockSize - len(buf)%aes.BlockSize) % aes.BlockSize
-	for i := 0; i < rem; i++ {
-		buf = append(buf, byte(rem))
+	aead, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
 	}
-	encrypted := make([]byte, aes.BlockSize+len(buf))
-	iv := encrypted[:aes.BlockSize]
+	iv := make([]byte, aead.NonceSize(), len(buf)+aead.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return nil, err
 	}
-	mode := cipher.NewCBCEncrypter(block, iv)
-	mode.CryptBlocks(encrypted[aes.BlockSize:], buf)
-	return encrypted, nil
+	encrypted := aead.Seal(nil, iv, buf, nil)
+	return append(iv, encrypted...), nil
 }
 
 // decrypt returns decrypted data from crypted data by AES-256-CBC.
@@ -151,10 +148,15 @@ func (store *SessionCookieStore) decrypt(buf []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	iv := buf[:aes.BlockSize]
-	decrypted := buf[aes.BlockSize:]
-	mode := cipher.NewCBCDecrypter(block, iv)
-	mode.CryptBlocks(decrypted, decrypted)
+	aead, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+	iv := buf[:aead.NonceSize()]
+	decrypted := buf[aead.NonceSize():]
+	if _, err := aead.Open(decrypted[:0], iv, decrypted, nil); err != nil {
+		return nil, err
+	}
 	return decrypted, nil
 }
 
