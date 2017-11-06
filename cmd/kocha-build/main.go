@@ -132,7 +132,7 @@ func (c *buildCommand) Run(args []string) (err error) {
 	// To avoid to become a dynamic linked binary.
 	// See https://github.com/golang/go/issues/9344
 	execPath := filepath.Join(dir, execName)
-	execArgs := []string{"build", "-o", execPath, "-installsuffix", "."}
+	execArgs := []string{"build", "-o", execPath, "-tags", "netgo", "-installsuffix", "netgo"}
 	// On Linux, works fine. On Windows, doesn't work.
 	// On other platforms, not tested.
 	if runtime.GOOS == "linux" {
