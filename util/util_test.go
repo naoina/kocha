@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/base64"
 	"fmt"
 	"go/build"
 	"go/format"
@@ -69,7 +70,7 @@ func TestGoString(t *testing.T) {
 
 	tmpl := template.Must(template.New("test").Parse(`foo{{.name}}bar`))
 	actual = GoString(tmpl)
-	expected = `template.Must(template.New("test").Funcs(kocha.TemplateFuncs).Parse(util.Gunzip("\x1f\x8b\b\x00\x00\tn\x88\x02\xffJ\xcbϯ\xae\xd6\xcbK\xccM\xad\xadMJ,\x02\x04\x00\x00\xff\xff4%\x83\xb6\x0f\x00\x00\x00")))`
+	expected = `template.Must(template.New("test").Funcs(kocha.TemplateFuncs).Parse(util.Gunzip("\x1f\x8b\b\x00\x00\x00\x00\x00\x02\xffJ\xcbϯ\xae\xd6\xcbK\xccM\xad\xadMJ,\x02\x04\x00\x00\xff\xff4%\x83\xb6\x0f\x00\x00\x00")))`
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -147,8 +148,8 @@ type testGoString struct{}
 func (g testGoString) GoString() string { return "gostring" }
 
 func Test_Gzip(t *testing.T) {
-	actual := Gzip("kocha")
-	expected := "\x1f\x8b\b\x00\x00\tn\x88\x02\xff\xca\xceO\xceH\x04\x04\x00\x00\xff\xff\f\x93\x85\x96\x05\x00\x00\x00"
+	actual := base64.StdEncoding.EncodeToString([]byte(Gzip("kocha")))
+	expected := "H4sIAAAAAAAC/8rOT85IBAQAAP//DJOFlgUAAAA="
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
@@ -171,8 +172,8 @@ func TestGunzip(t *testing.T) {
 
 	// reversibility test
 	raw := Gunzip("\x1f\x8b\b\x00\x00\tn\x88\x02\xff\xca\xceO\xceH\x04\x04\x00\x00\xff\xff\f\x93\x85\x96\x05\x00\x00\x00")
-	actual = Gzip(raw)
-	expected = "\x1f\x8b\b\x00\x00\tn\x88\x02\xff\xca\xceO\xceH\x04\x04\x00\x00\xff\xff\f\x93\x85\x96\x05\x00\x00\x00"
+	actual = base64.StdEncoding.EncodeToString([]byte(Gzip(raw)))
+	expected = "H4sIAAAAAAAC/8rOT85IBAQAAP//DJOFlgUAAAA="
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Expect %v, but %v", expected, actual)
 	}
