@@ -220,7 +220,7 @@ func TestIsUnexportedField(t *testing.T) {
 		actual := IsUnexportedField(v)
 		expected := true
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("IsUnexportedField(%q) => %v, want %v", v, actual, expected)
+			t.Errorf("IsUnexportedField(%#v) => %v, want %v", v, actual, expected)
 		}
 	}()
 
@@ -234,7 +234,7 @@ func TestIsUnexportedField(t *testing.T) {
 		actual := IsUnexportedField(v)
 		expected := false
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("IsUnexportedField(%q) => %v, want %v", v, actual, expected)
+			t.Errorf("IsUnexportedField(%#v) => %v, want %v", v, actual, expected)
 		}
 	}()
 }

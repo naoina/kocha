@@ -44,7 +44,7 @@ func TestGenmaiModelType_FieldTypeMap(t *testing.T) {
 	actual := (&GenmaiModelType{}).FieldTypeMap()
 	expected := m
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("(&GenmaiModelType{}).FieldTypeMap() => %q, want %q", "genmai", actual, expected)
+		t.Errorf("(&GenmaiModelType{}).FieldTypeMap() => %#v, want %#v", actual, expected)
 	}
 }
 
@@ -55,11 +55,11 @@ func TestGenmaiModelType_TemplatePath(t *testing.T) {
 	actual := path1
 	expected := filepath.Join(basepath, "skeleton", "model", "genmai", "genmai.go"+util.TemplateSuffix)
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("(&GenmaiModelType{}).TemplatePath() => %q, $, want %q, $", actual, expected)
+		t.Errorf("(&GenmaiModelType{}).TemplatePath() => %#v, $, want %#v, $", actual, expected)
 	}
 	actual = path2
 	expected = filepath.Join(basepath, "skeleton", "model", "genmai", "config.go"+util.TemplateSuffix)
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("(&GenmaiModelType{}).TemplatePath() => $, %q, want $, %q", actual, expected)
+		t.Errorf("(&GenmaiModelType{}).TemplatePath() => $, %#v, want $, %#v", actual, expected)
 	}
 }

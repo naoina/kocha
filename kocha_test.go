@@ -493,7 +493,7 @@ func TestApplication_Invoke(t *testing.T) {
 		actual := called
 		expected := true
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %q, but %q", expected, actual)
+			t.Errorf("Expect %#v, but %#v", expected, actual)
 		}
 	}()
 
@@ -510,7 +510,7 @@ func TestApplication_Invoke(t *testing.T) {
 		actual := called
 		expected := true
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %q, but %q", expected, actual)
+			t.Errorf("Expect %#v, but %#v", expected, actual)
 		}
 	}()
 
@@ -527,7 +527,7 @@ func TestApplication_Invoke(t *testing.T) {
 		actual := called
 		expected := true
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %q, but %q", expected, actual)
+			t.Errorf("Expect %#v, but %#v", expected, actual)
 		}
 	}()
 
@@ -570,7 +570,7 @@ func TestApplication_Invoke(t *testing.T) {
 		actual := called
 		expected := true
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %q, but %q", expected, actual)
+			t.Errorf("Expect %#v, but %#v", expected, actual)
 		}
 	}()
 
@@ -585,7 +585,7 @@ func TestApplication_Invoke(t *testing.T) {
 		var actual interface{} = unit.callCount
 		var expected interface{} = 1
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %q, but %q", expected, actual)
+			t.Errorf("Expect %#v, but %#v", expected, actual)
 		}
 
 		// again.
@@ -597,7 +597,7 @@ func TestApplication_Invoke(t *testing.T) {
 		actual = unit.callCount
 		expected = 1
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %q, but %q", expected, actual)
+			t.Errorf("Expect %#v, but %#v", expected, actual)
 		}
 
 		// same unit type.
@@ -611,7 +611,7 @@ func TestApplication_Invoke(t *testing.T) {
 		actual = called
 		expected = true
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %q, but %q", expected, actual)
+			t.Errorf("Expect %#v, but %#v", expected, actual)
 		}
 
 		// different unit type.
@@ -625,7 +625,7 @@ func TestApplication_Invoke(t *testing.T) {
 		actual = called
 		expected = true
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expect %q, but %q", expected, actual)
+			t.Errorf("Expect %#v, but %#v", expected, actual)
 		}
 	}()
 }
@@ -635,13 +635,13 @@ func TestGetenv(t *testing.T) {
 		actual := kocha.Getenv("TEST_KOCHA_ENV", "default value")
 		expected := "default value"
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Getenv(%q, %q) => %q, want %q", "TEST_KOCHA_ENV", "default value", actual, expected)
+			t.Errorf("Getenv(%#v, %#v) => %#v, want %#v", "TEST_KOCHA_ENV", "default value", actual, expected)
 		}
 
 		actual = os.Getenv("TEST_KOCHA_ENV")
 		expected = "default value"
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("os.Getenv(%q) => %q, want %q", "TEST_KOCHA_ENV", actual, expected)
+			t.Errorf("os.Getenv(%#v) => %#v, want %#v", "TEST_KOCHA_ENV", actual, expected)
 		}
 	}()
 
@@ -651,13 +651,13 @@ func TestGetenv(t *testing.T) {
 		actual := kocha.Getenv("TEST_KOCHA_ENV", "default value")
 		expected := "set kocha env"
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Getenv(%q, %q) => %q, want %q", "TEST_KOCHA_ENV", "default value", actual, expected)
+			t.Errorf("Getenv(%#v, %#v) => %#v, want %#v", "TEST_KOCHA_ENV", "default value", actual, expected)
 		}
 
 		actual = os.Getenv("TEST_KOCHA_ENV")
 		expected = "set kocha env"
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("os.Getenv(%q) => %q, want %q", "TEST_KOCHA_ENV", actual, expected)
+			t.Errorf("os.Getenv(%#v) => %#v, want %#v", "TEST_KOCHA_ENV", actual, expected)
 		}
 	}()
 }

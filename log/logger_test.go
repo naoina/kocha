@@ -1164,7 +1164,7 @@ func TestLogger_With_Panicln(t *testing.T) {
 		func() {
 			defer func() {
 				if err := recover(); err == nil {
-					t.Errorf("log level => %v; logger.With(%#v).Panicln(%#v) isn't calling panic()", v.level, msg)
+					t.Errorf("log level => %v; logger.With(%#v).Panicln(%#v) isn't calling panic()", v.level, fields, msg)
 				}
 			}()
 			logger.Panicln(msg)
