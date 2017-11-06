@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -288,14 +287,10 @@ func TestContext_Render_withDifferentKeyType(t *testing.T) {
 		c := newTestContext("testctrlr_ctx", "")
 		c.Data = v.data
 		ctx := v.ctx
-		actual := c.Render(ctx)
-		_, file, line, _ := runtime.Caller(0)
-		expect := v.expect
-		if expect != nil {
-			expect = fmt.Errorf("%s:%d: %v", file, line-1, expect)
-		}
+		actual := fmt.Sprint(c.Render(ctx))
+		expect := fmt.Sprint(v.expect)
 		if !reflect.DeepEqual(actual, expect) {
-			t.Errorf(`c.Render(%#v) => %#v; want %#v`, ctx, actual, expect)
+			t.Errorf(`c.Render(%#v) => %+v; want %+v`, ctx, actual, expect)
 		}
 	}
 }
@@ -322,20 +317,18 @@ func TestContext_Render_withContentType(t *testing.T) {
 func TestContext_Render_withMissingTemplateInAppName(t *testing.T) {
 	c := newTestContext("testctrlr", "")
 	c.App.Config.AppName = "unknownAppName"
-	actual := c.Render(nil)
-	_, file, line, _ := runtime.Caller(0)
-	expect := fmt.Errorf("%s:%d: kocha: template not found: unknownAppName:testctrlr.html", file, line-1)
+	actual := fmt.Sprint(c.Render(nil))
+	expect := "kocha: template not found: unknownAppName:testctrlr.html"
 	if !reflect.DeepEqual(actual, expect) {
-		t.Errorf(`kocha.Render(%#v, %#v) => %#v; want %#v`, c, nil, actual, expect)
+		t.Errorf(`kocha.Render(%#v, %#v) => %+v; want %+v`, c, nil, actual, expect)
 	}
 }
 
 func TestContext_Render_withMissingTemplate(t *testing.T) {
 	c := newTestContext("testctrlr", "")
 	c.Name = "unknownctrlr"
-	actual := c.Render(nil)
-	_, file, line, _ := runtime.Caller(0)
-	expect := fmt.Errorf("%s:%d: kocha: template not found: appname:unknownctrlr.html", file, line-1)
+	actual := fmt.Sprint(c.Render(nil))
+	expect := "kocha: template not found: appname:unknownctrlr.html"
 	if !reflect.DeepEqual(actual, expect) {
 		t.Errorf(`kocha.Render(%#v, %#v) => %#v; want %#v`, c, nil, actual, expect)
 	}
@@ -474,17 +467,15 @@ func TestContext_RenderError(t *testing.T) {
 		var buf bytes.Buffer
 		c.App.Logger = log.New(&buf, c.App.Config.Logger.Formatter, c.App.Config.Logger.Level)
 		c.Response.ContentType = v.contentType
-		var actual interface{} = c.RenderError(http.StatusInternalServerError, v.err, nil)
-		_, file, line, _ := runtime.Caller(0)
-		line--
-		var expect interface{} = fmt.Errorf("%s:%d: %v", file, line, v.expect)
+		var actual interface{} = fmt.Sprint(c.RenderError(http.StatusInternalServerError, v.err, nil))
+		var expect interface{} = fmt.Sprint(v.expect)
 		if !reflect.DeepEqual(actual, expect) {
-			t.Errorf(`Context.RenderError(%#v, %#v, %#v) => %#v; want %#v`, http.StatusInternalServerError, nil, nil, actual, expect)
+			t.Errorf(`Context.RenderError(%#v, %#v, %#v) => %+v; want %+v`, http.StatusInternalServerError, nil, nil, actual, expect)
 		}
 
 		func() {
 			actual := buf.String()
-			expect := fmt.Sprintf("message:%s:%d: %v", file, line, v.err)
+			expect := fmt.Sprintf("message:%v", v.err)
 			if v.err != nil && !strings.Contains(actual, expect) {
 				t.Errorf(`Context.RenderError(%#v, %#v, %#v); log => %#v; want %#v`, http.StatusInternalServerError, v.err, nil, actual, expect)
 			}

@@ -36,7 +36,7 @@ func (m *PanicRecoverMiddleware) Process(app *Application, c *Context, next func
 			}
 		}()
 		if err != nil {
-			app.Logger.Error(err)
+			app.Logger.Errorf("%+v", err)
 			goto ERROR
 		} else if perr := recover(); perr != nil {
 			app.logStackAndError(perr)
@@ -122,7 +122,7 @@ func (m *SessionMiddleware) before(app *Application, c *Context) (err error) {
 		case ErrSession:
 			app.Logger.Info(err)
 		default:
-			app.Logger.Error(err)
+			app.Logger.Errorf("%+v", err)
 		}
 		if c.Session == nil {
 			c.Session = make(Session)

@@ -12,9 +12,10 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 var contextPool = &sync.Pool{
@@ -151,18 +152,6 @@ func newContext() *Context {
 	return c
 }
 
-// ErrorWithLine returns error that added the filename and line to err.
-func ErrorWithLine(err error) error {
-	return errorWithLine(err, 2)
-}
-
-func errorWithLine(err error, calldepth int) error {
-	if _, file, line, ok := runtime.Caller(calldepth); ok {
-		return fmt.Errorf("%s:%d: %v", file, line, err)
-	}
-	return err
-}
-
 // Render renders a template.
 //
 // A data to used will be determined the according to the following rules.
@@ -179,15 +168,15 @@ func errorWithLine(err error, calldepth int) error {
 // Also ContentType set to "text/html" if not specified.
 func (c *Context) Render(data interface{}) error {
 	if err := c.setData(data); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	c.setContentTypeIfNotExists("text/html")
 	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	t, err := c.App.Template.Get(c.App.Config.AppName, c.Layout, c.Name, c.Format)
 	if err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	buf := bufPool.Get().(*bytes.Buffer)
 	defer func() {
@@ -195,10 +184,10 @@ func (c *Context) Render(data interface{}) error {
 		bufPool.Put(buf)
 	}()
 	if err := t.Execute(buf, c); err != nil {
-		return fmt.Errorf("%s: %v", t.Name(), err)
+		return errors.Wrap(err, t.Name())
 	}
 	if err := c.render(buf); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -209,15 +198,15 @@ func (c *Context) Render(data interface{}) error {
 // ContentType set to "application/json" if not specified.
 func (c *Context) RenderJSON(data interface{}) error {
 	if err := c.setData(data); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	c.setContentTypeIfNotExists("application/json")
 	buf, err := json.Marshal(c.Data)
 	if err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	if err := c.render(bytes.NewReader(buf)); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -228,15 +217,15 @@ func (c *Context) RenderJSON(data interface{}) error {
 // ContentType set to "application/xml" if not specified.
 func (c *Context) RenderXML(data interface{}) error {
 	if err := c.setData(data); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	c.setContentTypeIfNotExists("application/xml")
 	buf, err := xml.Marshal(c.Data)
 	if err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	if err := c.render(bytes.NewReader(buf)); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -247,7 +236,7 @@ func (c *Context) RenderXML(data interface{}) error {
 func (c *Context) RenderText(content string) error {
 	c.setContentTypeIfNotExists("text/plain")
 	if err := c.render(strings.NewReader(content)); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -263,14 +252,14 @@ func (c *Context) RenderText(content string) error {
 // Also ContentType set to "text/html" if not specified.
 func (c *Context) RenderError(statusCode int, err error, data interface{}) error {
 	if err != nil {
-		c.App.Logger.Error(c.errorWithLine(err))
+		c.App.Logger.Errorf("%+v", errors.WithStack(err))
 	}
 	if err := c.setData(data); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	c.setContentTypeIfNotExists("text/html")
 	if err := c.setFormatFromContentTypeIfNotExists(); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	c.Response.StatusCode = statusCode
 	c.Name = errorTemplateName(statusCode)
@@ -278,7 +267,7 @@ func (c *Context) RenderError(statusCode int, err error, data interface{}) error
 	if err != nil {
 		c.Response.ContentType = "text/plain"
 		if err := c.render(bytes.NewReader([]byte(http.StatusText(statusCode)))); err != nil {
-			return c.errorWithLine(err)
+			return errors.WithStack(err)
 		}
 		return nil
 	}
@@ -288,10 +277,10 @@ func (c *Context) RenderError(statusCode int, err error, data interface{}) error
 		bufPool.Put(buf)
 	}()
 	if err := t.Execute(buf, c); err != nil {
-		return fmt.Errorf("%s: %v", t.Name(), err)
+		return errors.Wrap(err, t.Name())
 	}
 	if err := c.render(buf); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -321,13 +310,13 @@ func (c *Context) SendFile(path string) error {
 		}
 		if _, err := os.Stat(path); err != nil {
 			if err := c.RenderError(http.StatusNotFound, nil, nil); err != nil {
-				return c.errorWithLine(err)
+				return errors.WithStack(err)
 			}
 			return nil
 		}
 		f, err := os.Open(path)
 		if err != nil {
-			return c.errorWithLine(err)
+			return errors.WithStack(err)
 		}
 		defer f.Close()
 		file = f
@@ -341,7 +330,7 @@ func (c *Context) SendFile(path string) error {
 		c.Response.ContentType = ct
 	}
 	if err := c.render(file); err != nil {
-		return c.errorWithLine(err)
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -363,11 +352,6 @@ func (c *Context) Redirect(url string, permanently bool) error {
 // Invoke is shorthand of c.App.Invoke.
 func (c *Context) Invoke(unit Unit, newFunc func(), defaultFunc func()) {
 	c.App.Invoke(unit, newFunc, defaultFunc)
-}
-
-// ErrorWithLine returns error that added the filename and line to err.
-func (c *Context) ErrorWithLine(err error) error {
-	return c.errorWithLine(err)
 }
 
 func (c *Context) render(r io.Reader) error {
@@ -443,10 +427,6 @@ func (c *Context) newParams() *Params {
 		c.Request.Form = url.Values{}
 	}
 	return newParams(c, c.Request.Form, "")
-}
-
-func (c *Context) errorWithLine(err error) error {
-	return errorWithLine(err, 3)
 }
 
 func (c *Context) reset() {
