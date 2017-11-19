@@ -12,7 +12,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var DatabaseMap = kocha.DatabaseMap{
+var DatabaseMap = map[string]struct {
+	Driver string
+	DSN    string
+}{
 	"default": {
 		Driver: kocha.Getenv("KOCHA_DB_DRIVER", "sqlite3"),
 		DSN:    kocha.Getenv("KOCHA_DB_DSN", filepath.Join("db", "db.sqlite3")),
