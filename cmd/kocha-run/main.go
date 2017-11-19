@@ -100,9 +100,9 @@ func (c *runCommand) Run(args []string) (err error) {
 func runApp(basedir, execName, importPath string) (*exec.Cmd, error) {
 	execPath := filepath.Join(basedir, execName)
 	execArgs := []string{"build", "-o", execPath}
-	if runtime.GOARCH == "amd64" {
-		execArgs = append(execArgs, "-race")
-	}
+	// if runtime.GOARCH == "amd64" {
+	// execArgs = append(execArgs, "-race")
+	// }
 	execArgs = append(execArgs, importPath)
 	c, err := execCmd("go", execArgs...)
 	if err != nil {
