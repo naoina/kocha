@@ -309,7 +309,8 @@ func (c *Context) SendFile(path string) error {
 			path = filepath.Join(c.App.Config.AppPath, StaticDir, path)
 		}
 		if _, err := os.Stat(path); err != nil {
-			if err := c.RenderError(http.StatusNotFound, nil, nil); err != nil {
+			c.Response.StatusCode = http.StatusNotFound
+			if err := c.RenderText(""); err != nil {
 				return errors.WithStack(err)
 			}
 			return nil

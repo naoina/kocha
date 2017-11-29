@@ -557,12 +557,8 @@ func TestContext_SendFile(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		file, err := ioutil.ReadFile(filepath.Join(c.App.Config.AppPath, "app", "view", "error", "404.html"))
-		if err != nil {
-			t.Fatal(err)
-		}
 		actual := string(buf)
-		expect := string(file)
+		expect := ""
 		if !reflect.DeepEqual(actual, expect) {
 			t.Errorf(`kocha.SendFile(c, "unknown/path").Proc(res); body => %#v; want %#v`, actual, expect)
 		}
